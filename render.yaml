@@ -1,38 +1,23 @@
-# Render (la misma cuenta que Vigila): servicio web Node, sin build.
+# Render (la misma cuenta que Vigila). Crear con: New → Blueprint → lukas612/nuevoperro.
+# Render solo pedirá las claves secretas (sync: false). Lo demás ya viene puesto,
+# ADMIN_TOKEN y APP_SECRET se generan solos y la URL pública se detecta sola.
 services:
   - type: web
-    name: plan-cachorro
+    name: nuevoperro
     runtime: node
     plan: starter        # el plan free se duerme y el primer visitante de un anuncio esperaría ~30 s
     region: frankfurt
-    buildCommand: "true"
+    branch: main
+    buildCommand: echo ok
     startCommand: node server.js
     healthCheckPath: /salud
     envVars:
       - key: NODE_VERSION
         value: "22"
-      - key: BASE_URL
-        sync: false
       - key: MARCA
-        sync: false
-      - key: EMAIL_CONTACTO
-        sync: false
-      - key: TITULAR
-        sync: false
+        value: Plan Cachorro
       - key: SUPABASE_URL
         value: https://wwxlzvfxlfuodikcamlq.supabase.co
-      - key: SUPABASE_SERVICE_ROLE_KEY
-        sync: false
-      - key: STRIPE_SECRET_KEY
-        sync: false
-      - key: STRIPE_WEBHOOK_SECRET
-        sync: false
-      - key: RESEND_API_KEY
-        sync: false
-      - key: EMAIL_FROM
-        sync: false
-      - key: META_PIXEL_ID
-        sync: false
       - key: PRECIOS
         value: "1999"
       - key: PRECIO_UPSELL
@@ -41,3 +26,12 @@ services:
         generateValue: true
       - key: APP_SECRET
         generateValue: true
+      # Las que Render te pedirá (puedes dejar en blanco las que aún no tengas):
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+      - key: RESEND_API_KEY
+        sync: false
