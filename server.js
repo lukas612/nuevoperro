@@ -86,7 +86,7 @@ const rutas = {
 
   'POST /api/evento': async (req, res) => {
     const b = await json(req);
-    const permitidos = ['visita', 'inicio_form', 'paso', 'form_completo', 'resultado_visto', 'paywall_visto', 'checkout_inicio', 'checkout_cancelado', 'upsell_visto', 'upsell_rechazado', 'clic_seguros'];
+    const permitidos = ['visita', 'inicio_form', 'paso', 'form_completo', 'resultado_visto', 'paywall_visto', 'checkout_inicio', 'checkout_cancelado', 'upsell_visto', 'upsell_rechazado', 'clic_seguros', 'derivado'];
     if (!permitidos.includes(b.tipo)) return enviar(res, 400, { error: 'tipo' });
     await datos.insertar('eventos', { tipo: b.tipo, sid: limpio(b.sid, 64), paso: limpio(b.paso, 40), utm: objeto(b.utm) });
     enviar(res, 200, { ok: true });
@@ -104,7 +104,9 @@ const rutas = {
       respuestas: {
         nombre: limpio(r.nombre, 40), raza: limpio(r.raza, 60), razaId: limpio(r.razaId, 20), tamano: limpio(r.tamano, 10), edadSemanas: Number(r.edadSemanas) || 0,
         vivienda: limpio(r.vivienda, 10), horasSolo: Number(r.horasSolo) || 0, problema: limpio(r.problema, 12),
-        convivientes: lista(r.convivientes, 20), primerPerro: limpio(r.primerPerro, 3), comunidad: limpio(r.comunidad, 40), tiene: lista(r.tiene, 20)
+        convivientes: lista(r.convivientes, 20), primerPerro: limpio(r.primerPerro, 3), comunidad: limpio(r.comunidad, 40), tiene: lista(r.tiene, 20),
+        // Perro adulto o adoptado (/perro)
+        tipo: ['adulto', 'adoptado'].includes(r.tipo) ? r.tipo : 'cachorro', edadPerro: limpio(r.edadPerro, 10), detalle: limpio(r.detalle, 20), muerde: limpio(r.muerde, 3)
       },
       consentimientos: { privacidad: true, comerciales: !!b.consentimientos.comerciales, seguros: !!b.consentimientos.seguros, version: '2026-11-07' },
       precio: precioPara(b.sid),
@@ -128,15 +130,20 @@ const rutas = {
     if (!lead) return enviar(res, 400, { error: 'Completa primero el formulario.' });
     const precio = precioPara(sid);
     await datos.insertar('eventos', { tipo: 'checkout_inicio', sid, utm: lead.utm });
-    if (MODO_DEMO) return enviar(res, 200, { url: `${CFG.baseUrl}/?pago=ok&session_id=demo_${sid}` });
+    const pagina = esAdulto(lead.respuestas) ? '/perro' : '/cachorro';
+    if (MODO_DEMO) return enviar(res, 200, { url: `${CFG.baseUrl}${pagina}?pago=ok&session_id=demo_${sid}` });
+    const PROGRAMAS = require('./content/programas-adulto.js').PROGRAMAS;
+    const nombreProducto = esAdulto(lead.respuestas)
+      ? `${(PROGRAMAS[lead.respuestas.problema] || PROGRAMAS.correa).titulo}: plan de 6 semanas para ${lead.respuestas.nombre || 'tu perro'}`
+      : `Plan de 8 semanas para ${lead.respuestas.nombre || 'tu cachorro'}`;
     try {
       const s = await stripe('POST', '/checkout/sessions', {
         mode: 'payment', customer_creation: 'always', customer_email: lead.email, locale: 'es',
-        line_items: { 0: { quantity: 1, price_data: { currency: 'eur', unit_amount: precio, product_data: { name: `Plan de 8 semanas para ${lead.respuestas.nombre || 'tu cachorro'}`, description: 'Plan personalizado, emails diarios y garantía de 14 días.' } } } },
+        line_items: { 0: { quantity: 1, price_data: { currency: 'eur', unit_amount: precio, product_data: { name: nombreProducto, description: 'Plan personalizado, emails diarios y garantía de 14 días.' } } } },
         payment_intent_data: { setup_future_usage: 'off_session', metadata: { sid, tipo: 'plan', app: 'cachorro' } },
         metadata: { sid, precio, app: 'cachorro', desistimiento: 'aceptado_' + new Date().toISOString() },
-        success_url: `${CFG.baseUrl}/?pago=ok&session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: `${CFG.baseUrl}/?pago=cancelado`
+        success_url: `${CFG.baseUrl}${pagina}?pago=ok&session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${CFG.baseUrl}${pagina}?pago=cancelado`
       });
       enviar(res, 200, { url: s.url });
     } catch (e) {
@@ -241,7 +248,9 @@ async function registrarPedido(s) {
 }
 
 // ---------- Servidor ----------
-const ESTATICOS_CONTENT = ['/plantillas.js', '/tareas-diarias.js', '/plan-html.js'];
+const ESTATICOS_CONTENT = ['/plantillas.js', '/tareas-diarias.js', '/plan-html.js', '/programas-adulto.js', '/plan-adulto-html.js'];
+const PAGINAS = { '/cachorro': 'cachorro.html', '/perro': 'perro.html' };
+const esAdulto = (r) => r && (r.tipo === 'adulto' || r.tipo === 'adoptado');
 const servidor = http.createServer(async (req, res) => {
   const url = new URL(req.url, CFG.baseUrl);
   try {
@@ -257,6 +266,7 @@ const servidor = http.createServer(async (req, res) => {
       if (!plan) return html(res, 404, pagina('Plan no encontrado', '<h1>No encontramos este plan</h1><p>Revisa el enlace del email o escríbenos.</p>'));
       return enviar(res, 200, plan.html, TIPOS['.html'], { 'X-Robots-Tag': 'noindex' });
     }
+    if (PAGINAS[url.pathname]) return servirArchivo(res, path.join(PUBLIC, PAGINAS[url.pathname]));
     if (ESTATICOS_CONTENT.includes(url.pathname)) return servirArchivo(res, path.join(__dirname, 'content', url.pathname.slice(1)));
     if (url.pathname === '/privacidad' || url.pathname === '/condiciones') {
       const h = fs.readFileSync(path.join(PUBLIC, url.pathname.slice(1) + '.html'), 'utf8')

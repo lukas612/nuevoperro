@@ -18,6 +18,16 @@ Todo lo necesario para validar las puertas 1, 2 y 3 del [documento del MVP](docs
 | `scripts/metricas.js` | Funnel por ángulo y por precio, comparado con las puertas |
 | `scripts/exportar-leads.js` | CSV para la herramienta de email (compradores, no compradores y seguros), respetando los consentimientos |
 
+## Páginas
+
+| Dirección | Qué es |
+| --- | --- |
+| `/` | Portada: eliges cachorro, recién adoptado o perro adulto |
+| `/cachorro` | Test, resultado y plan de 8 semanas para cachorros (`public/app.js`) |
+| `/perro` | Test, resultado y plan de 6 semanas para perros adultos y adoptados (`public/perro.js`, contenido en `content/programas-adulto.js`). Si el perro muerde a personas, no se vende y se deriva a un profesional |
+| `/plan/<token>` | Página privada de cada plan |
+| `/admin.html` | Panel de métricas |
+
 ## Arquitectura
 
 Repositorio propio. Usa las mismas cuentas que Vigila:

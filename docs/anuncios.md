@@ -10,7 +10,7 @@ Cinco ángulos, uno por problema. Cada ángulo lleva un vídeo vertical (UGC con
 - **URL de destino**, con `a` = ángulo (la landing adapta el titular para que encaje con el anuncio):
 
 ```
-https://TU-DOMINIO/?a=pis&utm_source=meta&utm_medium=paid&utm_campaign=fase1a&utm_content=pis_{{ad.name}}
+https://TU-DOMINIO/cachorro?a=pis&utm_source=meta&utm_medium=paid&utm_campaign=fase1a&utm_content=pis_{{ad.name}}
 ```
 
 Cambia `a=pis` por `noches`, `mordiscos`, `solo` o `rutina` en cada conjunto.
@@ -64,3 +64,42 @@ Cambia `a=pis` por `noches`, `mordiscos`, `solo` o `rutina` en cada conjunto.
 - 3–4 tomas por ángulo; los primeros 2 segundos son lo que más importa.
 - Graba también reacciones tuyas a cámara ("esto me pasó a mí la primera semana").
 - Nada que muestre al perro en una situación de estrés real prolongada.
+
+---
+
+# Ángulos para perro adulto y recién adoptado
+
+Apuntan a `/perro?a=<ángulo>`. La landing adapta el titular y deja el problema ya marcado en el test. Las direcciones antiguas de cachorro (`/?a=pis`) siguen funcionando: redirigen a `/cachorro`.
+
+```
+https://TU-DOMINIO/perro?a=correa&utm_source=meta&utm_medium=paid&utm_campaign=fase1a&utm_content=correa_{{ad.name}}
+```
+
+Cambia `a=correa` por `ladridos`, `soledad` o `adopcion`.
+
+## Ángulo 6 · Tira de la correa (`a=correa`)
+
+**Texto principal:** ¿Tu perro tira de la correa en cada paseo? No es que quiera mandar: le funciona. Cada vez que tira y avanza, aprende que tirar es el camino. Haz el test y recibe gratis sus 3 primeros días de plan, sin tirones ni collares de castigo.
+**Titular:** Pasea sin tirones en 6 semanas
+**Vídeo:** primer plano de una mano con la correa tensa y la marca roja en la palma. Texto: "¿Te suena?". Luego tú parándote en seco ("la regla del árbol") y el perro volviendo a tu lado. CTA.
+**Estática:** perro tirando de la correa en una acera. Texto: "¿Paseas tú o te pasea él?".
+
+## Ángulo 7 · Ladra a todo (`a=ladridos`)
+
+**Texto principal:** El timbre, el vecino, el perro de la ventana… Si tu perro ladra a todo, no es que sea "así": está avisando y le funciona. Descubre por qué lo hace y qué enseñarle en su lugar. Test gratis en 2 minutos.
+**Titular:** Por qué ladra tu perro (y qué hacer)
+**Vídeo:** suena el timbre y el perro ladra. Corte: el timbre suena y el perro va a su cama a por un premio. CTA.
+
+## Ángulo 8 · Lo pasa mal solo (`a=soledad`)
+
+**Texto principal:** Cojines rotos, quejas de los vecinos, pis en la entrada… No lo hace por venganza: lo pasa mal. Se puede enseñar a quedarse en casa con calma, poco a poco. Haz el test y te damos sus primeros 3 días.
+**Titular:** Que aprenda a quedarse solo
+**Vídeo:** grabación del móvil de un perro esperando en la puerta. Texto: "Esto es lo que hace cuando te vas". CTA.
+
+## Ángulo 9 · Recién adoptado (`a=adopcion`)
+
+**Texto principal:** Acabas de adoptar y tu perro está asustado, no come bien o hace pis en casa. Es normal: lo ha cambiado todo. Sus primeras semanas, con un plan hecho para él.
+**Titular:** Sus primeras semanas en casa
+**Vídeo:** el perro en la puerta de la protectora y luego en su cama nueva. Texto: "3 días, 3 semanas, 3 meses". CTA.
+
+**Recomendación para la fase 1a:** 3 ángulos de cachorro (pis, noches, mordiscos) y 4 de adulto (correa, ladridos, soledad, adopción), con el mismo presupuesto cada uno. El panel separa los resultados por ángulo.

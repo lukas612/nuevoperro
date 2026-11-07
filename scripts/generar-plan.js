@@ -12,7 +12,8 @@
 const { CFG } = require('../lib/config');
 const crypto = require('crypto');
 const datos = require('../lib/datos');
-const { render } = require('../content/plan-html.js');
+const planCachorro = require('../content/plan-html.js');
+const planAdulto = require('../content/plan-adulto-html.js');
 
 (async () => {
   const clave = process.argv[2];
@@ -21,7 +22,8 @@ const { render } = require('../content/plan-html.js');
   if (!lead) { console.error('No encuentro ese lead.'); process.exit(1); }
 
   const token = crypto.randomBytes(16).toString('hex');
-  const html = render({ respuestas: lead.respuestas, marca: CFG.marca, id: token, inicio: new Date().toISOString() });
+  const adulto = ['adulto', 'adoptado'].includes(lead.respuestas.tipo);
+  const html = (adulto ? planAdulto : planCachorro).render({ respuestas: lead.respuestas, marca: CFG.marca, id: token, inicio: new Date().toISOString() });
   await datos.insertar('planes', { token, sid: lead.sid, email: lead.email, html, estado: 'borrador' });
 
   console.log(`\nBorrador guardado. Revísalo en: ${CFG.baseUrl}/plan/${token}`);

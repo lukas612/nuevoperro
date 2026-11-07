@@ -204,7 +204,7 @@
     '@media (prefers-reduced-motion:reduce){*{transition:none!important}}'
   ].join('\n');
 
-  var api = { render: render, TIPOS: TIPOS };
+  var api = { render: render, TIPOS: TIPOS, CSS: CSS };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.PLAN_HTML = api;
 })(this);

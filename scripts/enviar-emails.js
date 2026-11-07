@@ -43,7 +43,7 @@ const diasDesde = (fecha) => Math.floor((Date.now() - new Date(fecha).getTime())
     if (!lead) continue;
     const dia = diasDesde(plan.enviado_at); // el día 1 es el día siguiente a la entrega
     const url = `${CFG.baseUrl}/plan/${plan.token}`;
-    if (dia >= 1 && dia <= 56) { const m = emails.diario(plan.email, lead.respuestas, dia, url); if (m) { m.para = plan.email; cola.push(m); } }
+    if (dia >= 1 && dia <= emails.DIAS(lead.respuestas)) { const m = emails.diario(plan.email, lead.respuestas, dia, url); if (m) { m.para = plan.email; cola.push(m); } }
     for (const e of [7, 21]) if (dia >= e && dia < e + 3) { const m = emails.encuesta(plan.email, lead.respuestas, e, url); m.para = plan.email; cola.push(m); }
   }
 

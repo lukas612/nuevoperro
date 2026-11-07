@@ -325,3 +325,20 @@ label.check input { margin-top: 2px; width: 20px; height: 20px; flex: none; acce
 /* "Otra raza" ocupa la fila entera al final del mosaico */
 .raza[data-raza="otra"] { grid-column: 1 / -1; flex-direction: row; justify-content: center; gap: 12px; padding: 10px 14px; font-size: .95rem; }
 .raza[data-raza="otra"] svg { width: 48px; max-width: 48px; }
+
+/* Portada con selector */
+.elecciones { display: flex; flex-direction: column; gap: 10px; }
+.eleccion { display: grid; grid-template-columns: 72px 1fr 24px; gap: 14px; align-items: center; background: var(--surface); border-radius: 20px; padding: 12px 16px 12px 12px; box-shadow: var(--shadow); text-decoration: none; color: var(--ink); border: 2px solid transparent; transition: transform .1s, border-color .15s; }
+.eleccion:hover { border-color: var(--line); }
+.eleccion:active { transform: scale(.98); }
+.eleccion:focus-visible { outline: 3px solid var(--brand); outline-offset: 2px; }
+.eleccion-cara svg { width: 72px; height: 72px; display: block; }
+.eleccion-txt { min-width: 0; }
+.eleccion-txt b { display: block; font: 800 1.15rem/1.2 var(--display); letter-spacing: -.01em; }
+.eleccion-txt small { display: block; color: var(--muted); font-size: .88rem; margin-top: 2px; }
+.eleccion-flecha .ico { transform: rotate(180deg); color: var(--muted); }
+.atajos { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.atajo { display: flex; align-items: center; gap: 10px; background: var(--surface); border-radius: 14px; padding: 8px 10px; text-decoration: none; color: var(--ink); font-weight: 600; font-size: .9rem; line-height: 1.25; min-width: 0; }
+.atajo:hover { box-shadow: var(--shadow); }
+.atajo .burbuja { width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center; flex: none; }
+.atajo .burbuja .ico { width: 18px; height: 18px; }
