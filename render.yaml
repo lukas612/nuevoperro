@@ -1,6 +1,6 @@
 # Render (la misma cuenta que Vigila). Crear con: New → Blueprint → lukas612/nuevoperro.
 # Render solo pedirá las claves secretas (sync: false). Lo demás ya viene puesto,
-# ADMIN_TOKEN y APP_SECRET se generan solos y la URL pública se detecta sola.
+# APP_SECRET se genera solo y la URL pública se detecta sola.
 services:
   - type: web
     name: nuevoperro
@@ -22,8 +22,8 @@ services:
         value: "1999"
       - key: PRECIO_UPSELL
         value: "999"
-      - key: ADMIN_TOKEN
-        generateValue: true
+      - key: ADMIN_EMAILS
+        value: lukas@witme.es
       - key: APP_SECRET
         generateValue: true
       # Las que Render te pedirá (puedes dejar en blanco las que aún no tengas):

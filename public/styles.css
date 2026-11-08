@@ -478,3 +478,10 @@ a.btn { text-decoration: none; }
 .venta-barra-in small { font-size: .72rem; color: var(--muted); margin-top: 3px; }
 .venta-barra .btn { flex: 1; min-width: 0; min-height: 46px; font-size: .95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 @media (prefers-reduced-motion: reduce) { .check.falta { animation: none; } }
+
+/* Páginas legales */
+.legal h1 { margin-bottom: 4px; }
+.legal h2 { font-size: 1.15rem; margin: 22px 0 6px; }
+.legal p, .legal li { line-height: 1.55; }
+.legal ul { padding-left: 20px; display: flex; flex-direction: column; gap: 6px; }
+.legal code { font-size: .85em; background: var(--surface-2); padding: 1px 5px; border-radius: 6px; }

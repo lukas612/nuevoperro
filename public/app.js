@@ -419,7 +419,7 @@
         extras: ['Protocolos para pis, mordiscos, noches y quedarse solo', 'Rutina que se actualiza cada semana con su edad', 'Checklist de socialización semana a semana', 'Salud y checklist legal de ' + (estado.r.comunidad || 'tu comunidad')] }, { I: I, burbuja: burbuja, esc: esc }) +
       window.VENTA.comparativa({ nombre: nombre(), semanas: 8, precio: CONF.precio }, { esc: esc, euros: euros }) +
       '<div class="precio-fila"><span class="precio">' + euros(CONF.precio) + '</span><span class="suave">Pago único · menos de ' + dia + ' € al día</span></div>' +
-      '<label class="check"><input type="checkbox" id="desist"> <span>Quiero recibir el plan ya. Acepto que, al empezar la entrega del contenido digital, pierdo el derecho legal de desistimiento. <a href="/condiciones" target="_blank">Condiciones</a>.</span></label>' +
+      '<label class="check"><input type="checkbox" id="desist"> <span>Quiero recibir el plan ya. Acepto que, al empezar la entrega del contenido digital, pierdo el derecho legal de desistimiento. <a href="/condiciones" target="_blank">Términos y condiciones</a>.</span></label>' +
       '<p class="error" id="err-pago"></p>' +
       '<button class="btn" id="pagar">Quiero el plan de ' + esc(nombre()) + ' · ' + euros(CONF.precio) + '</button>' +
       '<p class="micro"><span>' + I('candado') + 'Pago seguro con Stripe</span><span>Tarjeta · Apple Pay · Google Pay</span></p>' +

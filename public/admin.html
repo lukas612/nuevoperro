@@ -31,10 +31,15 @@
   <main class="pila-g">
     <section class="pila">
       <h1 style="font-size:1.8rem">Puertas del MVP</h1>
-      <div class="fila-form">
-        <input type="password" id="token" placeholder="Token de administración">
+      <div class="fila-form" id="login" hidden>
+        <input type="email" id="email" placeholder="Tu email" autocomplete="email">
+        <button class="btn" id="entrar">Enviarme el enlace</button>
+      </div>
+      <p class="suave" id="aviso" hidden></p>
+      <div class="fila-form" id="filtros" hidden>
         <input type="number" id="gasto" placeholder="Gasto total en Meta (€)" min="0" step="0.01">
-        <button class="btn" id="cargar">Ver métricas</button>
+        <button class="btn" id="cargar">Actualizar</button>
+        <button class="btn texto" id="salir" style="width:auto">Salir</button>
       </div>
       <p class="error" id="err"></p>
     </section>
@@ -44,7 +49,6 @@
   <script>
     (function () {
       var $ = function (id) { return document.getElementById(id); };
-      try { $('token').value = sessionStorage.getItem('pc_admin') || ''; } catch (e) {}
       var eur = function (x) { return x == null || isNaN(x) ? '—' : x.toFixed(2).replace('.', ',') + ' €'; };
       var pct = function (x) { return x == null || isNaN(x) ? '—' : (x * 100).toFixed(1).replace('.', ',') + '%'; };
       var esc = function (s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
@@ -58,12 +62,23 @@
           Object.keys(filas).map(function (k) { var f = filas[k]; return '<tr><td>' + esc(k) + '</td><td>' + (f.visitas || 0) + '</td><td>' + f.forms + '</td><td>' + pct(f.tasaForm) + '</td><td>' + eur(f.costeForm) + '</td><td>' + f.compras + '</td><td>' + pct(f.tasaCompra) + '</td><td>' + eur(f.cac) + '</td><td>' + eur(f.netoPorComprador) + '</td><td>' + f.upsells + '</td><td>' + f.reembolsos + '</td></tr>'; }).join('') +
           '</tbody></table></div>';
       }
-      $('cargar').onclick = function () {
-        var t = $('token').value.trim(); $('err').textContent = '';
-        try { sessionStorage.setItem('pc_admin', t); } catch (e) {}
-        fetch('/api/admin/metricas?token=' + encodeURIComponent(t) + ($('gasto').value ? '&gasto=' + $('gasto').value : ''))
-          .then(function (r) { if (r.status === 403) throw new Error('Token incorrecto.'); return r.json(); })
+      function mostrarLogin() {
+        $('login').hidden = false; $('filtros').hidden = true;
+        if (/caducado/.test(location.search)) $('err').textContent = 'El enlace ha caducado o no es válido. Pide otro.';
+      }
+      $('entrar').onclick = function () {
+        var e = $('email').value.trim(); if (!e) return;
+        $('entrar').disabled = true;
+        fetch('/api/admin/acceso', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email: e }) })
+          .finally(function () { $('login').hidden = true; $('aviso').hidden = false; $('aviso').textContent = 'Si ese email tiene acceso, te acaba de llegar un enlace para entrar (válido 1 hora).'; });
+      };
+      $('salir').onclick = function () { fetch('/api/admin/salir', { method: 'POST' }).then(function () { location.href = '/admin.html'; }); };
+      function cargar() {
+        $('err').textContent = '';
+        fetch('/api/admin/metricas' + ($('gasto').value ? '?gasto=' + $('gasto').value : ''), { credentials: 'same-origin' })
+          .then(function (r) { if (r.status === 401) { mostrarLogin(); throw null; } return r.json(); })
           .then(function (m) {
+            $('login').hidden = true; $('filtros').hidden = false;
             var T = m.total;
             $('puertas').innerHTML =
               puerta('Puerta 1 · coste por formulario', eur(T.costeForm), m.puertas.puerta1, T.forms + ' formularios · objetivo ≤ ' + eur(m.umbrales.costeForm)) +
@@ -73,8 +88,10 @@
               puerta('Club (interés)', String(m.club.interesados), m.club.compradores ? Math.round(m.club.interesados / m.club.compradores * 100) + '% de compradores' : 'sin compradores', 'Construir si supera el 10–15%');
             $('tablas').innerHTML = tabla('Por ángulo de anuncio', Object.assign({}, m.angulos, { TOTAL: T })) + tabla('Por precio (céntimos)', m.precios);
           })
-          .catch(function (e) { $('err').textContent = e.message || 'No se han podido cargar las métricas.'; });
-      };
+          .catch(function (e) { if (e) $('err').textContent = e.message || 'No se han podido cargar las métricas.'; });
+      }
+      $('cargar').onclick = cargar;
+      cargar();
     })();
   </script>
 </body>

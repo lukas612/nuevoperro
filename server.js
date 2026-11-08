@@ -352,10 +352,31 @@ const rutas = {
   },
 
   'GET /api/admin/metricas': async (req, res, url) => {
-    if (!CFG.adminToken || url.searchParams.get('token') !== CFG.adminToken) return enviar(res, 403, { error: 'token' });
+    if (!sesion.adminDeCookie(req)) return enviar(res, 401, { error: 'sesion' });
     const { calcular } = require('./scripts/metricas.js');
     enviar(res, 200, await calcular({ gasto: url.searchParams.get('gasto') ? Number(url.searchParams.get('gasto')) : null }));
-  }
+  },
+
+  'POST /api/admin/acceso': async (req, res) => {
+    const b = await json(req);
+    const email = limpio(b.email, 200).toLowerCase();
+    // Misma respuesta siempre: no revelamos qué emails son administradores.
+    enviar(res, 200, { ok: true });
+    if (!sesion.esAdmin(email) || pedidosAcceso.get('admin:' + email) > Date.now() - 60000) return;
+    pedidosAcceso.set('admin:' + email, Date.now());
+    correo.enviar(email, `Acceso al panel · ${CFG.marca}`, `<p>Entra al panel de ${CFG.marca} con este enlace (válido 1 hora):</p><p><a href="${sesion.enlaceAdmin(email)}">Entrar al panel</a></p><p style="color:#5c6b80;font-size:14px">Si no lo has pedido tú, ignora este email.</p>`)
+      .catch((e) => console.error('acceso admin', e.message));
+  },
+
+  'GET /admin/entrar': async (req, res, url) => {
+    const email = sesion.leerEnlaceAdmin(url.searchParams.get('t'));
+    if (!email) { res.writeHead(302, { Location: '/admin.html?caducado=1', 'Cache-Control': 'no-store' }); return res.end(); }
+    res.writeHead(302, { Location: '/admin.html', 'Set-Cookie': sesion.cookieAdmin(email), 'Cache-Control': 'no-store' });
+    res.end();
+  },
+
+  'POST /api/admin/salir': async (req, res) => enviar(res, 200, { ok: true }, 'application/json', { 'Set-Cookie': sesion.cerrarAdmin() })
+
 };
 
 async function registrarPedido(s) {
@@ -472,8 +493,9 @@ const servidor = http.createServer(async (req, res) => {
     }
     if (PAGINAS[url.pathname]) return enviar(res, 200, paginaFunnel(url.pathname), TIPOS['.html'], { 'Cache-Control': 'public, max-age=300' });
     if (ESTATICOS_CONTENT.includes(url.pathname)) return servirArchivo(res, path.join(__dirname, 'content', url.pathname.slice(1)));
+    if (url.pathname === '/terminos' || url.pathname === '/terminos-y-condiciones' || url.pathname === '/aviso-legal') return redirigir(res, '/condiciones', 301);
     if (url.pathname === '/privacidad' || url.pathname === '/condiciones') {
-      const legal = { '/privacidad': ['Política de privacidad', `Cómo tratamos tus datos en ${CFG.marca}: qué datos pedimos, para qué, con qué base legal y cómo ejercer tus derechos.`], '/condiciones': ['Condiciones de compra', `Condiciones de compra de ${CFG.marca}: qué incluye el plan, la entrega, el desistimiento y la garantía de 14 días.`] }[url.pathname];
+      const legal = { '/privacidad': ['Política de privacidad', `Cómo tratamos tus datos en ${CFG.marca}: qué datos pedimos, para qué, con qué base legal y cómo ejercer tus derechos.`], '/condiciones': ['Términos y condiciones', `Términos y condiciones de ${CFG.marca}: quiénes somos, uso de la web, qué incluye el plan, precio, entrega, desistimiento y responsabilidad.`] }[url.pathname];
       const h = fs.readFileSync(path.join(PUBLIC, url.pathname.slice(1) + '.html'), 'utf8')
         .replace(/<head>[\s\S]*<\/head>/, `<head>\n${SEO.cabeza({ titulo: SEO.conMarca(legal[0]), descripcion: legal[1], ruta: url.pathname })}\n</head>`)
         .replaceAll('{{MARCA}}', CFG.marca).replaceAll('{{BASE}}', CFG.baseUrl).replaceAll('{{EMAIL}}', CFG.emailContacto).replaceAll('{{TITULAR}}', CFG.titular);
