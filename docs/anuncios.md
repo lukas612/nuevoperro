@@ -10,7 +10,7 @@ Cinco ángulos, uno por problema. Cada ángulo lleva un vídeo vertical (UGC con
 - **URL de destino**, con `a` = ángulo (la landing adapta el titular para que encaje con el anuncio):
 
 ```
-https://TU-DOMINIO/cachorro?a=pis&utm_source=meta&utm_medium=paid&utm_campaign=fase1a&utm_content=pis_{{ad.name}}
+https://quebuenperro.com/cachorro?a=pis&utm_source=meta&utm_medium=paid&utm_campaign=fase1a&utm_content=pis_{{ad.name}}
 ```
 
 Cambia `a=pis` por `noches`, `mordiscos`, `solo` o `rutina` en cada conjunto.
@@ -72,7 +72,7 @@ Cambia `a=pis` por `noches`, `mordiscos`, `solo` o `rutina` en cada conjunto.
 Apuntan a `/perro?a=<ángulo>`. La landing adapta el titular y deja el problema ya marcado en el test. Las direcciones antiguas de cachorro (`/?a=pis`) siguen funcionando: redirigen a `/cachorro`.
 
 ```
-https://TU-DOMINIO/perro?a=correa&utm_source=meta&utm_medium=paid&utm_campaign=fase1a&utm_content=correa_{{ad.name}}
+https://quebuenperro.com/perro?a=correa&utm_source=meta&utm_medium=paid&utm_campaign=fase1a&utm_content=correa_{{ad.name}}
 ```
 
 Cambia `a=correa` por `ladridos`, `soledad` o `adopcion`.
