@@ -38,6 +38,7 @@
   function preguntas(o, u) {
     var faq = [
       ['¿Es una suscripción?', 'No. Es un pago único de ' + u.euros(o.precio) + '. No se renueva y no hay que darse de baja de nada.'],
+      ['¿Hasta cuándo tengo acceso?', 'Para siempre. El plan y Mi zona son tuyos, sin fecha de caducidad: vuelve a él cuando quieras, a tu ritmo.'],
       ['¿Cuánto tiempo al día?', 'Entre 5 y 15 minutos. Cada mañana te llega la tarea del día por email y la tienes en Mi zona.'],
       ['¿Y si me atasco?', 'Responde a cualquiera de nuestros emails y te ayudamos con vuestro caso.'],
       ['¿Cuándo lo recibo?', 'Nada más pagar. Te llega por email y lo tienes en Mi zona, en el móvil.']
@@ -53,7 +54,7 @@
     if (vieja) vieja.remove();
     var el = document.createElement('div');
     el.id = 'venta-barra'; el.className = 'venta-barra'; el.hidden = true;
-    el.innerHTML = '<div class="venta-barra-in"><span><b>' + u.euros(o.precio) + '</b><small>Pago único · sin suscripción</small></span>' +
+    el.innerHTML = '<div class="venta-barra-in"><span><b>' + u.euros(o.precio) + '</b><small>Pago único · para siempre</small></span>' +
       '<a class="btn" href="#paywall">Quiero el plan de ' + u.esc(o.nombre) + '</a></div>';
     document.body.appendChild(el);
     var pago = document.getElementById('paywall');

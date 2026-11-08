@@ -273,6 +273,7 @@
       var nombres = { entrega: 'Entregas de plan', diario: 'Tarea diaria', nurture: 'Seguimiento a leads', encuesta: 'Encuestas', acceso: 'Accesos a Mi zona', pack: 'Entregas de pack' };
       var it = [
         ['Clientes (total histórico)', num(o.clientesTotales)], ['Ingresos (total histórico)', eur(o.ingresosTotales)],
+        ['Visitas a la home', num(o.visitasHome) + (o.visitasHomeMeta ? ' (' + num(o.visitasHomeMeta) + ' de Meta)' : '')], ['Visitas a la web (home, guías, razas)', num(o.visitasWeb)],
         ['Planes entregados', num(o.planesEntregados)], ['Packs entregados', num(o.packsEntregados)],
         ['Emails enviados (periodo)', num(o.emailsTotal)]
       ].concat(Object.keys(o.emails).sort().map(function (k) { return ['· ' + (nombres[k] || k), num(o.emails[k])]; })).concat([

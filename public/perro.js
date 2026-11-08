@@ -343,9 +343,9 @@
         '<div class="semanas" style="grid-template-columns:repeat(6,1fr)">' + [1, 2, 3, 4, 5, 6].map(function (s) { return '<span>S' + s + '</span>'; }).join('') + '</div></div>' +
       '<h3 class="venta-tit">Todo lo que tendrás para ' + esc(nombre()) + '</h3>' +
       window.VENTA.incluye({ semanas: 6, prioridad: pg.titulo.toLowerCase(), icono: pg.icono,
-        extras: ['Ajustado a cuándo y cómo le pasa a ' + nombre(), 'Con lo que necesita su raza y su edad', 'Qué hacer, qué evitar y cuándo pedir ayuda profesional'] }, { I: I, burbuja: burbuja, esc: esc }) +
+        extras: ['Acceso para siempre al plan y a Mi zona, sin caducidad', 'Ajustado a cuándo y cómo le pasa a ' + nombre(), 'Con lo que necesita su raza y su edad', 'Qué hacer, qué evitar y cuándo pedir ayuda profesional'] }, { I: I, burbuja: burbuja, esc: esc }) +
       window.VENTA.comparativa({ nombre: nombre(), semanas: 6, precio: CONF.precio }, { esc: esc, euros: euros }) +
-      '<div class="precio-fila"><span class="precio">' + euros(CONF.precio) + '</span><span class="suave">Pago único · menos de ' + dia + ' € al día</span></div>' +
+      '<div class="precio-fila"><span class="precio">' + euros(CONF.precio) + '</span><span class="suave">Pago único · acceso para siempre</span></div>' +
       '<label class="check"><input type="checkbox" id="desist"> <span>Quiero recibir el plan ya. Acepto que, al empezar la entrega del contenido digital, pierdo el derecho legal de desistimiento. <a href="/condiciones" target="_blank">Términos y condiciones</a>.</span></label>' +
       '<p class="error" id="err-pago"></p><button class="btn" id="pagar">Quiero el plan de ' + esc(nombre()) + ' · ' + euros(CONF.precio) + '</button>' +
       '<p class="micro"><span>' + I('candado') + 'Pago seguro con Stripe</span><span>Tarjeta · Apple Pay · Google Pay</span></p>' +

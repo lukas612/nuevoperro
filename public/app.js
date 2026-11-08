@@ -424,9 +424,9 @@
         '<div class="semanas">' + [1, 2, 3, 4, 5, 6, 7, 8].map(function (s) { return '<span>S' + s + '</span>'; }).join('') + '</div></div>' +
       '<h3 class="venta-tit">Todo lo que tendrás para ' + esc(nombre()) + '</h3>' +
       window.VENTA.incluye({ semanas: 8, prioridad: (P.PROBLEMAS[estado.r.problema] || 'su mayor problema').toLowerCase(), icono: ({ pis: 'gota', mordiscos: 'diente', noches: 'luna', solo: 'puerta' })[estado.r.problema],
-        extras: ['Protocolos para pis, mordiscos, noches y quedarse solo', 'Rutina que se actualiza cada semana con su edad', 'Checklist de socialización semana a semana', 'Salud y checklist legal de ' + (estado.r.comunidad || 'tu comunidad')] }, { I: I, burbuja: burbuja, esc: esc }) +
+        extras: ['Acceso para siempre al plan y a Mi zona, sin caducidad', 'Protocolos para pis, mordiscos, noches y quedarse solo', 'Rutina que se actualiza cada semana con su edad', 'Checklist de socialización semana a semana', 'Salud y checklist legal de ' + (estado.r.comunidad || 'tu comunidad')] }, { I: I, burbuja: burbuja, esc: esc }) +
       window.VENTA.comparativa({ nombre: nombre(), semanas: 8, precio: CONF.precio }, { esc: esc, euros: euros }) +
-      '<div class="precio-fila"><span class="precio">' + euros(CONF.precio) + '</span><span class="suave">Pago único · menos de ' + dia + ' € al día</span></div>' +
+      '<div class="precio-fila"><span class="precio">' + euros(CONF.precio) + '</span><span class="suave">Pago único · acceso para siempre</span></div>' +
       '<label class="check"><input type="checkbox" id="desist"> <span>Quiero recibir el plan ya. Acepto que, al empezar la entrega del contenido digital, pierdo el derecho legal de desistimiento. <a href="/condiciones" target="_blank">Términos y condiciones</a>.</span></label>' +
       '<p class="error" id="err-pago"></p>' +
       '<button class="btn" id="pagar">Quiero el plan de ' + esc(nombre()) + ' · ' + euros(CONF.precio) + '</button>' +
