@@ -88,15 +88,17 @@
   // si acepta se envían, si rechaza se descartan. eventID = el mismo que manda el servidor (API de Conversiones).
   var colaPx = [];
   function pixel(ev, d, id, propio) {
-    if (lsGet('pc_cookies') === 'no') return;
+    if (CONF.avisoCookies && lsGet('pc_cookies') === 'no') return;
     var a = [propio ? 'trackCustom' : 'track', ev, d || {}];
     if (id) a.push({ eventID: id });
     if (pixelListo && window.fbq) window.fbq.apply(null, a); else if (colaPx.length < 30) colaPx.push(a);
   }
   var PX = { visita: ['ViewContent'], inicio_form: ['TestIniciado', 1], resultado_visto: ['ResultadoVisto', 1], paywall_visto: ['PaywallVisto', 1],
     checkout_cancelado: ['PagoCancelado', 1], upsell_visto: ['UpsellVisto', 1], upsell_rechazado: ['UpsellRechazado', 1], clic_seguros: ['InteresSeguros', 1], derivado: ['DerivadoEducador', 1] };
-  function cm() { return lsGet('pc_cookies') === 'si' ? 1 : 0; }
+  function cm() { return !CONF.avisoCookies || lsGet('pc_cookies') === 'si' ? 1 : 0; }
   function gestionarCookies() {
+    // Fase de pruebas: sin aviso, el píxel carga directamente. Para volver a pedir permiso: AVISO_COOKIES=si en Render.
+    if (!CONF.avisoCookies) return cargarPixel();
     var c = lsGet('pc_cookies');
     if (c === 'si') return cargarPixel();
     if (c === 'no' || !CONF.pixelId) return;
@@ -199,9 +201,9 @@
 
     if (q.tipo === 'nombre') {
       var hola = document.getElementById('hola');
-      var act = function () { var v = campo.value.trim(); sig.disabled = !v; hola.textContent = v ? '¡Hola, ' + v + '!' : ''; };
+      var act = function () { var v = campo.value.trim(); sig.textContent = v ? 'Continuar' : 'Saltar'; hola.textContent = v ? '¡Hola, ' + v + '!' : ''; };
       act(); campo.focus(); campo.oninput = act;
-      campo.onkeydown = function (e) { if (e.key === 'Enter' && campo.value.trim()) sig.click(); };
+      campo.onkeydown = function (e) { if (e.key === 'Enter') sig.click(); };
       sig.onclick = function () { estado.r.nombre = campo.value.trim(); avanzar(); };
       return;
     }

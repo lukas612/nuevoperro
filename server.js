@@ -103,7 +103,7 @@ const pagina = (titulo, cuerpo) => `<!doctype html><html lang="es"><head><meta c
 // ---------- Rutas ----------
 const rutas = {
   'GET /api/config': async (req, res, url) => {
-    enviar(res, 200, { marca: CFG.marca, pixelId: CFG.pixelId, precio: precioPara(url.searchParams.get('sid')), precioUpsell: CFG.precioUpsell, demo: MODO_DEMO, emailContacto: CFG.emailContacto });
+    enviar(res, 200, { marca: CFG.marca, pixelId: CFG.pixelId, avisoCookies: /^(si|sí|1|true)$/i.test(process.env.AVISO_COOKIES || ''), precio: precioPara(url.searchParams.get('sid')), precioUpsell: CFG.precioUpsell, demo: MODO_DEMO, emailContacto: CFG.emailContacto });
   },
 
   'POST /api/evento': async (req, res) => {

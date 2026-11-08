@@ -76,15 +76,17 @@
   // si acepta se envían, si rechaza se descartan. eventID = el mismo que manda el servidor (API de Conversiones).
   var colaPx = [];
   function pixel(ev, d, id, propio) {
-    if (lsGet('pc_cookies') === 'no') return;
+    if (CONF.avisoCookies && lsGet('pc_cookies') === 'no') return;
     var a = [propio ? 'trackCustom' : 'track', ev, d || {}];
     if (id) a.push({ eventID: id });
     if (pixelListo && window.fbq) window.fbq.apply(null, a); else if (colaPx.length < 30) colaPx.push(a);
   }
   var PX = { visita: ['ViewContent'], inicio_form: ['TestIniciado', 1], resultado_visto: ['ResultadoVisto', 1], paywall_visto: ['PaywallVisto', 1],
     checkout_cancelado: ['PagoCancelado', 1], upsell_visto: ['UpsellVisto', 1], upsell_rechazado: ['UpsellRechazado', 1], clic_seguros: ['InteresSeguros', 1], derivado: ['DerivadoEducador', 1] };
-  function cm() { return lsGet('pc_cookies') === 'si' ? 1 : 0; }
+  function cm() { return !CONF.avisoCookies || lsGet('pc_cookies') === 'si' ? 1 : 0; }
   function gestionarCookies() {
+    // Fase de pruebas: sin aviso, el píxel carga directamente. Para volver a pedir permiso: AVISO_COOKIES=si en Render.
+    if (!CONF.avisoCookies) return cargarPixel();
     var c = lsGet('pc_cookies');
     if (c === 'si') return cargarPixel();
     if (c === 'no' || !CONF.pixelId) return;
@@ -162,8 +164,8 @@
 
   // ---------- Preguntas ----------
   var PREGUNTAS = [
-    { id: 'nombre', t: '¿Cómo se llama tu cachorro?', s: 'Así personalizamos todo su plan.', tipo: 'nombre' },
-    { id: 'raza', t: function () { return '¿De qué raza es ' + nombre() + '?'; }, s: 'Si es mestizo o no la ves, elige esa opción.', tipo: 'raza' },
+    { id: 'raza', t: function () { return '¿De qué raza es tu cachorro?'; }, s: 'Si es mestizo o no la ves, elige esa opción.', tipo: 'raza' },
+    { id: 'nombre', t: '¿Cómo se llama tu cachorro?', s: 'Así personalizamos su plan. Si aún no tiene nombre, puedes saltarlo.', tipo: 'nombre' },
     { id: 'tamano', cuando: function () { var r = D.raza(estado.r.razaId); return !r || !r.tamano; }, t: '¿Qué tamaño tendrá de adulto?', s: 'Más o menos. Si no lo sabes, elige mediano.', tipo: 'opcion',
       lista: [['pequeno', { tam: ['chihuahua', .62] }, 'Pequeño', 'Menos de 10 kg'], ['mediano', { tam: ['beagle', .82] }, 'Mediano', 'De 10 a 25 kg'], ['grande', { tam: ['labrador', 1] }, 'Grande', 'Más de 25 kg']] },
     { id: 'edadSemanas', t: function () { return '¿Cuántas semanas tiene ' + nombre() + '?'; }, tipo: 'opcion', dos: true,
@@ -240,10 +242,10 @@
 
     if (q.tipo === 'nombre') {
       var hola = document.getElementById('hola');
-      var act = function () { var v = campo.value.trim(); sig.disabled = !v; hola.textContent = v ? '¡Hola, ' + v + '!' : ''; };
+      var act = function () { var v = campo.value.trim(); sig.textContent = v ? 'Continuar' : 'Saltar'; hola.textContent = v ? '¡Hola, ' + v + '!' : ''; };
       act(); campo.focus();
       campo.oninput = act;
-      campo.onkeydown = function (e) { if (e.key === 'Enter' && campo.value.trim()) sig.click(); };
+      campo.onkeydown = function (e) { if (e.key === 'Enter') sig.click(); };
       sig.onclick = function () { estado.r.nombre = campo.value.trim(); avanzar(); };
       return;
     }
