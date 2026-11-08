@@ -16,6 +16,10 @@ const crypto = require('crypto');
 const datos = require('./lib/datos');
 const correo = require('./lib/email');
 const plantillasEmail = require('./lib/emails');
+const sesion = require('./lib/sesion');
+const blog = require('./lib/blog');
+const ZONA = require('./content/zona.js');
+const PROGRAMAS_ADULTO = require('./content/programas-adulto.js').PROGRAMAS;
 
 const MODO_DEMO = !CFG.stripeKey;
 const PUBLIC = path.join(__dirname, 'public');
@@ -86,7 +90,7 @@ const rutas = {
 
   'POST /api/evento': async (req, res) => {
     const b = await json(req);
-    const permitidos = ['visita', 'inicio_form', 'paso', 'form_completo', 'resultado_visto', 'paywall_visto', 'checkout_inicio', 'checkout_cancelado', 'upsell_visto', 'upsell_rechazado', 'clic_seguros', 'derivado'];
+    const permitidos = ['visita', 'inicio_form', 'paso', 'form_completo', 'resultado_visto', 'paywall_visto', 'checkout_inicio', 'checkout_cancelado', 'upsell_visto', 'upsell_rechazado', 'clic_seguros', 'derivado', 'clic_afiliado'];
     if (!permitidos.includes(b.tipo)) return enviar(res, 400, { error: 'tipo' });
     await datos.insertar('eventos', { tipo: b.tipo, sid: limpio(b.sid, 64), paso: limpio(b.paso, 40), utm: objeto(b.utm) });
     enviar(res, 200, { ok: true });
@@ -223,6 +227,48 @@ const rutas = {
     html(res, 200, pagina('Gracias', '<h1>¡Gracias!</h1><p class="suave">Tu respuesta nos ayuda a mejorar el plan. Si quieres contarnos algo más, responde al email.</p>'));
   },
 
+  // ---------- Mi zona ----------
+  'POST /api/acceso': async (req, res) => {
+    const b = await json(req);
+    const email = limpio(b.email, 200).toLowerCase();
+    // Siempre la misma respuesta: no revelamos si un email es cliente.
+    enviar(res, 200, { ok: true });
+    if (!emailValido(email) || pedidosAcceso.get(email) > Date.now() - 120000) return;
+    pedidosAcceso.set(email, Date.now());
+    const planes = await datos.listar('planes', { email });
+    if (!planes.some((p) => p.estado === 'enviado')) return;
+    const m = plantillasEmail.acceso(email, sesion.enlaceMagico(email));
+    correo.enviar(email, m.asunto, m.html).catch((e) => console.error('acceso', e.message));
+  },
+
+  'GET /api/mi-zona': async (req, res) => {
+    const email = sesion.deCookie(req);
+    if (!email) return enviar(res, 401, { error: 'sesion' });
+    const planes = (await datos.listar('planes', { email })).filter((p) => p.estado === 'enviado');
+    const lista = [];
+    for (const p of planes) {
+      const lead = await datos.primero('leads', { sid: p.sid });
+      const r = lead?.respuestas || {};
+      const adulto = r.tipo === 'adulto' || r.tipo === 'adoptado';
+      const prog = adulto ? (PROGRAMAS_ADULTO[r.problema] || PROGRAMAS_ADULTO.correa) : null;
+      lista.push({ token: p.token, nombre: r.nombre || 'Tu perro', raza: r.raza || '', razaId: r.razaId || 'mestizo', tipo: r.tipo || 'cachorro', problema: r.problema || '',
+        titulo: adulto ? prog.titulo : 'Plan de 8 semanas', dias: adulto ? 42 : 56, desde: p.enviado_at || p.ts });
+    }
+    const problemas = [...new Set(lista.map((p) => p.problema).filter(Boolean))];
+    const productos = [...ZONA.PRODUCTOS.base, ...problemas.flatMap((k) => ZONA.PRODUCTOS[k] || [])].filter((x, i, a) => a.findIndex((y) => y.id === x.id) === i);
+    const consejos = [...problemas.flatMap((k) => ZONA.CONSEJOS[k] || []), ...ZONA.CONSEJOS.general];
+    enviar(res, 200, { email, planes: lista, consejos, productos, seguros: ZONA.SEGUROS, marca: CFG.marca });
+  },
+
+  'POST /api/salir': async (req, res) => enviar(res, 200, { ok: true }, 'application/json', { 'Set-Cookie': sesion.cerrar() }),
+
+  'GET /mi-zona/entrar': async (req, res, url) => {
+    const email = sesion.leer(url.searchParams.get('t'));
+    if (!email) return html(res, 400, pagina('Enlace caducado', '<h1>Este enlace ha caducado</h1><p class="suave">Pide uno nuevo desde <a href="/mi-zona">Mi zona</a>.</p>'));
+    res.writeHead(302, { Location: '/mi-zona', 'Set-Cookie': sesion.cabeceraCookie(email), 'Cache-Control': 'no-store' });
+    res.end();
+  },
+
   'GET /baja': async (req, res, url) => {
     const email = limpio(url.searchParams.get('e'), 200).toLowerCase();
     const t = limpio(url.searchParams.get('t'), 64);
@@ -248,7 +294,8 @@ async function registrarPedido(s) {
 }
 
 // ---------- Servidor ----------
-const ESTATICOS_CONTENT = ['/plantillas.js', '/tareas-diarias.js', '/plan-html.js', '/programas-adulto.js', '/plan-adulto-html.js'];
+const ESTATICOS_CONTENT = ['/plantillas.js', '/tareas-diarias.js', '/plan-html.js', '/programas-adulto.js', '/plan-adulto-html.js', '/zona.js'];
+const pedidosAcceso = new Map();
 const PAGINAS = { '/cachorro': 'cachorro.html', '/perro': 'perro.html' };
 const esAdulto = (r) => r && (r.tipo === 'adulto' || r.tipo === 'adoptado');
 const servidor = http.createServer(async (req, res) => {
@@ -265,6 +312,23 @@ const servidor = http.createServer(async (req, res) => {
       const plan = await datos.primero('planes', { token: m[1] });
       if (!plan) return html(res, 404, pagina('Plan no encontrado', '<h1>No encontramos este plan</h1><p>Revisa el enlace del email o escríbenos.</p>'));
       return enviar(res, 200, plan.html, TIPOS['.html'], { 'X-Robots-Tag': 'noindex' });
+    }
+    // Blog y SEO
+    if (url.pathname === '/blog' || url.pathname === '/blog/') return enviar(res, 200, blog.indice(), TIPOS['.html'], { 'Cache-Control': 'public, max-age=600' });
+    if (url.pathname === '/blog/indice.json') return enviar(res, 200, blog.indiceJson(), 'application/json', { 'Cache-Control': 'public, max-age=600' });
+    const mb = url.pathname.match(/^\/blog\/([a-z0-9-]+)\/?$/);
+    if (mb) { const h = blog.articulo(mb[1]); return h ? enviar(res, 200, h, TIPOS['.html'], { 'Cache-Control': 'public, max-age=600' }) : html(res, 404, pagina('No encontrado', '<h1>No encontramos este artículo</h1><p><a href="/blog">Ver todos los artículos</a></p>')); }
+    if (url.pathname === '/sitemap.xml') return enviar(res, 200, blog.sitemap(), 'application/xml; charset=utf-8', { 'Cache-Control': 'public, max-age=3600' });
+    if (url.pathname === '/robots.txt') return enviar(res, 200, blog.robots(), TIPOS['.txt'], { 'Cache-Control': 'public, max-age=3600' });
+
+    // Mi zona: desde el enlace privado del plan se entra directamente.
+    if (url.pathname === '/mi-zona') {
+      const t = url.searchParams.get('plan');
+      if (t && /^[a-f0-9]{32}$/.test(t)) {
+        const plan = await datos.primero('planes', { token: t });
+        if (plan) { res.writeHead(302, { Location: '/mi-zona', 'Set-Cookie': sesion.cabeceraCookie(plan.email), 'Cache-Control': 'no-store' }); return res.end(); }
+      }
+      return servirArchivo(res, path.join(PUBLIC, 'mi-zona.html'));
     }
     if (PAGINAS[url.pathname]) return servirArchivo(res, path.join(PUBLIC, PAGINAS[url.pathname]));
     if (ESTATICOS_CONTENT.includes(url.pathname)) return servirArchivo(res, path.join(__dirname, 'content', url.pathname.slice(1)));

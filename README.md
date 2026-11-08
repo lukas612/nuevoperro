@@ -26,6 +26,8 @@ Todo lo necesario para validar las puertas 1, 2 y 3 del [documento del MVP](docs
 | `/cachorro` | Test, resultado y plan de 8 semanas para cachorros (`public/app.js`) |
 | `/perro` | Test, resultado y plan de 6 semanas para perros adultos y adoptados (`public/perro.js`, contenido en `content/programas-adulto.js`). Si el perro muerde a personas, no se vende y se deriva a un profesional |
 | `/plan/<token>` | Página privada de cada plan |
+| `/mi-zona` | Zona del cliente: sus planes con progreso, consejo del día, seguro de RC y productos recomendados (afiliación en `content/zona.js`). Se entra con enlace mágico por email o desde el enlace del plan |
+| `/blog` | 12 guías para SEO (`content/blog.js`), con sitemap, datos estructurados y llamada al test en cada artículo |
 | `/admin.html` | Panel de métricas |
 
 ## Arquitectura

@@ -115,7 +115,7 @@
       (datos.volver ? '<button class="volver" id="volver">' + I('flecha') + 'Volver a la demo</button>' : '') +
 
       '<header class="hero"><div class="in">' +
-        '<div class="hero-top"><span class="marca">' + D.logo() + D.nombreMarca(marca) + '</span><span class="desde">Desde el ' + fechaLarga(inicio) + '</span></div>' +
+        '<div class="hero-top"><span class="marca">' + D.logo() + D.nombreMarca(marca) + '</span><span class="desde">Desde el ' + fechaLarga(inicio) + (datos.volver ? '' : ' · <a href="/mi-zona?plan=' + esc(id) + '" style="color:#ffd76e">Mi zona</a>') + '</span></div>' +
         '<div class="hero-main"><span class="av">' + D.cara(pf.razaId, { lengua: true }) + '</span><div><span class="eti cl">Plan de 8 semanas</span><h1>' + esc(n) + '</h1>' +
         '<div class="chips">' + chips.map(function (c) { return '<span>' + esc(c) + '</span>'; }).join('') + '</div></div></div>' +
         '<div class="progreso"><div class="pr-txt"><b id="pr-sem">Semana 1 de 8</b><span id="pr-pct">0 tareas hechas</span></div><div class="barra"><i id="pr-bar"></i></div></div>' +

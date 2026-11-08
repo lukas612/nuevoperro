@@ -348,3 +348,33 @@ label.check input { margin-top: 2px; width: 20px; height: 20px; flex: none; acce
 .sello-marca .sm-aviso { position: absolute; right: -3px; top: -3px; width: 19px; height: 19px; transform: rotate(8deg); }
 .nombre-marca { font-family: var(--display); font-weight: 800; letter-spacing: -.02em; white-space: nowrap; }
 .nm-perro { background: linear-gradient(transparent 55%, var(--primary) 55%, var(--primary) 92%, transparent 92%); padding: 0 3px; margin-left: -3px; }
+
+/* Mi zona */
+.plan-tarjeta { display: flex; align-items: center; gap: 14px; background: var(--surface); border-radius: 20px; padding: 14px; box-shadow: var(--shadow); text-decoration: none; color: var(--ink); border: 2px solid transparent; }
+.plan-tarjeta:hover { border-color: var(--line); }
+.plan-tarjeta .avatar { width: 72px; height: 72px; flex: none; }
+.plan-tarjeta b { font: 800 1.35rem/1.1 var(--display); letter-spacing: -.02em; }
+.barra-mini { display: block; height: 8px; border-radius: 99px; background: var(--line); overflow: hidden; }
+.barra-mini i { display: block; height: 100%; background: var(--primary); border-radius: 99px; }
+.cab-consejo { display: flex; align-items: center; gap: 10px; }
+.cab-consejo .burbuja { width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; flex: none; }
+.enlace-afil { font-weight: 700; font-size: .9rem; }
+a.btn { text-decoration: none; }
+#lecturas .atajo { padding: 10px 12px; }
+
+/* Blog */
+.posts { display: flex; flex-direction: column; gap: 10px; }
+.post-tarjeta { display: flex; gap: 14px; align-items: flex-start; background: var(--surface); border-radius: 18px; padding: 14px; text-decoration: none; color: var(--ink); box-shadow: var(--shadow); border: 2px solid transparent; }
+.post-tarjeta:hover { border-color: var(--line); }
+.post-tarjeta .burbuja, .cta-post .burbuja { width: 44px; height: 44px; border-radius: 14px; display: grid; place-items: center; flex: none; }
+.post-tarjeta b { font: 800 1.08rem/1.25 var(--display); letter-spacing: -.01em; }
+.post h1 { font-size: clamp(1.8rem, 6.5vw, 2.3rem); }
+.post-cuerpo { font-size: 1.05rem; line-height: 1.7; }
+.post-cuerpo h2 { font-size: 1.4rem; margin: 30px 0 10px; }
+.post-cuerpo h3 { margin: 18px 0 6px; }
+.post-cuerpo p { margin: 0 0 14px; }
+.post-cuerpo ul, .post-cuerpo ol { padding-left: 22px; margin: 0 0 16px; }
+.post-cuerpo li { margin-bottom: 6px; }
+.cta-post { display: flex; gap: 14px; align-items: flex-start; background: var(--butter); border-radius: 20px; padding: 18px; margin: 22px 0; }
+.cta-post b { font: 800 1.1rem/1.25 var(--display); }
+.post nav a { color: inherit; }

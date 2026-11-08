@@ -49,9 +49,14 @@
         '<li><div><b>Recibes el primer paso, gratis</b><span>Su rutina de mañana o sus 3 primeros días de plan.</span></div></li>' +
         '<li><div><b>Si quieres, el plan completo</b><span>Una tarea cada día y un email que te la recuerda.</span></div></li>' +
       '</ol></section>' +
+    '<section class="seccion"><span class="etiqueta">Guías gratis</span><h2>Aprende a educarle en positivo</h2><div class="pila" id="guias"></div><a href="/blog" class="enlace-afil">Ver todas las guías</a></section>' +
     '<section class="seccion faq"><span class="etiqueta">Preguntas</span>' +
       '<details><summary>¿Sirve si mi perro ya es adulto?</summary><p>Sí. Hay planes para cachorros, para perros recién adoptados y para problemas de perros adultos como tirar de la correa, ladrar o quedarse solo.</p></details>' +
       '<details><summary>¿Y si mi perro muerde?</summary><p>Si un perro muerde o amenaza a personas, lo responsable es que lo vea un profesional en persona. Te diremos cómo buscar ayuda y no te venderemos un plan.</p></details>' +
       '<details><summary>¿Es una suscripción?</summary><p>No. El test es gratis y el plan es un pago único, con 14 días de garantía.</p></details>' +
     '</section></div>';
+  fetch('/blog/indice.json').then(function (r) { return r.json(); }).then(function (posts) {
+    var el = document.getElementById('guias'); if (!el) return;
+    el.innerHTML = posts.slice(0, 4).map(function (p) { return '<a class="atajo" href="/blog/' + p.slug + '">' + burbuja('estrella', 'sky') + '<span>' + p.titulo.replace(/[&<>"]/g, '') + '</span></a>'; }).join('');
+  }).catch(function () {});
 })();
