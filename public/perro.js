@@ -168,8 +168,14 @@
     var q = lista[i - 1];
     var items = q.listaFn ? q.listaFn() : q.lista;
     var titulo = typeof q.t === 'function' ? q.t() : q.t;
-    pintarBarra({ progreso: (i - 1) / lista.length, atras: function () { if (i === 1) { estado.paso = 0; guardarEstado(); return render(); } estado.paso = i - 1; guardarEstado(); render(); } });
-    var html = '<div class="pila-g"><div class="cabecera-preg"><h2>' + esc(titulo) + '</h2>' + (q.s ? '<p class="suave">' + esc(q.s) + '</p>' : '') + '</div>';
+    pintarBarra({ progreso: (i - 1) / lista.length, atras: function () { if (i === 1) { location.href = '/'; return; } estado.paso = i - 1; guardarEstado(); render(); } });
+    var intro = '';
+    if (i === 1) {
+      var a = angulo || { t: 'Un plan para el problema de tu perro', s: 'Hecho para su raza, su edad y tu casa.' };
+      intro = '<section class="intro-test"><h1>' + esc(a.t) + '</h1><p class="suave">' + esc(a.s) + ' Responde unas preguntas rápidas y te damos gratis sus 3 primeros días de plan.</p>' +
+        '<div class="micro"><span>' + I('check') + 'Gratis</span><span>' + I('check') + '2 minutos</span><span>' + I('check') + 'Sin castigos</span></div></section>';
+    }
+    var html = '<div class="pila-g">' + intro + '<div class="cabecera-preg"><h2>' + esc(titulo) + '</h2>' + (q.s ? '<p class="suave">' + esc(q.s) + '</p>' : '') + '</div>';
     var val = estado.r[q.id];
 
     if (q.tipo === 'nombre') {
@@ -196,7 +202,7 @@
     }
     pintar(html + '</div>');
 
-    function avanzar() { evento('paso', q.id); estado.paso = i + 1; guardarEstado(); render(); }
+    function avanzar() { if (i === 1) evento('inicio_form'); evento('paso', q.id); estado.paso = i + 1; guardarEstado(); render(); }
     var campo = document.getElementById('campo'), sig = document.getElementById('sig');
 
     if (q.tipo === 'nombre') {
@@ -415,7 +421,7 @@
   window.verPlanAdultoDemo = function () { verPlan(estado.r && estado.r.nombre ? estado.r : { tipo: 'adulto', nombre: 'Kira', raza: 'Husky', razaId: 'husky', tamano: 'grande', edadPerro: 'adulto', problema: 'correa', detalle: 'estimulos', vivienda: 'piso', horasSolo: 4 }); };
 
   function render() {
-    if (estado.paso === 0) return angulo ? portada() : pregunta(1);
+    if (estado.paso === 0) return angulo && params.get('portada') ? portada() : pregunta(1);
     if (typeof estado.paso === 'number') { if (estado.r.muerde === 'si') return derivar(); return pregunta(estado.paso); }
     if (estado.paso === 'preparando') return preparando();
     if (estado.paso === 'resultado') return resultado();
@@ -441,6 +447,9 @@
     }).catch(function () { render(); });
   }
 
+  // Las preguntas no necesitan la configuración del servidor: se pintan ya, sin esperar (llegada desde un anuncio).
+  var pintadoYa = false;
+  if (!params.get('r') && !params.get('pago') && typeof estado.paso === 'number') { render(); pintadoYa = true; }
   fetch('/api/config?sid=' + sid).then(function (r) { return r.json(); }).then(function (c) { CONF = c; }).catch(function () {}).then(function () {
     document.getElementById('pie-contacto').textContent = CONF.emailContacto || '';
     document.title = CONF.marca + ' · El plan para tu perro';
@@ -448,8 +457,8 @@
     if (params.get('r')) return retomar(params.get('r'));
     if (params.get('pago') === 'ok' && params.get('session_id')) return trasPago(params.get('session_id'));
     if (params.get('pago') === 'cancelado') { evento('checkout_cancelado'); estado.paso = 'resultado'; }
-    if (estado.paso === 0) { evento('visita'); if (!angulo) evento('inicio_form'); }
+    if (estado.paso === 0) evento('visita');
     guardarEstado();
-    render();
+    if (!pintadoYa) render();
   });
 })();

@@ -200,9 +200,15 @@
     if (i > lista.length) { estado.paso = 'preparando'; guardarEstado(); return render(); }
     var q = lista[i - 1];
     var titulo = typeof q.t === 'function' ? q.t() : q.t;
-    pintarBarra({ progreso: (i - 1) / lista.length, atras: function () { estado.paso = i - 1; guardarEstado(); render(); } });
+    pintarBarra({ progreso: (i - 1) / lista.length, atras: function () { if (i === 1) { location.href = '/'; return; } estado.paso = i - 1; guardarEstado(); render(); } });
 
-    var html = '<div class="pila-g"><div class="cabecera-preg"><h2>' + esc(titulo) + '</h2>' + (q.s ? '<p class="suave">' + esc(q.s) + '</p>' : '') + '</div>';
+    var intro = '';
+    if (i === 1) {
+      var a = ANGULOS[utm.a] || { t: 'El plan de los primeros 2 meses para tu cachorro', s: 'Hecho para su raza, su edad y tu casa.' };
+      intro = '<section class="intro-test"><h1>' + esc(a.t) + '</h1><p class="suave">' + esc(a.s) + ' Responde unas preguntas rápidas y te damos gratis la rutina de mañana para tu cachorro.</p>' +
+        '<div class="micro"><span>' + I('check') + 'Gratis</span><span>' + I('check') + '2 minutos</span><span>' + I('check') + 'Sin tarjeta</span></div></section>';
+    }
+    var html = '<div class="pila-g">' + intro + '<div class="cabecera-preg"><h2>' + esc(titulo) + '</h2>' + (q.s ? '<p class="suave">' + esc(q.s) + '</p>' : '') + '</div>';
     var val = estado.r[q.id];
 
     if (q.tipo === 'nombre') {
@@ -236,7 +242,7 @@
     }
     pintar(html + '</div>');
 
-    function avanzar() { evento('paso', q.id); estado.paso = i + 1; guardarEstado(); render(); }
+    function avanzar() { if (i === 1) evento('inicio_form'); evento('paso', q.id); estado.paso = i + 1; guardarEstado(); render(); }
     var campo = document.getElementById('campo');
     var sig = document.getElementById('sig');
 
@@ -506,7 +512,7 @@
 
   // ---------- Router ----------
   function render() {
-    if (estado.paso === 0) return portada();
+    if (estado.paso === 0) return params.get('portada') ? portada() : pregunta(1);
     if (typeof estado.paso === 'number') return pregunta(estado.paso);
     if (estado.paso === 'preparando') return preparando();
     if (estado.paso === 'resultado') return resultado();
@@ -532,6 +538,9 @@
     }).catch(function () { render(); });
   }
 
+  // Las preguntas no necesitan la configuración del servidor: se pintan ya, sin esperar (llegada desde un anuncio).
+  var pintadoYa = false;
+  if (!params.get('r') && !params.get('pago') && typeof estado.paso === 'number') { render(); pintadoYa = true; }
   fetch('/api/config?sid=' + sid).then(function (r) { return r.json(); }).then(function (c) { CONF = c; }).catch(function () {}).then(function () {
     document.getElementById('pie-contacto').textContent = CONF.emailContacto || '';
     document.title = CONF.marca + ' · El plan para tu cachorro';
@@ -540,6 +549,6 @@
     if (params.get('pago') === 'ok' && params.get('session_id')) return trasPago(params.get('session_id'));
     if (params.get('pago') === 'cancelado') { evento('checkout_cancelado'); estado.paso = 'resultado'; }
     if (estado.paso === 0) evento('visita');
-    render();
+    if (!pintadoYa) render();
   });
 })();

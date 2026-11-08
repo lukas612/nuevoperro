@@ -501,3 +501,8 @@ a.btn { text-decoration: none; }
 .zona-nav button[aria-current="true"] span { position: relative; }
 .zona-nav button[aria-current="true"] span::after { content: ""; position: absolute; left: 20%; right: 20%; bottom: -5px; height: 3px; border-radius: 3px; background: var(--primary); }
 body:has(.zona-nav) .pie { padding-bottom: 84px; }
+
+/* Primera pregunta con el titular del anuncio (sin portada) */
+.intro-test { display: flex; flex-direction: column; gap: 8px; padding-bottom: 14px; border-bottom: 1px solid var(--line); }
+.intro-test h1 { font-size: 1.55rem; line-height: 1.12; }
+.intro-test .micro { justify-content: flex-start; margin: 0; }
