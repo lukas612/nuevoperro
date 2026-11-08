@@ -357,6 +357,13 @@ const rutas = {
     enviar(res, 200, await calcular({ gasto: url.searchParams.get('gasto') ? Number(url.searchParams.get('gasto')) : null }));
   },
 
+  'GET /api/admin/panel': async (req, res, url) => {
+    if (!sesion.adminDeCookie(req)) return enviar(res, 401, { error: 'sesion' });
+    const dias = Number(url.searchParams.get('dias')) || 30;
+    const g = url.searchParams.get('gasto');
+    enviar(res, 200, { email: sesion.adminDeCookie(req), ...(await require('./lib/panel').panel({ dias, gasto: g !== null && g !== '' ? Number(g) : null })) });
+  },
+
   'POST /api/admin/acceso': async (req, res) => {
     const b = await json(req);
     const email = limpio(b.email, 200).toLowerCase();
