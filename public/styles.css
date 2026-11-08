@@ -506,3 +506,17 @@ body:has(.zona-nav) .pie { padding-bottom: 84px; }
 .intro-test { display: flex; flex-direction: column; gap: 8px; padding-bottom: 14px; border-bottom: 1px solid var(--line); }
 .intro-test h1 { font-size: 1.55rem; line-height: 1.12; }
 .intro-test .micro { justify-content: flex-start; margin: 0; }
+
+/* Pago integrado: hoja inferior con el checkout de Stripe */
+.pago-hoja { position: fixed; inset: 0; z-index: 60; background: rgba(15, 23, 36, 0); display: flex; align-items: flex-end; justify-content: center; transition: background .2s; }
+.pago-hoja.visible { background: rgba(15, 23, 36, .55); }
+.pago-in { width: 100%; max-width: 560px; max-height: 94vh; overflow-y: auto; background: #fff; color: #1b2a41; border-radius: 22px 22px 0 0; padding: 0 0 env(safe-area-inset-bottom, 0px); transform: translateY(100%); transition: transform .25s ease-out; -webkit-overflow-scrolling: touch; }
+.pago-hoja.visible .pago-in { transform: none; }
+.pago-cab { position: sticky; top: 0; z-index: 1; background: #fff; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 16px; border-bottom: 1px solid #dde3ec; }
+.pago-cab span { display: flex; flex-direction: column; } .pago-cab small { color: #5c6b80; font-size: .82rem; }
+.pago-cerrar { width: 40px; height: 40px; border: 0; border-radius: 12px; background: #eef2f8; font-size: 1.5rem; line-height: 1; color: #1b2a41; cursor: pointer; }
+#pago-stripe { min-height: 320px; padding: 8px 0 16px; }
+.pago-cargando { padding: 40px 16px; text-align: center; color: #5c6b80; }
+html.pago-abierto, html.pago-abierto body { overflow: hidden; }
+@media (min-width: 640px) { .pago-hoja { align-items: center; } .pago-in { border-radius: 22px; max-height: 90vh; } }
+@media (prefers-reduced-motion: reduce) { .pago-in, .pago-hoja { transition: none; } }

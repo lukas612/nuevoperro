@@ -440,9 +440,25 @@
     window.VENTA.activarPago({ pagar: function (btn, err) {
       btn.disabled = true; btn.textContent = 'Abriendo el pago…';
       pixel('InitiateCheckout', { value: CONF.precio / 100, currency: 'EUR', content_name: estado.r.problema, num_items: 1 }, 'ic_' + sid);
-      post('/api/checkout', { sid: sid, desistimiento: true, cm: cm() })
-        .then(function (j) { location.href = j.url; })
-        .catch(function (e) { err.textContent = (e && e.error) || 'No hemos podido abrir el pago. Inténtalo de nuevo.'; btn.disabled = false; btn.textContent = 'Quiero el plan de ' + nombre(); });
+      var redirigir = function () {
+        post('/api/checkout', { sid: sid, desistimiento: true, cm: cm() })
+          .then(function (j) { location.href = j.url; })
+          .catch(function (e) { err.textContent = (e && e.error) || 'No hemos podido abrir el pago. Inténtalo de nuevo.'; btn.disabled = false; btn.textContent = 'Quiero el plan de ' + nombre(); });
+      };
+      if (!CONF.stripePk) return redirigir();
+      // Pago dentro de la página; si algo falla, se usa la página de pago de Stripe como hasta ahora.
+      window.VENTA.pagoIntegrado({
+        pk: CONF.stripePk, titulo: 'Todo lo de ' + nombre() + ' · ' + euros(CONF.precio),
+        pedir: function () {
+          return post('/api/checkout', { sid: sid, desistimiento: true, cm: cm(), integrado: true }).then(function (j) {
+            if (j.clientSecret) return j.clientSecret;
+            if (j.url) location.href = j.url;
+            throw new Error('sin clientSecret');
+          });
+        },
+        alCerrar: function () { btn.disabled = false; btn.textContent = 'Quiero el plan de ' + nombre() + ' · ' + euros(CONF.precio); },
+        alFallar: redirigir
+      });
     } });
   }
 

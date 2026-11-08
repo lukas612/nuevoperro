@@ -33,5 +33,7 @@ services:
         sync: false
       - key: STRIPE_WEBHOOK_SECRET
         sync: false
+      - key: STRIPE_PUBLISHABLE_KEY
+        sync: false
       - key: RESEND_API_KEY
         sync: false

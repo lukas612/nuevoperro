@@ -103,7 +103,7 @@ const pagina = (titulo, cuerpo) => `<!doctype html><html lang="es"><head><meta c
 // ---------- Rutas ----------
 const rutas = {
   'GET /api/config': async (req, res, url) => {
-    enviar(res, 200, { marca: CFG.marca, pixelId: CFG.pixelId, avisoCookies: /^(si|sí|1|true)$/i.test(process.env.AVISO_COOKIES || ''), precio: precioPara(url.searchParams.get('sid')), precioUpsell: CFG.precioUpsell, demo: MODO_DEMO, emailContacto: CFG.emailContacto });
+    enviar(res, 200, { marca: CFG.marca, pixelId: CFG.pixelId, stripePk: MODO_DEMO ? '' : CFG.stripePk, avisoCookies: /^(si|sí|1|true)$/i.test(process.env.AVISO_COOKIES || ''), precio: precioPara(url.searchParams.get('sid')), precioUpsell: CFG.precioUpsell, demo: MODO_DEMO, emailContacto: CFG.emailContacto });
   },
 
   'POST /api/evento': async (req, res) => {
@@ -230,15 +230,30 @@ const rutas = {
       // nuestra marca, y en el extracto bancario el sufijo QUEBUENPERRO.
       sesionPago.payment_intent_data.statement_descriptor_suffix = 'QUEBUENPERRO';
       const marcaPago = { display_name: CFG.marca, icon: { type: 'url', url: `${CFG.baseUrl}/apple-touch-icon.png` }, button_color: '#1b2a41', border_style: 'rounded' };
+      // Pago integrado en la página (Embedded Checkout) si el navegador lo pide y hay clave publicable.
+      const integrado = !!(b.integrado && CFG.stripePk);
+      if (integrado) {
+        sesionPago.ui_mode = 'embedded';
+        sesionPago.return_url = sesionPago.success_url;
+        delete sesionPago.success_url; delete sesionPago.cancel_url;
+      }
+      const crear = async (params) => {
+        try { return await stripe('POST', '/checkout/sessions', params); }
+        catch (e) {
+          // Versiones nuevas de la API llaman distinto al modo integrado.
+          if (integrado && /ui_mode/.test(e.message) && params.ui_mode === 'embedded') return stripe('POST', '/checkout/sessions', { ...params, ui_mode: 'embedded_page' });
+          throw e;
+        }
+      };
       let s;
-      try { s = await stripe('POST', '/checkout/sessions', { ...sesionPago, branding_settings: marcaPago }); }
+      try { s = await crear({ ...sesionPago, branding_settings: marcaPago }); }
       catch (e) {
         if (!/branding_settings|statement_descriptor/.test(e.message)) throw e;
         console.warn('checkout: sin personalización de marca:', e.message);
         delete sesionPago.payment_intent_data.statement_descriptor_suffix;
-        s = await stripe('POST', '/checkout/sessions', sesionPago);
+        s = await crear(sesionPago);
       }
-      enviar(res, 200, { url: s.url });
+      enviar(res, 200, integrado ? { clientSecret: s.client_secret } : { url: s.url });
     } catch (e) {
       console.error('checkout', e.message);
       enviar(res, 502, { error: 'No hemos podido iniciar el pago. Inténtalo de nuevo.' });
