@@ -493,16 +493,16 @@ async function registrarPedido(s) {
 // ---------- SEO de las páginas del funnel y utilidades ----------
 const FUNNEL_SEO = {
   '/cachorro': {
-    titulo: SEO.conMarca('Plan para tu cachorro: pis, mordiscos y noches'),
-    descripcion: 'Plan de 8 semanas para tu cachorro según su raza, edad y casa: pis en casa, mordiscos, noches y quedarse solo. Haz el test gratis en 2 minutos.',
-    h1: 'Plan de 8 semanas para educar a tu cachorro',
+    titulo: SEO.conMarca('Todo para educar a tu cachorro en positivo'),
+    descripcion: 'Todo para educar a tu cachorro: plan de 8 semanas según su raza, edad y casa (pis, mordiscos, noches), clicker y diario. Test gratis.',
+    h1: 'Todo lo que necesitas para educar a tu cachorro',
     texto: 'Responde 12 preguntas sobre tu cachorro y recibe gratis su rutina de mañana: horarios de comidas, siestas y salidas a hacer pis según su edad y su tamaño.',
     producto: 'Plan de 8 semanas para tu cachorro'
   },
   '/perro': {
-    titulo: SEO.conMarca('Plan para educar a tu perro adulto o adoptado'),
-    descripcion: 'Plan de 6 semanas para tu perro: tirar de la correa, ladridos, quedarse solo o adaptarse tras la adopción. Educación en positivo. Test gratis.',
-    h1: 'Plan de 6 semanas para el problema de tu perro',
+    titulo: SEO.conMarca('Todo para educar a tu perro adulto o adoptado'),
+    descripcion: 'Todo lo que necesitas para educar a tu perro: plan de 6 semanas para la correa, los ladridos, quedarse solo o la adopción, con clicker y consejos. Test gratis.',
+    h1: 'Todo lo que necesitas para educar a tu perro',
     texto: 'Tirar de la correa, ladrar, quedarse solo o adaptarse a casa tras la adopción: responde unas preguntas y recibe gratis sus 3 primeros días de plan.',
     producto: 'Plan de 6 semanas para tu perro'
   }

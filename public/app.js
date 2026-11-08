@@ -106,7 +106,7 @@
   };
   function portada() {
     pintarBarra(null);
-    var a = ANGULOS[utm.a] || { t: 'El plan de los primeros 2 meses para tu cachorro', s: 'Hecho para su raza, su edad y tu casa.', n: ['gota', 'sky', '07:00', 'Pis nada más despertar'] };
+    var a = ANGULOS[utm.a] || { t: 'Todo lo que necesitas para educar a tu cachorro', s: 'Hecho para su raza, su edad y tu casa.', n: ['gota', 'sky', '07:00', 'Pis nada más despertar'] };
     pintar(
       '<div class="pila-g">' +
       '<section class="pila">' +
@@ -204,7 +204,7 @@
 
     var intro = '';
     if (i === 1) {
-      var a = ANGULOS[utm.a] || { t: 'El plan de los primeros 2 meses para tu cachorro', s: 'Hecho para su raza, su edad y tu casa.' };
+      var a = ANGULOS[utm.a] || { t: 'Todo lo que necesitas para educar a tu cachorro', s: 'Hecho para su raza, su edad y tu casa.' };
       intro = '<section class="intro-test"><h1>' + esc(a.t) + '</h1><p class="suave">' + esc(a.s) + ' Responde unas preguntas rápidas y te damos gratis la rutina de mañana para tu cachorro.</p>' +
         '<div class="micro"><span>' + I('check') + 'Gratis</span><span>' + I('check') + '2 minutos</span><span>' + I('check') + 'Sin tarjeta</span></div></section>';
     }

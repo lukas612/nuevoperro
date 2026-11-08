@@ -110,7 +110,7 @@
   // ---------- Portada (solo si llega de un anuncio) ----------
   function portada() {
     pintarBarra(null);
-    var a = angulo || { t: 'Un plan para el problema de tu perro', s: 'Hecho para su raza, su edad y tu casa.' };
+    var a = angulo || { t: 'Todo lo que necesitas para educar a tu perro', s: 'Hecho para su raza, su edad y tu casa.' };
     var caras = ['border-collie', 'labrador', 'mestizo', 'beagle', 'husky'];
     pintar('<div class="pila-g"><section class="pila">' +
       '<span class="eyebrow">' + I('huella') + 'Para perros de cualquier edad</span>' +
@@ -171,7 +171,7 @@
     pintarBarra({ progreso: (i - 1) / lista.length, atras: function () { if (i === 1) { location.href = '/'; return; } estado.paso = i - 1; guardarEstado(); render(); } });
     var intro = '';
     if (i === 1) {
-      var a = angulo || { t: 'Un plan para el problema de tu perro', s: 'Hecho para su raza, su edad y tu casa.' };
+      var a = angulo || { t: 'Todo lo que necesitas para educar a tu perro', s: 'Hecho para su raza, su edad y tu casa.' };
       intro = '<section class="intro-test"><h1>' + esc(a.t) + '</h1><p class="suave">' + esc(a.s) + ' Responde unas preguntas rápidas y te damos gratis sus 3 primeros días de plan.</p>' +
         '<div class="micro"><span>' + I('check') + 'Gratis</span><span>' + I('check') + '2 minutos</span><span>' + I('check') + 'Sin castigos</span></div></section>';
     }

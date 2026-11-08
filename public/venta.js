@@ -8,8 +8,8 @@
 
   function aviso(o, u) {
     return '<a class="venta-aviso" href="#paywall">' +
-      '<span class="venta-aviso-txt"><b>El plan completo de ' + u.esc(o.nombre) + ' está listo</b>' +
-      '<span>' + u.esc(o.semanas) + ' semanas · una tarea al día · clicker y diario en tu móvil</span></span>' +
+      '<span class="venta-aviso-txt"><b>Todo lo que necesita ' + u.esc(o.nombre) + ' está listo</b>' +
+      '<span>' + u.esc(o.semanas) + ' semanas de plan · clicker y diario en tu móvil · para siempre</span></span>' +
       '<span class="venta-aviso-btn">Verlo ' + u.I('flecha') + '</span></a>';
   }
 
@@ -32,7 +32,7 @@
   function comparativa(o, u) {
     return '<div class="venta-compara">' +
       '<div><span>Una sola clase con un educador</span><b>30–60 €</b></div>' +
-      '<div class="tu"><span>El plan completo de ' + u.esc(o.nombre) + ', ' + u.esc(o.semanas) + ' semanas</span><b>' + u.euros(o.precio) + '</b></div></div>';
+      '<div class="tu"><span>Todo lo de ' + u.esc(o.nombre) + ': plan de ' + u.esc(o.semanas) + ' semanas y Mi zona</span><b>' + u.euros(o.precio) + '</b></div></div>';
   }
 
   function preguntas(o, u) {
