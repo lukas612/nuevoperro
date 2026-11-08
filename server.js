@@ -156,14 +156,26 @@ const rutas = {
       ? `${(PROGRAMAS[lead.respuestas.problema] || PROGRAMAS.correa).titulo}: plan de 6 semanas para ${lead.respuestas.nombre || 'tu perro'}`
       : `Plan de 8 semanas para ${lead.respuestas.nombre || 'tu cachorro'}`;
     try {
-      const s = await stripe('POST', '/checkout/sessions', {
+      const sesionPago = {
         mode: 'payment', customer_creation: 'always', customer_email: lead.email, locale: 'es',
         line_items: { 0: { quantity: 1, price_data: { currency: 'eur', unit_amount: precio, product_data: { name: nombreProducto, description: 'Plan personalizado, emails diarios y garantía de 14 días.' } } } },
         payment_intent_data: { setup_future_usage: 'off_session', metadata: { sid, tipo: 'plan', app: 'cachorro' } },
         metadata: { sid, precio, app: 'cachorro', desistimiento: 'aceptado_' + new Date().toISOString() },
         success_url: `${CFG.baseUrl}${pagina}?pago=ok&session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: `${CFG.baseUrl}${pagina}?pago=cancelado`
-      });
+      };
+      // La cuenta de Stripe puede ser compartida (Vigila): en la página de pago se muestra
+      // nuestra marca, y en el extracto bancario el sufijo QUEBUENPERRO.
+      sesionPago.payment_intent_data.statement_descriptor_suffix = 'QUEBUENPERRO';
+      const marcaPago = { display_name: CFG.marca, icon: { type: 'url', url: `${CFG.baseUrl}/apple-touch-icon.png` }, button_color: '#1b2a41', border_style: 'rounded' };
+      let s;
+      try { s = await stripe('POST', '/checkout/sessions', { ...sesionPago, branding_settings: marcaPago }); }
+      catch (e) {
+        if (!/branding_settings|statement_descriptor/.test(e.message)) throw e;
+        console.warn('checkout: sin personalización de marca:', e.message);
+        delete sesionPago.payment_intent_data.statement_descriptor_suffix;
+        s = await stripe('POST', '/checkout/sessions', sesionPago);
+      }
       enviar(res, 200, { url: s.url });
     } catch (e) {
       console.error('checkout', e.message);
