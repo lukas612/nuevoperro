@@ -22,7 +22,7 @@ const pct = (a, b) => (b ? a / b : null);
 const netoVenta = (c) => c / 100 / (1 + IVA) - (c / 100 * 0.015 + 0.25);
 
 async function calcular(opts = {}) {
-  const [eventos, leads, pedidosTodos, reembolsos] = await Promise.all([datos.listar('eventos'), datos.listar('leads'), datos.listar('pedidos'), datos.listar('reembolsos')]);
+  const [eventos, leads, pedidosTodos, reembolsos, club] = await Promise.all([datos.listar('eventos'), datos.listar('leads'), datos.listar('pedidos'), datos.listar('reembolsos'), datos.listar('emails', { clave: 'club' })]);
   const pedidos = pedidosTodos.filter((p) => !p.demo || opts.incluirDemo);
   let gasto = opts.gastoPorAngulo || {};
   const gf = path.join(__dirname, '..', 'data', 'gasto.json');
@@ -84,7 +84,7 @@ async function calcular(opts = {}) {
     reembolsos: total.compras ? (total.tasaReembolso < PUERTAS.reembolsos ? 'dentro' : 'FUERA') : '—',
     puerta3: notas.length < PUERTAS.respuestasMin ? `faltan datos (${notas.length}/${PUERTAS.respuestasMin} respuestas)` : (util >= PUERTAS.utilMin && total.tasaReembolso < PUERTAS.reembolsos ? 'PASA' : 'NO PASA')
   };
-  return { umbrales: PUERTAS, total, angulos, precios, puertas, encuesta: { respuestas: notas.length, util }, clicSeguros: eventos.filter((e) => e.tipo === 'clic_seguros').length, leadsSeguros: leads.filter((l) => l.consentimientos?.seguros).length };
+  return { umbrales: PUERTAS, total, angulos, precios, puertas, encuesta: { respuestas: notas.length, util }, clicSeguros: eventos.filter((e) => e.tipo === 'clic_seguros').length, leadsSeguros: leads.filter((l) => l.consentimientos?.seguros).length, club: { interesados: club.length, compradores: new Set(pedidos.filter((p) => p.tipo === 'plan').map((p) => p.email)).size } };
 }
 
 function imprimir(m) {
@@ -104,6 +104,7 @@ function imprimir(m) {
   console.log(`Puerta 2 (≥ ${m.umbrales.compra * 100}% compra y CAC ≤ ${m.umbrales.cac} €): ${m.puertas.puerta2}`);
   console.log(`Reembolsos (< ${m.umbrales.reembolsos * 100}%): ${m.puertas.reembolsos}`);
   console.log(`Puerta 3 (≥ 8/10 útil y < 5% reembolsos): ${m.puertas.puerta3} · útil: ${p1(m.encuesta.util)} de ${m.encuesta.respuestas}`);
+  console.log(`Club (interés): ${m.club.interesados} de ${m.club.compradores} compradores · ${p1(pct(m.club.interesados, m.club.compradores))} (se construye si supera el 10–15%)`);
   console.log('Recuerda: mínimo 1.000 clics por ángulo para decidir la puerta 1 (los clics salen de Meta, no de aquí).');
 }
 

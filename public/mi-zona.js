@@ -70,8 +70,12 @@
     app.innerHTML = '<div class="pila-g entra">' +
       '<section class="pila"><h1 style="font-size:1.9rem">Hola' + (nombres.length === 1 ? ', aquí tienes todo lo de ' + esc(nombres[0]) : '') + '</h1><p class="suave peq">' + esc(d.email) + '</p></section>' +
       '<section class="pila"><span class="etiqueta">' + (d.planes.length > 1 ? 'Tus planes' : 'Tu plan') + '</span>' + planes + '</section>' +
+      '<section class="tarjeta pila" id="instalar"></section>' +
       '<section class="tarjeta pila consejo"><div class="cab-consejo">' + burbuja('chispa', 'butter') + '<span class="etiqueta">Consejo de hoy</span></div>' +
         '<h2 id="c-tit" style="font-size:1.3rem"></h2><p id="c-txt"></p><button class="btn texto" id="otro" style="align-self:flex-start;width:auto;padding-left:0">Otro consejo</button></section>' +
+      '<section class="tarjeta pila" id="diario"></section>' +
+      '<section class="tarjeta pila" id="clicker-caja"></section>' +
+      '<section class="club pila" id="club"></section>' +
       '<section class="tarjeta pila">' + '<div class="cab-consejo">' + burbuja('escudo', 'mint') + '<h2 style="font-size:1.3rem">' + esc(seguro.titulo) + '</h2></div>' +
         '<p>' + esc(seguro.texto) + '</p>' + botonSeguro + '<p class="peq suave">' + esc(seguro.aviso) + '</p></section>' +
       '<section class="pila"><span class="etiqueta">Lo que te va a ayudar</span><div class="incluye-grid">' + productos + '</div>' +
@@ -79,6 +83,13 @@
       '<section class="pila" id="lecturas"></section>' +
       '</div>';
 
+    var H = window.QBP_HERRAMIENTAS;
+    if (H) {
+      H.instalar(document.getElementById('instalar'));
+      H.diario(document.getElementById('diario'), nombres[0] || 'tu perro');
+      H.clicker(document.getElementById('clicker-caja'));
+      H.club(document.getElementById('club'), d.enClub);
+    }
     function pintaConsejo() { var c = d.consejos[idxConsejo % d.consejos.length]; document.getElementById('c-tit').textContent = c[0]; document.getElementById('c-txt').textContent = sus(c[1]); }
     pintaConsejo();
     document.getElementById('otro').onclick = function () { idxConsejo++; pintaConsejo(); };

@@ -69,7 +69,8 @@
               puerta('Puerta 1 · coste por formulario', eur(T.costeForm), m.puertas.puerta1, T.forms + ' formularios · objetivo ≤ ' + eur(m.umbrales.costeForm)) +
               puerta('Puerta 2 · conversión a compra', pct(T.tasaCompra), m.puertas.puerta2, T.compras + ' ventas · CAC ' + eur(T.cac) + ' (≤ ' + eur(m.umbrales.cac) + ')') +
               puerta('Puerta 3 · valor', pct(m.encuesta.util), m.puertas.puerta3, m.encuesta.respuestas + ' respuestas · reembolsos ' + pct(T.tasaReembolso)) +
-              puerta('Seguros (H6)', String(m.clicSeguros), 'clics', m.leadsSeguros + ' leads con consentimiento de seguros');
+              puerta('Seguros (H6)', String(m.clicSeguros), 'clics', m.leadsSeguros + ' leads con consentimiento de seguros') +
+              puerta('Club (interés)', String(m.club.interesados), m.club.compradores ? Math.round(m.club.interesados / m.club.compradores * 100) + '% de compradores' : 'sin compradores', 'Construir si supera el 10–15%');
             $('tablas').innerHTML = tabla('Por ángulo de anuncio', Object.assign({}, m.angulos, { TOTAL: T })) + tabla('Por precio (céntimos)', m.precios);
           })
           .catch(function (e) { $('err').textContent = e.message || 'No se han podido cargar las métricas.'; });

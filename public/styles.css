@@ -397,3 +397,35 @@ a.btn { text-decoration: none; }
 .mini-cara svg { width: 34px; height: 34px; display: block; }
 .pie nav { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 6px; }
 @media (max-width: 420px) { .ficha { grid-template-columns: 1fr; } }
+
+/* Herramientas de Mi zona */
+.diario-botones { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.diario-botones .btn { min-height: 52px; font-size: .95rem; padding: 10px; }
+.diario-botones .btn[data-l="fuera"] { box-shadow: inset 0 0 0 2px var(--ok); color: var(--ok); }
+.diario-resumen { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.diario-resumen div { background: var(--surface-2); border-radius: 14px; padding: 10px 12px; display: flex; flex-direction: column; }
+.diario-resumen b { font: 800 1.5rem/1 var(--display); }
+.diario-resumen span { font-size: .8rem; color: var(--muted); margin-top: 4px; }
+.diario-barras { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; align-items: end; }
+.db-col { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.db-pct { font-size: .68rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+.db-barra { width: 100%; height: 64px; background: var(--surface-2); border-radius: 8px; display: flex; align-items: flex-end; overflow: hidden; }
+.db-barra i { display: block; width: 100%; background: var(--ok); border-radius: 8px; }
+.db-dia { font-size: .72rem; font-weight: 600; }
+.diario-hoy { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.diario-hoy li { display: flex; justify-content: space-between; align-items: center; font-size: .9rem; border-bottom: 1px solid var(--line); padding: 4px 0; }
+.clicker { align-self: center; width: 150px; height: 150px; border-radius: 50%; border: 0; background: var(--primary); color: var(--primary-ink); font: 800 1.3rem var(--display); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; cursor: pointer; box-shadow: 0 8px 0 #e0a800, 0 14px 24px rgba(27,42,65,.15); touch-action: manipulation; user-select: none; -webkit-tap-highlight-color: transparent; transition: transform .05s, box-shadow .05s; }
+.clicker .ico { width: 34px; height: 34px; }
+.clicker.pulsado, .clicker:active { transform: translateY(6px); box-shadow: 0 2px 0 #e0a800, 0 6px 12px rgba(27,42,65,.15); }
+.clicker:focus-visible { outline: 3px solid var(--brand); outline-offset: 4px; }
+#clicker-caja details summary { cursor: pointer; font-weight: 700; font-size: .95rem; }
+#clicker-caja ol { padding-left: 20px; display: flex; flex-direction: column; gap: 6px; }
+.club { background: linear-gradient(150deg, #26396a, #1b2a41 65%); border-radius: 22px; padding: 18px; color: #fff; }
+.club-cab { display: flex; gap: 12px; align-items: center; }
+.club-sello { width: 44px; height: 44px; border-radius: 14px; background: var(--primary); color: #1b2a41; display: grid; place-items: center; flex: none; }
+.club-lista { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.club-lista li { display: flex; gap: 10px; align-items: flex-start; font-size: .95rem; line-height: 1.4; }
+.club-lista .ico { color: #ffd76e; margin-top: 1px; }
+.instalar-icono img { border-radius: 12px; display: block; }
+.instalar-pasos { padding-left: 20px; display: flex; flex-direction: column; gap: 6px; margin: 0; }
+.instalar-pasos .ico { width: 16px; height: 16px; transform: rotate(90deg); vertical-align: -3px; }

@@ -27,6 +27,8 @@ Todo lo necesario para validar las puertas 1, 2 y 3 del [documento del MVP](docs
 | `/perro` | Test, resultado y plan de 6 semanas para perros adultos y adoptados (`public/perro.js`, contenido en `content/programas-adulto.js`). Si el perro muerde a personas, no se vende y se deriva a un profesional |
 | `/plan/<token>` | Página privada de cada plan |
 | `/mi-zona` | Zona del cliente: sus planes con progreso, consejo del día, seguro de RC y productos recomendados (afiliación en `content/zona.js`). Se entra con enlace mágico por email o desde el enlace del plan |
+| `/mi-zona` (herramientas) | Diario de pis y caca con estadísticas de 7 días y aviso de la franja con más accidentes, clicker con sonido, tarjeta del Club (lista de interés, se ve en el panel) y aviso para instalar la web como app |
+| App instalable (PWA) | `manifest.webmanifest`, `sw.js` e iconos: se instala desde Mi zona (Android: botón; iPhone: instrucciones de Safari), se abre en `/mi-zona` y el plan visitado funciona sin conexión |
 | `/guias` | Centro de guías para SEO: 5 categorías, 12 artículos (`content/guias.js`) y 6 rutinas de cachorro por edad calculadas con el motor del plan |
 | `/razas` | 20 páginas "Cómo educar a un/una …" con datos de cada raza (`content/seo.js` + rasgos de `plantillas.js`) |
 | `/admin.html` | Panel de métricas |

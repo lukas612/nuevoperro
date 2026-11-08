@@ -54,7 +54,7 @@
 
     var html = '<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><meta name="robots" content="noindex">' +
       '<title>Plan de ' + esc(n) + ' · ' + esc(marca) + '</title>' +
-      '<link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="/apple-touch-icon.png">' +
+      '<link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="/apple-touch-icon.png"><link rel="manifest" href="/manifest.webmanifest"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Qué Buen Perro">' +
       '<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>' +
       '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=Figtree:wght@400;500;600;700&display=swap">' +
       '<style>' + PH.CSS + '.porque{font-size:1rem;line-height:1.6}.tabs{grid-template-columns:repeat(6,1fr)}@media (max-width:480px){.tabs{grid-template-columns:repeat(3,1fr)}}</style></head><body>' +
@@ -101,7 +101,7 @@
     "function act(){var n=0;for(var i=1;i<=N;i++)if(st['d'+i])n++;document.getElementById('pr-sem').textContent='Semana '+sem+' de 6';document.getElementById('pr-pct').textContent=n+' de '+N+' tareas hechas';document.getElementById('pr-bar').style.width=Math.max(3,n/N*100)+'%'}" +
     "function tab(k){document.querySelectorAll('[data-tab]').forEach(function(b){b.setAttribute('aria-selected',b.dataset.tab==k)});document.querySelectorAll('.sem').forEach(function(s){s.hidden=s.dataset.sem!=k})}" +
     "document.querySelectorAll('[data-tab]').forEach(function(b){b.onclick=function(){tab(b.dataset.tab)}});tab(sem);act();" +
-    "var v=document.getElementById('volver');if(v)v.onclick=function(){location.reload()};})();";
+    "var v=document.getElementById('volver');if(v)v.onclick=function(){location.reload()};try{if('serviceWorker' in navigator&&!v)navigator.serviceWorker.register('/sw.js').catch(function(){})}catch(e){}})();";
 
   var api = { render: render, tareas: function (problema) { return tareasPlanas(PR.PROGRAMAS[problema] || PR.PROGRAMAS.correa); } };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;

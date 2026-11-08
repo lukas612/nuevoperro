@@ -58,7 +58,7 @@ function verificarFirmaStripe(raw, cabecera) {
 }
 
 // ---------- Utilidades HTTP ----------
-const TIPOS = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.svg': 'image/svg+xml', '.png': 'image/png', '.jpg': 'image/jpeg', '.ico': 'image/x-icon', '.json': 'application/json', '.txt': 'text/plain; charset=utf-8' };
+const TIPOS = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.svg': 'image/svg+xml', '.png': 'image/png', '.jpg': 'image/jpeg', '.ico': 'image/x-icon', '.json': 'application/json', '.txt': 'text/plain; charset=utf-8', '.webmanifest': 'application/manifest+json' };
 const COMPRIMIBLE = /^(text\/|application\/(json|xml|javascript)|image\/svg)/;
 function enviar(res, codigo, cuerpo, tipo = 'application/json', extra = {}) {
   let datosSalida = typeof cuerpo === 'string' || Buffer.isBuffer(cuerpo) ? cuerpo : JSON.stringify(cuerpo);
@@ -88,7 +88,8 @@ function servirArchivo(res, archivo) {
     if (err) return enviar(res, 404, 'No encontrado', 'text/plain; charset=utf-8');
     const ext = path.extname(archivo);
     // Imágenes y fuentes cambian poco: 1 día. CSS y JS: 5 minutos para que los despliegues lleguen rápido.
-    const cache = ['.png', '.jpg', '.svg', '.ico'].includes(ext) ? 'public, max-age=86400' : 'public, max-age=300';
+    // El service worker no se cachea: así cada despliegue llega a quien tenga la app instalada.
+    const cache = path.basename(archivo) === 'sw.js' ? 'no-cache' : ['.png', '.jpg', '.svg', '.ico'].includes(ext) ? 'public, max-age=86400' : 'public, max-age=300';
     enviar(res, 200, buf, TIPOS[ext] || 'application/octet-stream', { 'Cache-Control': cache });
   });
 }
@@ -284,7 +285,41 @@ const rutas = {
     const problemas = [...new Set(lista.map((p) => p.problema).filter(Boolean))];
     const productos = [...ZONA.PRODUCTOS.base, ...problemas.flatMap((k) => ZONA.PRODUCTOS[k] || [])].filter((x, i, a) => a.findIndex((y) => y.id === x.id) === i);
     const consejos = [...problemas.flatMap((k) => ZONA.CONSEJOS[k] || []), ...ZONA.CONSEJOS.general];
-    enviar(res, 200, { email, planes: lista, consejos, productos, seguros: ZONA.SEGUROS, marca: CFG.marca });
+    const enClub = !!(await datos.primero('emails', { email, clave: 'club' }));
+    enviar(res, 200, { email, planes: lista, consejos, productos, seguros: ZONA.SEGUROS, marca: CFG.marca, enClub });
+  },
+
+  // Diario de pis y caca (Mi zona)
+  'GET /api/diario': async (req, res) => {
+    const email = sesion.deCookie(req);
+    if (!email) return enviar(res, 401, { error: 'sesion' });
+    const desde = Date.now() - 14 * 864e5;
+    const filas = (await datos.listar('diario', { email }, { orden: 'ts.desc', limite: 500 })).filter((f) => new Date(f.ts).getTime() >= desde);
+    enviar(res, 200, { registros: filas.map(({ id, ts, tipo, lugar }) => ({ id, ts, tipo, lugar })) });
+  },
+  'POST /api/diario': async (req, res) => {
+    const email = sesion.deCookie(req);
+    if (!email) return enviar(res, 401, { error: 'sesion' });
+    const b = await json(req);
+    if (!['pis', 'caca'].includes(b.tipo) || !['fuera', 'dentro'].includes(b.lugar)) return enviar(res, 400, { error: 'datos' });
+    const fila = await datos.insertar('diario', { email, tipo: b.tipo, lugar: b.lugar }, { devolver: true });
+    enviar(res, 200, { registro: { id: fila.id, ts: fila.ts, tipo: fila.tipo, lugar: fila.lugar } });
+  },
+  'POST /api/diario/borrar': async (req, res) => {
+    const email = sesion.deCookie(req);
+    if (!email) return enviar(res, 401, { error: 'sesion' });
+    const b = await json(req);
+    if (!/^\d+$/.test(String(b.id || ''))) return enviar(res, 400, { error: 'id' });
+    await datos.borrar('diario', { email, id: String(b.id) });
+    enviar(res, 200, { ok: true });
+  },
+
+  // Club (de momento, solo lista de interés para medir la demanda)
+  'POST /api/club': async (req, res) => {
+    const email = sesion.deCookie(req);
+    if (!email) return enviar(res, 401, { error: 'sesion' });
+    await datos.insertar('emails', { email, clave: 'club' }, { ignorarDuplicado: true });
+    enviar(res, 200, { ok: true });
   },
 
   'POST /api/salir': async (req, res) => enviar(res, 200, { ok: true }, 'application/json', { 'Set-Cookie': sesion.cerrar() }),
@@ -426,7 +461,7 @@ const servidor = http.createServer(async (req, res) => {
         .replaceAll('{{MARCA}}', CFG.marca).replaceAll('{{BASE}}', CFG.baseUrl).replaceAll('{{EMAIL}}', CFG.emailContacto).replaceAll('{{TITULAR}}', CFG.titular);
       return html(res, 200, h);
     }
-    if (url.pathname.endsWith('.html') && !['/admin.html', '/mi-zona.html'].includes(url.pathname)) return noEncontrado(res);
+    if (url.pathname.endsWith('.html') && !['/admin.html', '/mi-zona.html', '/offline.html'].includes(url.pathname)) return noEncontrado(res);
     const archivo = path.normalize(path.join(PUBLIC, url.pathname));
     if (!archivo.startsWith(PUBLIC + path.sep)) return enviar(res, 403, 'Prohibido', 'text/plain');
     fs.stat(archivo, (err, st) => (err || !st.isFile() ? noEncontrado(res) : servirArchivo(res, archivo)));
