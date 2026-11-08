@@ -18,6 +18,8 @@
   var params = new URLSearchParams(location.search);
   var utm = lsGet('pc_utm') || {};
   ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'a', 'fbclid'].forEach(function (k) { if (params.get(k)) utm[k] = params.get(k).slice(0, 100); });
+  // Clic desde un anuncio de Meta sin parámetros UTM: lo atribuimos a Meta igualmente.
+  if (params.get('fbclid') && !params.get('utm_source')) { utm.utm_source = 'meta'; utm.utm_medium = utm.utm_medium || 'paid'; }
   lsSet('pc_utm', utm);
 
   var estado = lsGet('pc_estado') || { paso: 0, r: {} };

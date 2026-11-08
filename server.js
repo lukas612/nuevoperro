@@ -438,6 +438,7 @@ const servidor = http.createServer(async (req, res) => {
     }
     // Páginas indexables (generadas en el servidor)
     const CACHE_HTML = { 'Cache-Control': 'public, max-age=600' };
+    if (url.pathname === '/admin' || url.pathname === '/admin/metricas') return redirigir(res, '/admin.html', 302);
     if (url.pathname === '/') {
       // Compatibilidad con anuncios antiguos: /?a=pis → /cachorro?a=pis
       const a = url.searchParams.get('a');
