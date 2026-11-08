@@ -369,18 +369,30 @@
     if ((r.convivientes || []).indexOf('ninos') >= 0) ajustes.push(['nino', 'Niños en casa']);
     var chips = [r.raza, r.edadSemanasTexto, r.vivienda === 'jardin' ? 'Casa con jardín' : 'Piso', r.horasSolo ? r.horasSoloTexto + ' sin nadie' : 'Casi nunca sin nadie'].filter(Boolean);
 
+    var n = nombre(), sus = function (t) { return String(t).replace(/\{n\}/g, n); };
+    var T = window.TAREAS || [];
+    var dia1 = T[0] || { titulo: 'Su zona segura', tarea: 'Monta la zona segura de {n}.' };
+    var pasos = (r.problema === 'pis' ? (r.vivienda === 'jardin' ? prot.jardin : prot.piso) : prot.si) || [];
+    var icProb = ({ pis: 'gota', mordiscos: 'diente', noches: 'luna', solo: 'puerta' })[r.problema] || 'gota';
+    var nombreRaza = ((D.raza(razaId()) || {}).nombre || 'tu perro').toLowerCase();
+
     var html =
       '<div class="pila-g">' +
       '<section class="pila"><div class="perfil"><span class="avatar">' + D.cara(razaId(), { lengua: true }) + '</span>' +
-        '<div class="pila" style="gap:6px"><span class="chip ok">' + I('check') + 'Gratis para ti</span><h1 style="font-size:1.7rem">La rutina de mañana para ' + esc(nombre()) + '</h1></div></div>' +
-        '<div class="ajustes"><span class="suave peq">Ajustada a:</span>' + ajustes.map(function (a) { return '<span class="chip">' + I(a[0]) + esc(a[1]) + '</span>'; }).join('') + '</div>' +
-        window.VENTA.aviso({ nombre: nombre(), semanas: 8 }, { I: I, esc: esc }) + '</section>' +
+        '<div class="pila" style="gap:6px"><span class="chip ok">' + I('check') + 'Vista previa gratis</span><h1 style="font-size:1.7rem">El plan de ' + esc(n) + ' está listo</h1></div></div>' +
+        '<div class="ajustes"><span class="suave peq">Hecho para:</span>' + ajustes.map(function (a) { return '<span class="chip">' + I(a[0]) + esc(a[1]) + '</span>'; }).join('') + '</div>' +
+        window.VENTA.aviso({ nombre: n, semanas: 8 }, { I: I, esc: esc }) + '</section>' +
 
-      '<section class="tarjeta pila"><ul class="linea-tiempo plegada" id="rutina">' + rut.bloques.map(function (b, k) {
-        var tb = tipoBloque(b[2]);
-        return '<li' + (k >= 5 ? ' class="extra"' : '') + '>' + burbuja(tb[0], tb[1]) + '<div><div class="hora">' + esc(b[0]) + '</div><div class="txt">' + esc(b[1]) + '</div></div></li>';
-      }).join('') + '</ul>' + (rut.bloques.length > 5 ? '<button class="btn sec" id="ver-rutina">Ver el día completo (' + (rut.bloques.length - 5) + ' momentos más)</button>' : '') + '<p class="nota">' + I('chispa') + '<span>' + esc(rut.nota) + '</span></p>' +
-        rut.avisosRaza.map(function (a) { return '<p class="nota raza-nota">' + I('huella') + '<span><b>Por ser ' + esc((D.raza(razaId()) || {}).nombre || 'tu perro').toLowerCase() + ':</b> ' + esc(a.charAt(0).toLowerCase() + a.slice(1)) + '</span></p>'; }).join('') + '</section>' +
+      // Lo que puede hacer hoy mismo (abierto)
+      '<section class="tarjeta pila hoy-gratis"><span class="eti-peq">Día 1 · empieza hoy</span><h2 style="font-size:1.35rem">' + esc(dia1.titulo) + '</h2><p>' + esc(sus(dia1.tarea)) + '</p></section>' +
+
+      // Su problema: primeros pasos abiertos, el resto bloqueado
+      '<section class="tarjeta pila"><div class="cab-consejo">' + burbuja(icProb, 'peach') + '<div><span class="eti-peq">Tu prioridad</span><h2 style="font-size:1.3rem">' + esc(prot.titulo) + '</h2></div></div>' +
+        '<ol class="pasos-prot">' + pasos.slice(0, 2).map(function (x) { return '<li>' + esc(sus(x)) + '</li>'; }).join('') + '</ol>' +
+        (pasos.length > 2 || (prot.no || []).length ? bloqueado('<ol class="pasos-prot" start="3">' + pasos.slice(2).map(function (x) { return '<li>' + esc(sus(x)) + '</li>'; }).join('') + '</ol>' +
+          ((prot.no || []).length ? '<p><b>Lo que no hay que hacer:</b></p><ul>' + prot.no.map(function (x) { return '<li>' + esc(sus(x)) + '</li>'; }).join('') + '</ul>' : ''),
+          'Ver los ' + (Math.max(0, pasos.length - 2) + (prot.no || []).length) + ' pasos y consejos restantes') : '') +
+        rut.avisosRaza.slice(0, 1).map(function (a) { return '<p class="nota raza-nota">' + I('huella') + '<span><b>Por ser ' + esc(nombreRaza) + ':</b> ' + esc(a.charAt(0).toLowerCase() + a.slice(1)) + '</span></p>'; }).join('') + '</section>' +
 
       '<section class="pila"><h2>Así es su plan de 8 semanas</h2>' + vistaPrevia() + '</section>' +
       paywallHtml() +
@@ -395,12 +407,15 @@
       window.VENTA.preguntas({ precio: CONF.precio }, { esc: esc, euros: euros }) + '</div>';
     pintar(html);
     evento('paywall_visto');
-    var vr = document.getElementById('ver-rutina');
-    if (vr) vr.onclick = function () { document.getElementById('rutina').classList.remove('plegada'); vr.remove(); };
 
     var bs = document.getElementById('seguros');
     if (bs) bs.onclick = function () { evento('clic_seguros'); bs.outerHTML = '<p class="chip ok">' + I('check') + 'Apuntado: te avisaremos con la comparativa</p>'; };
     activarPaywall();
+  }
+  // Contenido de pago difuminado, con un botón que lleva a la compra
+  function bloqueado(interior, texto) {
+    return '<div class="bloqueado"><div class="bloq-contenido" aria-hidden="true">' + interior + '</div>' +
+      '<a class="bloq-cta" href="#paywall">' + I('candado') + '<span>' + esc(texto) + '</span></a></div>';
   }
   function vistaPrevia() {
     var T = window.TAREAS || [];
