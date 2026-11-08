@@ -142,7 +142,7 @@
         '<div class="caja"><h4>' + I('ley') + 'Checklist legal' + (r.comunidad ? ' · ' + esc(r.comunidad) : '') + '</h4><ul class="legal">' + legal + '</ul><p class="peq">' + esc(P.LEGAL.aviso) + '</p></div>' +
       '</section>' +
 
-      '<footer class="pie">' + b('escudo', 'mint') + '<div><b>Garantía de 14 días</b><span>Si el plan no te sirve, responde a cualquiera de nuestros emails y te devolvemos el dinero.</span></div></footer>' +
+      '<footer class="pie">' + b('correo', 'mint') + '<div><b>¿Te atascas?</b><span>Responde a cualquiera de nuestros emails y te ayudamos con vuestro caso.</span></div></footer>' +
       '<p class="legal-pie">Este plan ofrece rutinas y educación en positivo. No sustituye a tu veterinario ni al curso oficial de tenencia responsable. Contenido revisado el ' + esc(P.REVISADO) + '.</p>' +
       '</main>' +
       '<script>' + JS.replace('__ID__', JSON.stringify(id)).replace('__INICIO__', JSON.stringify(inicio.toISOString())).replace('__TAREAS__', JSON.stringify(T.map(function (t) { return [t.titulo, t.tarea.replace(/\{n\}/g, n)]; }))) + '<\/script>' +

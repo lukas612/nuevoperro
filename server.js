@@ -166,7 +166,7 @@ const rutas = {
     try {
       const sesionPago = {
         mode: 'payment', customer_creation: 'always', customer_email: lead.email, locale: 'es',
-        line_items: { 0: { quantity: 1, price_data: { currency: 'eur', unit_amount: precio, product_data: { name: nombreProducto, description: 'Plan personalizado, emails diarios y garantía de 14 días.' } } } },
+        line_items: { 0: { quantity: 1, price_data: { currency: 'eur', unit_amount: precio, product_data: { name: nombreProducto, description: 'Plan personalizado, una tarea al día y Mi zona en tu móvil.' } } } },
         payment_intent_data: { setup_future_usage: 'off_session', metadata: { sid, tipo: 'plan', app: 'cachorro' } },
         metadata: { sid, precio, app: 'cachorro', desistimiento: 'aceptado_' + new Date().toISOString() },
         success_url: `${CFG.baseUrl}${pagina}?pago=ok&session_id={CHECKOUT_SESSION_ID}`,

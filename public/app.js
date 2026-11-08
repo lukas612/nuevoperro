@@ -147,7 +147,6 @@
 
       '<section class="seccion faq"><span class="etiqueta">Preguntas</span>' +
         '<details><summary>¿Sustituye al veterinario o a un educador?</summary><p>No. El plan te da rutinas y educación en positivo. La salud, las vacunas y la comida las decide tu veterinario.</p></details>' +
-        '<details><summary>¿Y si no me sirve?</summary><p>Tienes 14 días de garantía: te devolvemos el 100% sin preguntas.</p></details>' +
         '<details><summary>¿Es una suscripción?</summary><p>No. El test es gratis y el plan completo es un pago único.</p></details>' +
       '</section>' +
 
@@ -418,8 +417,7 @@
         extras: ['Protocolos para pis, mordiscos, noches y quedarse solo', 'Rutina que se actualiza cada semana con su edad', 'Checklist de socialización semana a semana', 'Salud y checklist legal de ' + (estado.r.comunidad || 'tu comunidad')] }, { I: I, burbuja: burbuja, esc: esc }) +
       window.VENTA.comparativa({ nombre: nombre(), semanas: 8, precio: CONF.precio }, { esc: esc, euros: euros }) +
       '<div class="precio-fila"><span class="precio">' + euros(CONF.precio) + '</span><span class="suave">Pago único · menos de ' + dia + ' € al día</span></div>' +
-      '<div class="garantia">' + I('escudo') + '<span>Garantía de 14 días: si no te sirve, te devolvemos el 100%, sin preguntas.</span></div>' +
-      '<label class="check"><input type="checkbox" id="desist"> <span>Quiero recibir el plan ya. Acepto que, al empezar la entrega del contenido digital, pierdo el derecho legal de desistimiento (la garantía de 14 días sigue vigente). <a href="/condiciones" target="_blank">Condiciones</a>.</span></label>' +
+      '<label class="check"><input type="checkbox" id="desist"> <span>Quiero recibir el plan ya. Acepto que, al empezar la entrega del contenido digital, pierdo el derecho legal de desistimiento. <a href="/condiciones" target="_blank">Condiciones</a>.</span></label>' +
       '<p class="error" id="err-pago"></p>' +
       '<button class="btn" id="pagar">Quiero el plan de ' + esc(nombre()) + ' · ' + euros(CONF.precio) + '</button>' +
       '<p class="micro"><span>' + I('candado') + 'Pago seguro con Stripe</span><span>Tarjeta · Apple Pay · Google Pay</span></p>' +
@@ -491,7 +489,7 @@
         '<li>' + burbuja('estrella', 'mint') + '<div><b>Día 7</b><span>Te preguntamos cómo vais para ajustar lo que haga falta.</span></div></li>' +
       '</ul>' +
       (window.DEMO_VER_PLAN ? '<button class="btn" id="ver-plan">' + I('calendario') + 'Ver el plan de ' + esc(nombre()) + '</button>' : '') +
-      '<div class="garantia">' + I('escudo') + '<span>Tienes 14 días de garantía. Si no te sirve, responde a cualquier email y te devolvemos el dinero.</span></div></div>');
+      '<div class="garantia">' + I('correo') + '<span>¿Dudas por el camino? Responde a cualquiera de nuestros emails y te ayudamos.</span></div></div>');
     var vp = document.getElementById('ver-plan');
     if (vp) vp.onclick = function () { verPlan(respuestas); };
   }

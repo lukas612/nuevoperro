@@ -225,7 +225,7 @@ Hacemos planes para educar a tu perro en positivo, hechos para él: su raza, su 
 Sin castigos, sin tirones, sin gritos. Empieza aquí: quebuenperro.com
 
 **Respuesta tipo a comentarios (precio):**
-¡Hola! El test y el primer paso son gratis. El plan completo cuesta 19,99 € en un solo pago, sin suscripción, y tiene 14 días de garantía. Lo tienes en quebuenperro.com
+¡Hola! El test y el primer paso son gratis. El plan completo cuesta 19,99 € en un solo pago y sin suscripción. Lo tienes en quebuenperro.com
 
 **Respuesta tipo a comentarios (escepticismo):**
-Entendemos la duda. Por eso el primer paso es gratis: haz el test, prueba su rutina unos días y decide. Y si compras el plan y no te sirve, te devolvemos el dinero en 14 días.
+Entendemos la duda. Por eso el primer paso es gratis: haz el test, prueba su rutina unos días y decide con calma.

@@ -85,7 +85,7 @@
           '<li>' + b('personas', 'mint') + '<span>Si tras 3 semanas no ves ningún avance, un educador canino en persona puede ver lo que el plan no ve.</span></li>' +
           '<li>' + b('escudo', 'sky') + '<span>Si alguna vez muerde o amenaza a una persona, para el plan y busca un profesional.</span></li>' +
         '</ul></div></section>' +
-      '<footer class="pie">' + b('escudo', 'mint') + '<div><b>Garantía de 14 días</b><span>Si el plan no te sirve, responde a cualquiera de nuestros emails y te devolvemos el dinero.</span></div></footer>' +
+      '<footer class="pie">' + b('correo', 'mint') + '<div><b>¿Te atascas?</b><span>Responde a cualquiera de nuestros emails y te ayudamos con vuestro caso.</span></div></footer>' +
       '<p class="legal-pie">Este plan ofrece educación en positivo. No sustituye a tu veterinario ni a un profesional que vea a tu perro en persona.</p>' +
       '</main><script>' + JS.replace('__ID__', JSON.stringify(id)).replace('__INICIO__', JSON.stringify(inicio.toISOString())).replace('__TAREAS__', JSON.stringify(T.map(function (t) { return [t[0], sus(t[1])]; }))) + '<\/script></body></html>';
     return html;
