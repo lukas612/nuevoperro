@@ -184,7 +184,7 @@
       html += '<div class="pila"><div class="campo-avatar"><span class="avatar">' + D.cara(razaId(), { lengua: true }) + '</span>' +
         '<input type="email" id="campo" autocomplete="email" inputmode="email" placeholder="tu@email.com" value="' + esc(estado.email || '') + '"></div>' +
         '<label class="check"><input type="checkbox" id="c-priv"' + (c.privacidad ? ' checked' : '') + '> <span>He leído la <a href="/privacidad" target="_blank">política de privacidad</a> y acepto que tratéis mis datos para preparar mi resultado.</span></label>' +
-        '<label class="check"><input type="checkbox" id="c-com"' + (c.comerciales ? ' checked' : '') + '> <span>Quiero recibir consejos y ofertas de ' + esc(CONF.marca) + ' por email (opcional).</span></label>' +
+        '<label class="check"><input type="checkbox" id="c-com"' + (c.comerciales ? ' checked' : '') + '> <span><b>Sí, enviadme consejos para ' + esc(nombre()) + ' esta semana</b>, y ofertas de ' + esc(CONF.marca) + '. Me doy de baja con un clic cuando quiera.</span></label>' +
         '<label class="check"><input type="checkbox" id="c-seg"' + (c.seguros ? ' checked' : '') + '> <span>Acepto que me contactéis con ofertas de seguros para mi perro (opcional).</span></label>' +
         '<p class="error" id="err"></p><button class="btn" id="sig">Ver el resultado de ' + esc(nombre()) + '</button></div>';
     } else {
