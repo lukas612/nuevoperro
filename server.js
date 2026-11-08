@@ -349,8 +349,16 @@ const ESTATICOS_CONTENT = ['/plantillas.js', '/tareas-diarias.js', '/plan-html.j
 const pedidosAcceso = new Map();
 const PAGINAS = { '/cachorro': 'cachorro.html', '/perro': 'perro.html' };
 const esAdulto = (r) => r && (r.tipo === 'adulto' || r.tipo === 'adoptado');
+const HOST_CANONICO = new URL(CFG.baseUrl).host;
 const servidor = http.createServer(async (req, res) => {
   const url = new URL(req.url, CFG.baseUrl);
+  // Un solo dominio para Google: www, .es u onrender.com → 301 al dominio de BASE_URL.
+  // No afecta a la API (webhooks de Stripe), a /salud ni a las pruebas en local.
+  const host = (req.headers.host || '').toLowerCase();
+  if (process.env.BASE_URL && host && host !== HOST_CANONICO && !/^(localhost|127\.|\[::1\])/.test(host) && !url.pathname.startsWith('/api/') && url.pathname !== '/salud') {
+    res.writeHead(301, { Location: CFG.baseUrl + url.pathname + url.search, 'Cache-Control': 'public, max-age=3600' });
+    return res.end();
+  }
   try {
     const ruta = rutas[`${req.method} ${url.pathname}`];
     if (ruta) return await ruta(req, res, url);
