@@ -220,6 +220,8 @@ const rutas = {
     try {
       const sesionPago = {
         mode: 'payment', customer_creation: 'always', customer_email: lead.email, locale: 'es',
+        // Solo euros: sin el selector de moneda local de Stripe (la cuenta la tiene activada para otros negocios).
+        adaptive_pricing: { enabled: 'false' },
         line_items: { 0: { quantity: 1, price_data: { currency: 'eur', unit_amount: precio, product_data: { name: nombreProducto, description: 'Plan personalizado, una tarea al día y Mi zona en tu móvil.' } } } },
         payment_intent_data: { setup_future_usage: 'off_session', metadata: { sid, tipo: 'plan', app: 'cachorro' } },
         metadata: { sid, precio, app: 'cachorro', desistimiento: 'aceptado_' + new Date().toISOString() },
@@ -250,7 +252,7 @@ const rutas = {
       enviar(res, 200, integrado ? { clientSecret: s.client_secret } : { url: s.url });
     } catch (e) {
       console.error('checkout', e.message);
-      enviar(res, 502, { error: 'No hemos podido iniciar el pago. Inténtalo de nuevo.', detalle: b.integrado ? String(e.message).slice(0, 300) : undefined }); // TEMPORAL: diagnóstico del pago integrado
+      enviar(res, 502, { error: 'No hemos podido iniciar el pago. Inténtalo de nuevo.' });
     }
   },
 
