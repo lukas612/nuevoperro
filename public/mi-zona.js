@@ -15,7 +15,9 @@
 
   function cabecera(conSesion) {
     barra.innerHTML = '<a class="marca" href="/" style="text-decoration:none;color:inherit">' + D.logo() + D.nombreMarca('Qué Buen Perro') + '</a>' +
-      (conSesion ? '<button class="btn texto" id="salir" style="width:auto;margin-left:auto">Salir</button>' : '');
+      '<details class="menu"><summary aria-label="Abrir menú"><svg aria-hidden="true" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg><span>Menú</span></summary><nav class="menu-panel" aria-label="Menú principal">' +
+        '<a href="/cachorro">Plan para cachorros</a><a href="/perro">Plan para perro adulto o adoptado</a><a href="/guias">Guías</a><a href="/razas">Razas</a><a href="/mi-zona">Mi zona</a>' +
+        (conSesion ? '<button type="button" id="salir">Cerrar sesión</button>' : '') + '</nav></details>';
     var s = document.getElementById('salir');
     if (s) s.onclick = function () { post('/api/salir').then(function () { location.reload(); }); };
   }

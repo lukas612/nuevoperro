@@ -17,6 +17,8 @@ const datos = require('./lib/datos');
 const correo = require('./lib/email');
 const plantillasEmail = require('./lib/emails');
 const sesion = require('./lib/sesion');
+const meta = require('./lib/meta');
+const { entregarPlan, entregarPendientes } = require('./lib/entrega');
 const guias = require('./lib/guias');
 const SEO = require('./lib/seo');
 const zlib = require('zlib');
@@ -130,9 +132,11 @@ const rutas = {
       },
       consentimientos: { privacidad: true, comerciales: !!b.consentimientos.comerciales, seguros: !!b.consentimientos.seguros, version: '2026-11-07' },
       precio: precioPara(b.sid),
-      utm: objeto(b.utm)
+      utm: objeto(b.utm),
+      meta: meta.datosNavegador(req, b)
     };
     await datos.insertar('leads', lead);
+    meta.evento('Lead', { id: 'lead_' + lead.sid, email: lead.email, sid: lead.sid, nav: lead.meta, extra: { content_name: lead.respuestas.problema, content_category: lead.respuestas.tipo } });
     await datos.insertar('eventos', { tipo: 'form_completo', sid: lead.sid, utm: lead.utm });
     enviar(res, 200, { ok: true });
     // Email inmediato con su rutina, solo con consentimiento comercial. Sin bloquear la respuesta.
@@ -150,6 +154,9 @@ const rutas = {
     if (!lead) return enviar(res, 400, { error: 'Completa primero el formulario.' });
     const precio = precioPara(sid);
     await datos.insertar('eventos', { tipo: 'checkout_inicio', sid, utm: lead.utm });
+    lead.meta = meta.unir(lead.meta, meta.datosNavegador(req, b));
+    datos.actualizar('leads', { sid }, { meta: lead.meta }).catch((e) => console.error('lead meta', e.message));
+    meta.evento('InitiateCheckout', { id: 'ic_' + sid, email: lead.email, sid, nav: lead.meta, valor: precio / 100, extra: { content_name: lead.respuestas.problema, num_items: 1 } });
     const pagina = esAdulto(lead.respuestas) ? '/perro' : '/cachorro';
     if (MODO_DEMO) return enviar(res, 200, { url: `${CFG.baseUrl}${pagina}?pago=ok&session_id=demo_${sid}` });
     const PROGRAMAS = require('./content/programas-adulto.js').PROGRAMAS;
@@ -222,6 +229,9 @@ const rutas = {
       }, 'upsell_' + id);
       if (pi.status === 'succeeded') {
         await datos.insertar('pedidos', { session_id: id, sid: s.metadata.sid, email: s.customer_details?.email, importe: CFG.precioUpsell, tipo: 'upsell', pack: limpio(b.pack, 30), payment_intent: pi.id }, { ignorarDuplicado: true });
+        const leadUp = await datos.primero('leads', { sid: s.metadata.sid });
+        meta.evento('Purchase', { id: 'upsell_' + id, email: s.customer_details?.email, sid: s.metadata.sid, nav: meta.unir(leadUp?.meta, meta.datosNavegador(req, b)),
+          valor: CFG.precioUpsell / 100, extra: { content_name: 'upsell_' + limpio(b.pack, 30), content_type: 'product', contents: [{ id: 'upsell', quantity: 1 }] } });
         return enviar(res, 200, { ok: true });
       }
       enviar(res, 402, { error: 'El banco pide confirmar el pago. Te lo enviamos por email.' });
@@ -353,6 +363,11 @@ async function registrarPedido(s) {
     session_id: s.id, sid: s.metadata?.sid, email: s.customer_details?.email || lead?.email, importe: s.amount_total, tipo: 'plan',
     payment_intent: typeof s.payment_intent === 'object' ? s.payment_intent?.id : s.payment_intent, desistimiento: s.metadata?.desistimiento, utm: lead?.utm || {}
   }, { ignorarDuplicado: true });
+  // Entrega automática: genera el plan, lo envía por email y activa Mi zona.
+  entregarPlan(s.metadata?.sid);
+  // Mismo event_id que el píxel del navegador ('compra_' + session_id): Meta deduplica.
+  await meta.evento('Purchase', { id: 'compra_' + s.id, email: s.customer_details?.email || lead?.email, sid: s.metadata?.sid, nav: lead?.meta || {},
+    valor: s.amount_total / 100, extra: { content_name: lead?.respuestas?.problema, content_type: 'product', contents: [{ id: 'plan', quantity: 1 }] } });
 }
 
 // ---------- SEO de las páginas del funnel y utilidades ----------
@@ -410,7 +425,7 @@ const servidor = http.createServer(async (req, res) => {
     const ruta = rutas[`${req.method} ${url.pathname}`];
     if (ruta) return await ruta(req, res, url);
     if (req.method !== 'GET' && req.method !== 'HEAD') return enviar(res, 405, { error: 'método' });
-    if (url.pathname === '/salud') return enviar(res, 200, { ok: true, supabase: datos.USA_SUPABASE, stripe: !MODO_DEMO, email: correo.configurado() });
+    if (url.pathname === '/salud') return enviar(res, 200, { ok: true, supabase: datos.USA_SUPABASE, stripe: !MODO_DEMO, email: correo.configurado(), metaCapi: meta.configurado() });
 
     // Página privada del plan: /plan/<token de 32 hex>
     const m = url.pathname.match(/^\/plan\/([a-f0-9]{32})$/);
@@ -477,6 +492,7 @@ if (require.main === module) {
     console.log('Datos:', datos.USA_SUPABASE ? 'Supabase' : 'archivos en data/ (desarrollo)');
     console.log(MODO_DEMO ? 'MODO DEMO: sin Stripe, los pagos se simulan.' : 'Stripe activo.');
     console.log('Emails:', correo.configurado() ? 'Resend' : 'desactivados (sin RESEND_API_KEY)');
+    if (!MODO_DEMO) entregarPendientes().catch((e) => console.error('entregas pendientes', e.message));
     console.log('Precios en test:', CFG.precios.map((p) => (p / 100).toFixed(2) + ' €').join(' / '));
   });
 }

@@ -30,7 +30,11 @@
     return fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
       .then(function (r) { return r.json().then(function (j) { if (!r.ok) throw j; return j; }); });
   }
-  function evento(tipo, paso) { post('/api/evento', { tipo: tipo, sid: sid, paso: paso, utm: utm }).catch(function () {}); }
+  function evento(tipo, paso) {
+    post('/api/evento', { tipo: tipo, sid: sid, paso: paso, utm: utm }).catch(function () {});
+    var m = PX[tipo];
+    if (m) pixel(m[0], { content_name: utm.a || paso || 'cachorro', content_category: 'cachorro' }, null, m[1]);
+  }
   function nombre() { return estado.r.nombre || 'tu cachorro'; }
   function razaId() { return estado.r.razaId || 'mestizo'; }
   function burbuja(icono, color, extra) { return '<span class="burbuja b-' + color + '"' + (extra || '') + '>' + I(icono) + '</span>'; }
@@ -61,10 +65,22 @@
     /* eslint-disable */
     !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');
     /* eslint-enable */
-    window.fbq('init', CONF.pixelId);
+    window.fbq('init', CONF.pixelId, (typeof estado !== 'undefined' && estado.email) ? { em: estado.email, external_id: sid } : { external_id: sid });
     window.fbq('track', 'PageView');
+    colaPx.splice(0).forEach(function (a) { window.fbq.apply(null, a); });
   }
-  function pixel(ev, datos) { if (pixelListo && window.fbq) window.fbq('track', ev, datos || {}); }
+  // Eventos del píxel. Antes de que la persona decida sobre las cookies se guardan en cola;
+  // si acepta se envían, si rechaza se descartan. eventID = el mismo que manda el servidor (API de Conversiones).
+  var colaPx = [];
+  function pixel(ev, d, id, propio) {
+    if (lsGet('pc_cookies') === 'no') return;
+    var a = [propio ? 'trackCustom' : 'track', ev, d || {}];
+    if (id) a.push({ eventID: id });
+    if (pixelListo && window.fbq) window.fbq.apply(null, a); else if (colaPx.length < 30) colaPx.push(a);
+  }
+  var PX = { visita: ['ViewContent'], inicio_form: ['TestIniciado', 1], resultado_visto: ['ResultadoVisto', 1], paywall_visto: ['PaywallVisto', 1],
+    checkout_cancelado: ['PagoCancelado', 1], upsell_visto: ['UpsellVisto', 1], upsell_rechazado: ['UpsellRechazado', 1], clic_seguros: ['InteresSeguros', 1], derivado: ['DerivadoEducador', 1] };
+  function cm() { return lsGet('pc_cookies') === 'si' ? 1 : 0; }
   function gestionarCookies() {
     var c = lsGet('pc_cookies');
     if (c === 'si') return cargarPixel();
@@ -72,7 +88,7 @@
     var caja = document.getElementById('cookies');
     caja.hidden = false;
     document.getElementById('cookies-si').onclick = function () { lsSet('pc_cookies', 'si'); caja.hidden = true; cargarPixel(); };
-    document.getElementById('cookies-no').onclick = function () { lsSet('pc_cookies', 'no'); caja.hidden = true; };
+    document.getElementById('cookies-no').onclick = function () { lsSet('pc_cookies', 'no'); caja.hidden = true; colaPx.length = 0; };
   }
 
   // ---------- Portada (adaptada al ángulo del anuncio) ----------
@@ -305,8 +321,8 @@
       sig.disabled = true;
       estado.email = email; estado.consent = consent;
       var r = estado.r;
-      post('/api/lead', { sid: sid, email: email, consentimientos: consent, utm: utm, respuestas: { nombre: r.nombre, raza: r.raza, razaId: r.razaId, tamano: r.tamano, edadSemanas: r.edadSemanas, vivienda: r.vivienda, horasSolo: r.horasSolo, problema: r.problema, convivientes: r.convivientes, primerPerro: r.primerPerro, comunidad: r.comunidad, tiene: r.tiene } })
-        .then(function () { pixel('Lead'); estado.paso = 'preparando'; guardarEstado(); render(); })
+      post('/api/lead', { sid: sid, email: email, consentimientos: consent, utm: utm, cm: cm(), respuestas: { nombre: r.nombre, raza: r.raza, razaId: r.razaId, tamano: r.tamano, edadSemanas: r.edadSemanas, vivienda: r.vivienda, horasSolo: r.horasSolo, problema: r.problema, convivientes: r.convivientes, primerPerro: r.primerPerro, comunidad: r.comunidad, tiene: r.tiene } })
+        .then(function () { pixel('Lead', { content_name: estado.r.problema || utm.a || 'cachorro', content_category: 'cachorro' }, 'lead_' + sid); estado.paso = 'preparando'; guardarEstado(); render(); })
         .catch(function () { sig.disabled = false; err.textContent = 'No hemos podido guardar tus respuestas. Inténtalo de nuevo.'; });
     };
   }
@@ -399,6 +415,7 @@
         '<li>' + burbuja('personas', 'mint') + 'Checklist de socialización semana a semana</li>' +
         '<li>' + burbuja('ley', 'lilac') + 'Salud y checklist legal de ' + esc(estado.r.comunidad || 'tu comunidad') + '</li>' +
         '<li>' + burbuja('correo', 'sky') + 'Un email cada día con la tarea del día</li>' +
+        '<li>' + burbuja('casa', 'mint') + 'Mi zona en tu móvil, como una app: diario de progresos y clicker incluidos</li>' +
       '</ul>' +
       '<div class="precio-fila"><span class="precio">' + euros(CONF.precio) + '</span><span class="suave">Pago único · menos de ' + dia + ' € al día</span></div>' +
       '<div class="garantia">' + I('escudo') + '<span>Garantía de 14 días: si no te sirve, te devolvemos el 100%, sin preguntas.</span></div>' +
@@ -414,8 +431,8 @@
     chk.onchange = function () { btn.disabled = !chk.checked; err.textContent = ''; };
     btn.onclick = function () {
       btn.disabled = true; btn.textContent = 'Abriendo el pago…';
-      pixel('InitiateCheckout', { value: CONF.precio / 100, currency: 'EUR' });
-      post('/api/checkout', { sid: sid, desistimiento: true })
+      pixel('InitiateCheckout', { value: CONF.precio / 100, currency: 'EUR', content_name: estado.r.problema, num_items: 1 }, 'ic_' + sid);
+      post('/api/checkout', { sid: sid, desistimiento: true, cm: cm() })
         .then(function (j) { location.href = j.url; })
         .catch(function (e) { err.textContent = (e && e.error) || 'No hemos podido abrir el pago. Inténtalo de nuevo.'; btn.disabled = false; btn.textContent = 'Quiero el plan de ' + nombre(); });
     };
@@ -427,7 +444,7 @@
     pintar('<div class="preparando"><div class="anillo">' + D.cara(razaId()) + '</div><h2>Confirmando tu pago…</h2></div>');
     fetch('/api/pedido?session_id=' + encodeURIComponent(sessionId)).then(function (r) { return r.json(); }).then(function (j) {
       if (!j.pagado) { pintar('<div class="pila"><h2>Todavía no vemos el pago</h2><p>Si te han cobrado, escríbenos a ' + esc(CONF.emailContacto) + ' y lo resolvemos hoy.</p></div>'); return; }
-      if (lsGet('pc_compra_px') !== sessionId) { pixel('Purchase', { value: j.importe / 100, currency: 'EUR' }); lsSet('pc_compra_px', sessionId); }
+      if (lsGet('pc_compra_px') !== sessionId) { pixel('Purchase', { value: j.importe / 100, currency: 'EUR', content_type: 'product', contents: [{ id: 'plan', quantity: 1 }] }, 'compra_' + sessionId); lsSet('pc_compra_px', sessionId); }
       if (j.upsell) upsell(sessionId); else gracias(false);
     }).catch(function () { pintar('<div class="pila"><h2>No hemos podido confirmar el pago</h2><p>Recarga la página en unos segundos.</p></div>'); });
   }
@@ -451,8 +468,8 @@
       b.onclick = function () {
         app.querySelectorAll('[data-pack]').forEach(function (x) { x.disabled = true; });
         b.textContent = 'Añadiendo…';
-        post('/api/upsell', { session_id: sessionId, pack: b.dataset.pack })
-          .then(function () { pixel('Purchase', { value: CONF.precioUpsell / 100, currency: 'EUR', content_name: 'upsell' }); gracias(true); })
+        post('/api/upsell', { session_id: sessionId, pack: b.dataset.pack, cm: cm() })
+          .then(function () { pixel('Purchase', { value: CONF.precioUpsell / 100, currency: 'EUR', content_name: 'upsell_' + b.dataset.pack, content_type: 'product', contents: [{ id: 'upsell', quantity: 1 }] }, 'upsell_' + sessionId); gracias(true); })
           .catch(function (e) { document.getElementById('err-up').textContent = (e && e.error) || 'No se ha podido añadir. Tu plan no se ve afectado.'; app.querySelectorAll('[data-pack]').forEach(function (x) { x.disabled = false; }); b.textContent = 'Reintentar'; });
       };
     });
