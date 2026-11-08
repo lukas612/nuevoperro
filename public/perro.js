@@ -315,15 +315,18 @@
         window.VENTA.aviso({ nombre: nombre(), semanas: 6 }, { I: I, esc: esc }) + '</section>' +
       '<section class="tarjeta pila"><h3>' + I(pg.icono) + ' Por qué lo hace</h3><p>' + esc(sus(pg.porQue)) + '</p>' +
         notas.map(function (x) { return '<p class="nota raza-nota">' + I('huella') + '<span>' + esc(x) + '</span></p>'; }).join('') + '</section>' +
-      '<section class="tarjeta pila"><ul class="linea-tiempo">' + pg.primerosDias.map(function (d, k) {
-        return '<li>' + burbuja(['estrella', 'chispa', 'check'][k], ['butter', 'peach', 'mint'][k]) + '<div><div class="hora">Día ' + (k + 1) + ' · ' + esc(d[0]) + '</div><div class="txt">' + esc(sus(d[1])) + '</div></div></li>';
-      }).join('') + '</ul></section>' +
-      window.VENTA.panel({ semanas: 6, abiertos: 3, adulto: true }, { I: I, burbuja: burbuja, esc: esc }) +
+      window.VENTA.miniPlan({ nombre: nombre(), cara: D.cara(razaId(), { lengua: true }), titulo: pg.titulo + ' · 6 semanas', total: 42, abiertos: 3, guardado: estado.previo || [],
+        tabs: pg.semanas.map(function (x, k) { return ['S' + (k + 1), x.foco.split(' ')[0]]; }),
+        foco: 'Semana 1 · ' + pg.semanas[0].foco, dias: pg.semanas[0].tareas.map(function (t) { return [t[0], sus(t[1])]; }) }, { I: I, burbuja: burbuja, esc: esc }) +
+      window.VENTA.panel({ adulto: true }, { I: I, burbuja: burbuja, esc: esc }) +
       window.VENTA.consejos({ nombre: nombre(), problema: r.problema }, { I: I, burbuja: burbuja, esc: esc }) +
       paywallHtml() + window.VENTA.preguntas({ precio: CONF.precio }, { esc: esc, euros: euros }) + '</div>';
     pintar(html);
     evento('paywall_visto');
     window.VENTA.activarBloqueos(function (k) { evento('clic_bloqueado', k); });
+    window.VENTA.activarMiniPlan({ total: 42, abiertos: 3, nombre: nombre(),
+      alGuardar: function (keys) { estado.previo = keys; guardarEstado(); },
+      alMarcar: function (k) { evento('tarea_previa', k); pixel('TareaPrevia', { content_name: k }, null, 1); } });
     activarPaywall();
   }
 
@@ -361,7 +364,7 @@
       btn.disabled = true; btn.textContent = 'Abriendo el pago…';
       pixel('InitiateCheckout', { value: CONF.precio / 100, currency: 'EUR', content_name: estado.r.problema, num_items: 1 }, 'ic_' + sid);
       var redirigir = function () {
-        post('/api/checkout', { sid: sid, desistimiento: true, cm: cm() })
+        post('/api/checkout', { sid: sid, desistimiento: true, previo: estado.previo || [], cm: cm() })
           .then(function (j) { location.href = j.url; })
           .catch(function (e) { err.textContent = (e && e.error) || 'No hemos podido abrir el pago. Inténtalo de nuevo.'; btn.disabled = false; btn.textContent = 'Quiero el plan de ' + nombre(); });
       };
@@ -370,7 +373,7 @@
       window.VENTA.pagoIntegrado({
         pk: CONF.stripePk, titulo: 'Todo lo de ' + nombre() + ' · ' + euros(CONF.precio),
         pedir: function () {
-          return post('/api/checkout', { sid: sid, desistimiento: true, cm: cm(), integrado: true }).then(function (j) {
+          return post('/api/checkout', { sid: sid, desistimiento: true, previo: estado.previo || [], cm: cm(), integrado: true }).then(function (j) {
             if (j.clientSecret) return j.clientSecret;
             if (j.url) location.href = j.url;
             throw new Error('sin clientSecret');

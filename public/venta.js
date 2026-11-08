@@ -130,12 +130,10 @@
     var img = function (f) { return '<img src="/email/' + f + '" alt="" loading="lazy">'; };
     var ico = function (ic, color) { return '<span class="tile-ico">' + u.burbuja(ic, color) + '</span>'; };
     var tiles = [
-      [ico('calendario', 'butter'), 'Semanas 2 a ' + o.semanas, (o.semanas * 7 - o.abiertos) + ' tareas más, una al día', 'semanas'],
       [img(o.adulto ? 'plan-perro.jpg' : 'diario.jpg'), o.adulto ? 'Tu progreso' : 'Diario de pis y caca', o.adulto ? 'Lo que lleváis hecho, semana a semana' : 'Un toque y ves cómo mejora', 'diario'],
       [img('clicker.jpg'), 'Clicker en tu móvil', 'Marca justo lo que hace bien', 'clicker'],
       [ico(o.adulto ? 'escudo' : 'reloj', 'sky'), o.adulto ? 'Si hay una recaída' : 'Su rutina, hora a hora', o.adulto ? 'Qué hacer y cuándo pedir ayuda' : 'Ajustada cada semana a su edad', 'extra'],
-      [ico('personas', 'lilac'), 'Hacedlo juntos', 'Comparte el plan con tu pareja', 'juntos'],
-      [img('mi-zona.jpg'), 'Mi zona, como una app', 'En tu móvil, sin caducidad', 'app']
+      [ico('personas', 'lilac'), 'Hacedlo juntos', 'Comparte el plan con tu pareja', 'juntos']
     ];
     return '<section class="pila"><span class="etiqueta">Tu panel</span><div class="tiles-bloq">' + tiles.map(function (t) {
       return '<button type="button" class="tile-bloq" data-bloq="' + t[3] + '"><span class="tile-vis" aria-hidden="true">' + t[0] + '</span>' +
@@ -168,5 +166,52 @@
     });
   }
 
-  root.VENTA = { panel: panel, consejos: consejos, activarBloqueos: activarBloqueos, pagoIntegrado: pagoIntegrado, aviso: aviso, incluye: incluye, comparativa: comparativa, preguntas: preguntas, barra: barra, quitarBarra: quitarBarra, activarPago: activarPago };
+  // ---------- Mini plan interactivo: los 3 primeros días se pueden marcar, el resto con candado ----------
+  function miniPlan(o, u) {
+    var hechas = (o.guardado || []).length;
+    var dias = o.dias.slice(0, 7).map(function (d, k) {
+      var key = 'd' + (k + 1);
+      if (k < o.abiertos) {
+        return '<li><label class="mp-dia"><input type="checkbox" data-d="' + key + '"' + ((o.guardado || []).indexOf(key) >= 0 ? ' checked' : '') + '>' +
+          '<span class="mp-caja">' + u.I('check') + '</span><span><b>Día ' + (k + 1) + ' · ' + u.esc(d[0]) + '</b>' + u.esc(d[1]) + '</span></label></li>';
+      }
+      return '<li class="mp-bloq" data-bloq="dia"><span class="mp-caja"></span><span><b>Día ' + (k + 1) + ' · ' + u.esc(d[0]) + '</b>' + u.esc(d[1]) + '</span></li>';
+    }).join('');
+    return '<section class="mini-plan" id="mini-plan">' +
+      '<div class="peek-hero"><span class="avatar">' + o.cara + '</span><div><small>' + u.esc(o.titulo) + '</small><b>' + u.esc(o.nombre) + '</b>' +
+        '<div class="peek-bar"><i id="mp-barra" style="width:' + Math.max(3, hechas / o.total * 100) + '%"></i></div><span class="mp-cont" id="mp-cont">' + hechas + ' de ' + o.total + ' tareas hechas</span></div></div>' +
+      '<div class="peek-tabs" style="grid-template-columns:repeat(' + o.tabs.length + ',1fr)">' + o.tabs.map(function (t, k) {
+        return k === 0 ? '<span class="on">' + t[0] + '<small>' + u.esc(t[1]) + '</small></span>' : '<button type="button" class="mp-tab" data-bloq="semana">' + u.I('candado') + '<small>' + t[0] + '</small></button>';
+      }).join('') + '</div>' +
+      '<div class="peek-body"><p class="eti-peq">' + u.esc(o.foco) + '</p>' +
+        '<p class="mp-ayuda" id="mp-msg">Prueba: marca el día 1 cuando lo hagas con ' + u.esc(o.nombre) + '.</p>' +
+        '<ul class="mp-lista">' + dias + '</ul>' +
+        '<a class="bloq-cta mp-cta" href="#paywall" data-bloq="dias">' + u.I('candado') + '<span>Desbloquea los ' + (o.total - o.abiertos) + ' días restantes</span></a>' +
+      '</div></section>';
+  }
+  function activarMiniPlan(o) {
+    var caja = document.getElementById('mini-plan'); if (!caja) return;
+    var msg = document.getElementById('mp-msg');
+    var pintar = function (nuevo) {
+      var keys = [].slice.call(caja.querySelectorAll('input[data-d]:checked')).map(function (c) { return c.dataset.d; });
+      document.getElementById('mp-barra').style.width = Math.max(3, keys.length / o.total * 100) + '%';
+      document.getElementById('mp-cont').textContent = keys.length + ' de ' + o.total + ' tareas hechas';
+      if (nuevo) {
+        msg.className = 'mp-ayuda ok';
+        msg.innerHTML = keys.length >= o.abiertos
+          ? '<b>¡Los ' + o.abiertos + ' días de prueba, hechos!</b> ' + o.nombre + ' va lanzado. Desbloquea el plan y seguís mañana con el día ' + (o.abiertos + 1) + '. Tu progreso se guarda.'
+          : '<b>¡Bien hecho!</b> Día ' + nuevo.slice(1) + ' completado. Si desbloqueas el plan, lo que marques aquí se guarda en tu plan.';
+      }
+      if (o.alGuardar) o.alGuardar(keys);
+      return keys;
+    };
+    caja.querySelectorAll('input[data-d]').forEach(function (c) {
+      c.addEventListener('change', function () {
+        pintar(c.checked ? c.dataset.d : null);
+        if (c.checked) { if (navigator.vibrate) navigator.vibrate(25); if (o.alMarcar) o.alMarcar(c.dataset.d); }
+      });
+    });
+  }
+
+  root.VENTA = { miniPlan: miniPlan, activarMiniPlan: activarMiniPlan, panel: panel, consejos: consejos, activarBloqueos: activarBloqueos, pagoIntegrado: pagoIntegrado, aviso: aviso, incluye: incluye, comparativa: comparativa, preguntas: preguntas, barra: barra, quitarBarra: quitarBarra, activarPago: activarPago };
 })(typeof window !== 'undefined' ? window : this);

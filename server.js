@@ -108,7 +108,7 @@ const rutas = {
 
   'POST /api/evento': async (req, res) => {
     const b = await json(req);
-    const permitidos = ['visita', 'inicio_form', 'paso', 'form_completo', 'resultado_visto', 'paywall_visto', 'checkout_inicio', 'checkout_cancelado', 'upsell_visto', 'upsell_rechazado', 'clic_seguros', 'derivado', 'clic_afiliado', 'visita_web', 'clic_bloqueado'];
+    const permitidos = ['visita', 'inicio_form', 'paso', 'form_completo', 'resultado_visto', 'paywall_visto', 'checkout_inicio', 'checkout_cancelado', 'upsell_visto', 'upsell_rechazado', 'clic_seguros', 'derivado', 'clic_afiliado', 'visita_web', 'clic_bloqueado', 'tarea_previa'];
     if (!permitidos.includes(b.tipo)) return enviar(res, 400, { error: 'tipo' });
     await datos.insertar('eventos', { tipo: b.tipo, sid: limpio(b.sid, 64), paso: limpio(b.paso, 40), utm: objeto(b.utm) });
     enviar(res, 200, { ok: true });
@@ -209,7 +209,8 @@ const rutas = {
     const precio = precioPara(sid);
     await datos.insertar('eventos', { tipo: 'checkout_inicio', sid, utm: lead.utm });
     lead.meta = meta.unir(lead.meta, meta.datosNavegador(req, b));
-    datos.actualizar('leads', { sid }, { meta: lead.meta }).catch((e) => console.error('lead meta', e.message));
+    const previo = Array.isArray(b.previo) ? b.previo.filter((k) => /^d[1-7]$/.test(k)).slice(0, 7) : [];
+    datos.actualizar('leads', { sid }, { meta: lead.meta, ...(previo.length ? { previo } : {}) }).catch((e) => console.error('lead meta', e.message));
     meta.evento('InitiateCheckout', { id: 'ic_' + sid, email: lead.email, sid, nav: lead.meta, valor: precio / 100, extra: { content_name: lead.respuestas.problema, num_items: 1 } });
     const pagina = esAdulto(lead.respuestas) ? '/perro' : '/cachorro';
     if (MODO_DEMO) return enviar(res, 200, { url: `${CFG.baseUrl}${pagina}?pago=ok&session_id=demo_${sid}` });

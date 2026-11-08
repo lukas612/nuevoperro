@@ -383,8 +383,10 @@
         '<div class="ajustes"><span class="suave peq">Hecho para:</span>' + ajustes.map(function (a) { return '<span class="chip">' + I(a[0]) + esc(a[1]) + '</span>'; }).join('') + '</div>' +
         window.VENTA.aviso({ nombre: n, semanas: 8 }, { I: I, esc: esc }) + '</section>' +
 
-      // Lo que puede hacer hoy mismo (abierto)
-      '<section class="tarjeta pila hoy-gratis"><span class="eti-peq">Día 1 · empieza hoy</span><h2 style="font-size:1.35rem">' + esc(dia1.titulo) + '</h2><p>' + esc(sus(dia1.tarea)) + '</p></section>' +
+      // Su plan, interactivo: los 3 primeros días se pueden marcar; el resto, con candado
+      window.VENTA.miniPlan({ nombre: n, cara: D.cara(razaId(), { lengua: true }), titulo: 'Plan de 8 semanas', total: 56, abiertos: 3, guardado: estado.previo || [],
+        tabs: [1, 2, 3, 4, 5, 6, 7, 8].map(function (k) { return ['S' + k, (Number(r.edadSemanas) || 8) + k - 1 + ' sem.']; }),
+        foco: 'Semana 1 · ' + P.SOCIALIZACION[0].foco, dias: T.slice(0, 7).map(function (t) { return [t.titulo, sus(t.tarea)]; }) }, { I: I, burbuja: burbuja, esc: esc }) +
 
       // Su problema: primeros pasos abiertos, el resto bloqueado
       '<section class="tarjeta pila"><div class="cab-consejo">' + burbuja(icProb, 'peach') + '<div><span class="eti-peq">Tu prioridad</span><h2 style="font-size:1.3rem">' + esc(prot.titulo) + '</h2></div></div>' +
@@ -394,7 +396,7 @@
           'Ver los ' + (Math.max(0, pasos.length - 2) + (prot.no || []).length) + ' pasos y consejos restantes') : '') +
         rut.avisosRaza.slice(0, 1).map(function (a) { return '<p class="nota raza-nota">' + I('huella') + '<span><b>Por ser ' + esc(nombreRaza) + ':</b> ' + esc(a.charAt(0).toLowerCase() + a.slice(1)) + '</span></p>'; }).join('') + '</section>' +
 
-      window.VENTA.panel({ semanas: 8, abiertos: 1 }, { I: I, burbuja: burbuja, esc: esc }) +
+      window.VENTA.panel({}, { I: I, burbuja: burbuja, esc: esc }) +
       window.VENTA.consejos({ nombre: n, problema: r.problema }, { I: I, burbuja: burbuja, esc: esc }) +
       paywallHtml() +
       '<section class="pila"><h2>¿' + esc(nombre()) + ' está en regla?</h2>' +
@@ -409,6 +411,9 @@
     pintar(html);
     evento('paywall_visto');
     window.VENTA.activarBloqueos(function (k) { evento('clic_bloqueado', k); });
+    window.VENTA.activarMiniPlan({ total: 56, abiertos: 3, nombre: n,
+      alGuardar: function (keys) { estado.previo = keys; guardarEstado(); },
+      alMarcar: function (k) { evento('tarea_previa', k); pixel('TareaPrevia', { content_name: k }, null, 1); } });
 
     var bs = document.getElementById('seguros');
     if (bs) bs.onclick = function () { evento('clic_seguros'); bs.outerHTML = '<p class="chip ok">' + I('check') + 'Apuntado: te avisaremos con la comparativa</p>'; };
@@ -458,7 +463,7 @@
       btn.disabled = true; btn.textContent = 'Abriendo el pago…';
       pixel('InitiateCheckout', { value: CONF.precio / 100, currency: 'EUR', content_name: estado.r.problema, num_items: 1 }, 'ic_' + sid);
       var redirigir = function () {
-        post('/api/checkout', { sid: sid, desistimiento: true, cm: cm() })
+        post('/api/checkout', { sid: sid, desistimiento: true, previo: estado.previo || [], cm: cm() })
           .then(function (j) { location.href = j.url; })
           .catch(function (e) { err.textContent = (e && e.error) || 'No hemos podido abrir el pago. Inténtalo de nuevo.'; btn.disabled = false; btn.textContent = 'Quiero el plan de ' + nombre(); });
       };
@@ -467,7 +472,7 @@
       window.VENTA.pagoIntegrado({
         pk: CONF.stripePk, titulo: 'Todo lo de ' + nombre() + ' · ' + euros(CONF.precio),
         pedir: function () {
-          return post('/api/checkout', { sid: sid, desistimiento: true, cm: cm(), integrado: true }).then(function (j) {
+          return post('/api/checkout', { sid: sid, desistimiento: true, previo: estado.previo || [], cm: cm(), integrado: true }).then(function (j) {
             if (j.clientSecret) return j.clientSecret;
             if (j.url) location.href = j.url;
             throw new Error('sin clientSecret');
