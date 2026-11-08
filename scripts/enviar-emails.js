@@ -33,8 +33,11 @@ async function enviarEmails({ prueba: PRUEBA = false } = {}) {
   for (const l of leads) porEmail.set(l.email, l);
 
   for (const lead of porEmail.values()) {
-    if (bajas.has(lead.email) || compradores.has(lead.sid) || emailsCompradores.has(lead.email) || !lead.consentimientos?.comerciales) continue;
+    if (bajas.has(lead.email) || compradores.has(lead.sid) || emailsCompradores.has(lead.email)) continue;
     const d = diasDesde(lead.ts);
+    // Su resultado (día 0) a quien no lo recibió al hacer el test (fallo de envío o leads anteriores). Va a todos: lo han pedido.
+    if (d <= 2 && !hecho.has(lead.email + '|nurture_0')) { const m0 = emails.nurture(0, lead); m0.para = lead.email; cola.push(m0); }
+    if (!lead.consentimientos?.comerciales) continue;
     // Secuencia de 7 días, en orden y como mucho un email al día. Si se salta algún día, sigue donde lo dejó.
     // No se empieza con leads de hace más de 10 días.
     if (d < 1 || d > 10) continue;
