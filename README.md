@@ -27,8 +27,19 @@ Todo lo necesario para validar las puertas 1, 2 y 3 del [documento del MVP](docs
 | `/perro` | Test, resultado y plan de 6 semanas para perros adultos y adoptados (`public/perro.js`, contenido en `content/programas-adulto.js`). Si el perro muerde a personas, no se vende y se deriva a un profesional |
 | `/plan/<token>` | Página privada de cada plan |
 | `/mi-zona` | Zona del cliente: sus planes con progreso, consejo del día, seguro de RC y productos recomendados (afiliación en `content/zona.js`). Se entra con enlace mágico por email o desde el enlace del plan |
-| `/blog` | 12 guías para SEO (`content/blog.js`), con sitemap, datos estructurados y llamada al test en cada artículo |
+| `/guias` | Centro de guías para SEO: 5 categorías, 12 artículos (`content/guias.js`) y 6 rutinas de cachorro por edad calculadas con el motor del plan |
+| `/razas` | 20 páginas "Cómo educar a un/una …" con datos de cada raza (`content/seo.js` + rasgos de `plantillas.js`) |
 | `/admin.html` | Panel de métricas |
+
+## SEO
+
+Todas las páginas indexables se generan en el servidor (`lib/guias.js`, `lib/seo.js`): título y descripción propios, canonical, Open Graph con imagen (`public/og.png`), datos estructurados (Organization, WebSite, Article, FAQPage, BreadcrumbList, Product), sitemap con todas las URL, robots.txt que excluye las zonas privadas, gzip y 301 desde las URL antiguas. Para comprobarlo todo:
+
+```bash
+node scripts/auditoria-seo.js https://TU-DOMINIO
+```
+
+Para Google Search Console, añade la variable `GOOGLE_SITE_VERIFICATION` con el código de verificación.
 
 ## Arquitectura
 

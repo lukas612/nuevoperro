@@ -323,7 +323,7 @@
     REVISADO: REVISADO, TAMANOS: TAMANOS, TRAMOS: TRAMOS, PARAMS: PARAMS,
     PROTOCOLOS: PROTOCOLOS, SOCIALIZACION: SOCIALIZACION, SALUD: SALUD, LEGAL: LEGAL,
     COMUNIDADES: COMUNIDADES, PROBLEMAS: PROBLEMAS,
-    tramoPorEdad: tramoPorEdad, rutinaDiaria: rutinaDiaria, RASGOS: RASGOS
+    tramoPorEdad: tramoPorEdad, rutinaDiaria: rutinaDiaria, RASGOS: RASGOS, ACTIVIDADES: ACTIVIDADES
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.PLANTILLAS = api;

@@ -1,5 +1,5 @@
 /*
- * Blog para SEO: 12 artículos de educación canina en positivo.
+ * Guías para SEO (/guias): artículos de educación canina en positivo, agrupados por categoría.
  * BORRADOR PENDIENTE DE REVISIÓN por el educador (y el artículo legal, por los abogados).
  *
  * Formato del cuerpo (markdown sencillo): "## " subtítulo, "- " lista, "1. " lista numerada,
@@ -14,6 +14,8 @@ const PERRO = (a, texto) => ({ href: `/perro?a=${a}&utm_source=blog&utm_medium=s
 module.exports = [
   {
     slug: 'ensenar-cachorro-hacer-pis-en-la-calle',
+    tituloSeo: 'Cómo enseñar a un cachorro a hacer pis en la calle',
+    categoria: 'cachorros',
     titulo: 'Cómo enseñar a un cachorro a hacer pis en la calle (sin regañar)',
     descripcion: 'Guía paso a paso para que tu cachorro haga pis fuera: los 5 momentos clave, cuánto aguanta según su edad y los errores que lo retrasan.',
     tema: 'pis', fecha: '2026-11-08', lectura: 6,
@@ -61,6 +63,7 @@ Si quieres los horarios exactos para tu cachorro según su edad, su tamaño y tu
   },
   {
     slug: 'perro-tira-de-la-correa',
+    categoria: 'perro-adulto',
     titulo: 'Mi perro tira de la correa: por qué lo hace y cómo evitarlo',
     descripcion: 'Por qué tu perro tira de la correa y cómo enseñarle a caminar con la correa floja con la regla del árbol, sin tirones ni collares de castigo.',
     tema: 'correa', fecha: '2026-11-08', lectura: 6,
@@ -108,6 +111,7 @@ El test gratis te da los 3 primeros días de un plan de 6 semanas adaptado a cu�
   },
   {
     slug: 'cachorro-muerde-que-hacer',
+    categoria: 'cachorros',
     titulo: 'Mi cachorro muerde: qué hacer (y qué no) con los mordiscos',
     descripcion: 'Los mordiscos del cachorro son normales: cómo redirigirlos a un mordedor, por qué muerde más cuando tiene sueño y los errores que lo empeoran.',
     tema: 'mordiscos', fecha: '2026-11-08', lectura: 5,
@@ -148,6 +152,8 @@ Si quieres un plan con la rutina de tu cachorro y un protocolo de mordiscos día
   },
   {
     slug: 'cachorro-llora-por-la-noche',
+    tituloSeo: 'Cachorro llora por la noche: guía para las primeras noches',
+    categoria: 'cachorros',
     titulo: 'Mi cachorro llora por la noche: guía para las primeras noches',
     descripcion: 'Por qué llora tu cachorro por la noche y cómo conseguir que dormáis los dos: dónde poner su cama, la salida nocturna y qué hacer si llora.',
     tema: 'noches', fecha: '2026-11-08', lectura: 5,
@@ -189,6 +195,7 @@ El test gratis te da la rutina de mañana de tu cachorro, con la hora de la últ
   },
   {
     slug: 'ansiedad-por-separacion-perros',
+    categoria: 'perro-adulto',
     titulo: 'Ansiedad por separación en perros: señales y qué hacer',
     descripcion: 'Cómo saber si tu perro lo pasa mal cuando se queda solo y cómo enseñarle poco a poco a quedarse en casa con calma, con ausencias graduales.',
     tema: 'solo', fecha: '2026-11-08', lectura: 7,
@@ -242,6 +249,8 @@ El test gratis te da los 3 primeros días de un plan de 6 semanas adaptado a lo 
   },
   {
     slug: 'por-que-mi-perro-ladra-tanto',
+    tituloSeo: 'Por qué mi perro ladra tanto y cómo hacer que ladre menos',
+    categoria: 'perro-adulto',
     titulo: 'Por qué mi perro ladra tanto y cómo conseguir que ladre menos',
     descripcion: 'Los motivos más comunes de los ladridos (timbre, ventana, pedir atención) y qué enseñarle a tu perro en su lugar, sin gritos ni collares antiladridos.',
     tema: 'ladridos', fecha: '2026-11-08', lectura: 6,
@@ -287,6 +296,7 @@ El test gratis te da los primeros 3 días de un plan de 6 semanas según cuándo
   },
   {
     slug: 'cuantas-horas-duerme-un-cachorro',
+    categoria: 'cachorros',
     titulo: '¿Cuántas horas duerme un cachorro? Tabla por edades',
     descripcion: 'Cuánto duerme un cachorro según su edad, por qué el sueño es clave para su educación y cómo organizar sus siestas en el día a día.',
     tema: 'rutina', fecha: '2026-11-08', lectura: 4,
@@ -329,6 +339,7 @@ El test gratis calcula el horario de siestas, comidas y salidas de tu cachorro s
   },
   {
     slug: 'socializacion-cachorro-checklist',
+    categoria: 'cachorros',
     titulo: 'Socialización del cachorro: checklist semana a semana',
     descripcion: 'Qué experiencias necesita tu cachorro en sus primeras semanas en casa: ruidos, personas, lugares y otros perros, con una checklist por semanas.',
     tema: 'rutina', fecha: '2026-11-08', lectura: 6,
@@ -380,6 +391,7 @@ El plan de 8 semanas incluye esta checklist adaptada a la edad de tu cachorro, c
   },
   {
     slug: 'perro-adoptado-regla-3-3-3',
+    categoria: 'perro-adoptado',
     titulo: 'Perro adoptado: la regla 3-3-3 para sus primeras semanas',
     descripcion: 'Qué esperar los primeros 3 días, 3 semanas y 3 meses con un perro adoptado, y cómo ayudarle a adaptarse a su nueva casa sin agobiarle.',
     tema: 'adaptacion', fecha: '2026-11-08', lectura: 6,
@@ -427,6 +439,8 @@ El test gratis te da los 3 primeros días de un plan de adaptación de 6 semanas
   },
   {
     slug: 'ley-bienestar-animal-perros-obligaciones',
+    tituloSeo: 'Ley de bienestar animal: obligaciones del dueño de un perro',
+    categoria: 'ley-y-papeleo',
     titulo: 'Ley de bienestar animal: qué tiene que hacer el dueño de un perro',
     descripcion: 'Resumen prudente de las obligaciones principales para dueños de perros en España: microchip, registro, seguro y curso, y qué sigue pendiente.',
     tema: 'legal', fecha: '2026-11-08', lectura: 5,
@@ -464,6 +478,7 @@ El test gratis incluye un checklist legal con lo que ya tienes hecho y lo que te
   },
   {
     slug: 'cuanto-tiempo-puede-estar-un-perro-solo',
+    categoria: 'perro-adulto',
     titulo: '¿Cuánto tiempo puede estar un perro solo en casa?',
     descripcion: 'Cuántas horas puede quedarse solo un perro según su edad, qué necesita cuando te vas y cómo organizarte si trabajas fuera de casa.',
     tema: 'solo', fecha: '2026-11-08', lectura: 5,
@@ -497,10 +512,11 @@ El test gratis incluye un checklist legal con lo que ya tienes hecho y lo que te
 
 Llantos o ladridos al poco de irte, destrozos en puertas o pis aunque sepa hacerlo fuera. En ese caso no basta con organizar horarios: hay que enseñarle a quedarse solo poco a poco.
 
-Lee también nuestra guía sobre [ansiedad por separación](/blog/ansiedad-por-separacion-perros) o haz el test gratis para recibir un plan adaptado a tu perro.`
+Lee también nuestra guía sobre [ansiedad por separación](/guias/ansiedad-por-separacion-perros) o haz el test gratis para recibir un plan adaptado a tu perro.`
   },
   {
     slug: 'educacion-canina-en-positivo',
+    categoria: 'educacion',
     titulo: 'Educación canina en positivo: qué es y por qué funciona',
     descripcion: 'Qué es la educación en positivo, por qué funciona mejor que los castigos y cómo aplicarla en casa con premios, momento justo y constancia.',
     tema: 'rutina', fecha: '2026-11-08', lectura: 5,

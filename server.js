@@ -17,7 +17,9 @@ const datos = require('./lib/datos');
 const correo = require('./lib/email');
 const plantillasEmail = require('./lib/emails');
 const sesion = require('./lib/sesion');
-const blog = require('./lib/blog');
+const guias = require('./lib/guias');
+const SEO = require('./lib/seo');
+const zlib = require('zlib');
 const ZONA = require('./content/zona.js');
 const PROGRAMAS_ADULTO = require('./content/programas-adulto.js').PROGRAMAS;
 
@@ -57,9 +59,19 @@ function verificarFirmaStripe(raw, cabecera) {
 
 // ---------- Utilidades HTTP ----------
 const TIPOS = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.svg': 'image/svg+xml', '.png': 'image/png', '.jpg': 'image/jpeg', '.ico': 'image/x-icon', '.json': 'application/json', '.txt': 'text/plain; charset=utf-8' };
+const COMPRIMIBLE = /^(text\/|application\/(json|xml|javascript)|image\/svg)/;
 function enviar(res, codigo, cuerpo, tipo = 'application/json', extra = {}) {
-  res.writeHead(codigo, { 'Content-Type': tipo, 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff', ...extra });
-  res.end(typeof cuerpo === 'string' || Buffer.isBuffer(cuerpo) ? cuerpo : JSON.stringify(cuerpo));
+  let datosSalida = typeof cuerpo === 'string' || Buffer.isBuffer(cuerpo) ? cuerpo : JSON.stringify(cuerpo);
+  const cab = { 'Content-Type': tipo, 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff', 'Referrer-Policy': 'strict-origin-when-cross-origin', ...extra };
+  // gzip para texto: mejora la velocidad de carga (Core Web Vitals)
+  const acepta = (res.req && res.req.headers['accept-encoding']) || '';
+  if (COMPRIMIBLE.test(tipo) && /\bgzip\b/.test(acepta) && Buffer.byteLength(datosSalida) > 1024) {
+    datosSalida = zlib.gzipSync(datosSalida);
+    cab['Content-Encoding'] = 'gzip';
+    cab.Vary = 'Accept-Encoding';
+  }
+  res.writeHead(codigo, cab);
+  res.end(res.req && res.req.method === 'HEAD' ? undefined : datosSalida);
 }
 const html = (res, codigo, cuerpo) => enviar(res, codigo, cuerpo, TIPOS['.html']);
 function leerCuerpo(req, limite = 100_000) {
@@ -74,7 +86,10 @@ async function json(req) { try { return JSON.parse((await leerCuerpo(req)) || '{
 function servirArchivo(res, archivo) {
   fs.readFile(archivo, (err, buf) => {
     if (err) return enviar(res, 404, 'No encontrado', 'text/plain; charset=utf-8');
-    enviar(res, 200, buf, TIPOS[path.extname(archivo)] || 'application/octet-stream', { 'Cache-Control': 'public, max-age=300' });
+    const ext = path.extname(archivo);
+    // Imágenes y fuentes cambian poco: 1 día. CSS y JS: 5 minutos para que los despliegues lleguen rápido.
+    const cache = ['.png', '.jpg', '.svg', '.ico'].includes(ext) ? 'public, max-age=86400' : 'public, max-age=300';
+    enviar(res, 200, buf, TIPOS[ext] || 'application/octet-stream', { 'Cache-Control': cache });
   });
 }
 const limpio = (s, n = 200) => String(s ?? '').slice(0, n);
@@ -293,6 +308,42 @@ async function registrarPedido(s) {
   }, { ignorarDuplicado: true });
 }
 
+// ---------- SEO de las páginas del funnel y utilidades ----------
+const FUNNEL_SEO = {
+  '/cachorro': {
+    titulo: SEO.conMarca('Plan para tu cachorro: pis, mordiscos y noches'),
+    descripcion: 'Plan de 8 semanas para tu cachorro según su raza, edad y casa: pis en casa, mordiscos, noches y quedarse solo. Haz el test gratis en 2 minutos.',
+    h1: 'Plan de 8 semanas para educar a tu cachorro',
+    texto: 'Responde 12 preguntas sobre tu cachorro y recibe gratis su rutina de mañana: horarios de comidas, siestas y salidas a hacer pis según su edad y su tamaño.',
+    producto: 'Plan de 8 semanas para tu cachorro'
+  },
+  '/perro': {
+    titulo: SEO.conMarca('Plan para educar a tu perro adulto o adoptado'),
+    descripcion: 'Plan de 6 semanas para tu perro: tirar de la correa, ladridos, quedarse solo o adaptarse tras la adopción. Educación en positivo. Test gratis.',
+    h1: 'Plan de 6 semanas para el problema de tu perro',
+    texto: 'Tirar de la correa, ladrar, quedarse solo o adaptarse a casa tras la adopción: responde unas preguntas y recibe gratis sus 3 primeros días de plan.',
+    producto: 'Plan de 6 semanas para tu perro'
+  }
+};
+const cacheFunnel = {};
+function paginaFunnel(ruta) {
+  if (cacheFunnel[ruta]) return cacheFunnel[ruta];
+  const f = FUNNEL_SEO[ruta];
+  const base = fs.readFileSync(path.join(PUBLIC, PAGINAS[ruta]), 'utf8');
+  const producto = { '@context': 'https://schema.org', '@type': 'Product', name: f.producto, description: f.descripcion, brand: { '@type': 'Brand', name: CFG.marca }, image: SEO.url('/og.png'),
+    offers: { '@type': 'Offer', price: (CFG.precios[0] / 100).toFixed(2), priceCurrency: 'EUR', availability: 'https://schema.org/InStock', url: SEO.url(ruta) } };
+  const cabeza = SEO.cabeza({ titulo: f.titulo, descripcion: f.descripcion, ruta, jsonld: [producto, SEO.migas([['Inicio', '/'], [f.h1, ruta]])] });
+  // Contenido inicial visible sin JavaScript (el funnel lo sustituye al cargar)
+  const inicial = `<div class="pila"><h1>${SEO.esc(f.h1)}</h1><p class="suave">${SEO.esc(f.texto)}</p><noscript><p>Para hacer el test necesitas activar JavaScript. Mientras tanto, puedes leer nuestras <a href="/guias">guías</a>.</p></noscript></div>`;
+  cacheFunnel[ruta] = base.replace(/<head>[\s\S]*<\/head>/, `<head>\n${cabeza}\n</head>`).replace('<main id="app" aria-live="polite"></main>', `<main id="app" aria-live="polite">${inicial}</main>`);
+  return cacheFunnel[ruta];
+}
+function redirigir(res, destino, codigo) { res.writeHead(codigo, { Location: destino, 'Cache-Control': codigo === 301 ? 'public, max-age=86400' : 'no-store' }); res.end(); }
+function noEncontrado(res) {
+  enviar(res, 404, SEO.pagina({ titulo: SEO.conMarca('Página no encontrada'), descripcion: 'Esta página no existe.', ruta: '/404', noindex: true,
+    cuerpo: '<div class="pila"><h1>No encontramos esta página</h1><p class="suave">Puede que el enlace esté mal o que la hayamos movido.</p><p><a href="/">Ir al inicio</a> · <a href="/guias">Ver las guías</a> · <a href="/razas">Ver las razas</a></p></div>' }), TIPOS['.html']);
+}
+
 // ---------- Servidor ----------
 const ESTATICOS_CONTENT = ['/plantillas.js', '/tareas-diarias.js', '/plan-html.js', '/programas-adulto.js', '/plan-adulto-html.js', '/zona.js'];
 const pedidosAcceso = new Map();
@@ -313,13 +364,29 @@ const servidor = http.createServer(async (req, res) => {
       if (!plan) return html(res, 404, pagina('Plan no encontrado', '<h1>No encontramos este plan</h1><p>Revisa el enlace del email o escríbenos.</p>'));
       return enviar(res, 200, plan.html, TIPOS['.html'], { 'X-Robots-Tag': 'noindex' });
     }
-    // Blog y SEO
-    if (url.pathname === '/blog' || url.pathname === '/blog/') return enviar(res, 200, blog.indice(), TIPOS['.html'], { 'Cache-Control': 'public, max-age=600' });
-    if (url.pathname === '/blog/indice.json') return enviar(res, 200, blog.indiceJson(), 'application/json', { 'Cache-Control': 'public, max-age=600' });
+    // Páginas indexables (generadas en el servidor)
+    const CACHE_HTML = { 'Cache-Control': 'public, max-age=600' };
+    if (url.pathname === '/') {
+      // Compatibilidad con anuncios antiguos: /?a=pis → /cachorro?a=pis
+      const a = url.searchParams.get('a');
+      if (['pis', 'noches', 'mordiscos', 'solo', 'rutina'].includes(a)) return redirigir(res, '/cachorro' + url.search, 302);
+      if (['correa', 'ladridos', 'soledad', 'adopcion'].includes(a)) return redirigir(res, '/perro' + url.search, 302);
+      return enviar(res, 200, guias.portada(), TIPOS['.html'], CACHE_HTML);
+    }
+    if (url.pathname === '/guias') return enviar(res, 200, guias.hubGuias(), TIPOS['.html'], CACHE_HTML);
+    if (url.pathname === '/razas') return enviar(res, 200, guias.hubRazas(), TIPOS['.html'], CACHE_HTML);
+    if (url.pathname === '/guias/indice.json' || url.pathname === '/blog/indice.json') return enviar(res, 200, guias.indiceJson(), 'application/json', CACHE_HTML);
+    const mg = url.pathname.match(/^\/guias\/([a-z0-9-]+)$/);
+    if (mg) { const h = guias.guia(mg[1]); return h ? enviar(res, 200, h, TIPOS['.html'], CACHE_HTML) : noEncontrado(res); }
+    const mr = url.pathname.match(/^\/razas\/([a-z0-9-]+)$/);
+    if (mr) { const h = guias.raza(mr[1]); return h ? enviar(res, 200, h, TIPOS['.html'], CACHE_HTML) : noEncontrado(res); }
+    // Barra final y antiguo /blog → 301 a la URL buena
+    if (/^\/(guias|razas)\/.+\/$/.test(url.pathname) || url.pathname === '/guias/' || url.pathname === '/razas/') return redirigir(res, url.pathname.replace(/\/+$/, '') + url.search, 301);
+    if (url.pathname === '/blog' || url.pathname === '/blog/') return redirigir(res, '/guias', 301);
     const mb = url.pathname.match(/^\/blog\/([a-z0-9-]+)\/?$/);
-    if (mb) { const h = blog.articulo(mb[1]); return h ? enviar(res, 200, h, TIPOS['.html'], { 'Cache-Control': 'public, max-age=600' }) : html(res, 404, pagina('No encontrado', '<h1>No encontramos este artículo</h1><p><a href="/blog">Ver todos los artículos</a></p>')); }
-    if (url.pathname === '/sitemap.xml') return enviar(res, 200, blog.sitemap(), 'application/xml; charset=utf-8', { 'Cache-Control': 'public, max-age=3600' });
-    if (url.pathname === '/robots.txt') return enviar(res, 200, blog.robots(), TIPOS['.txt'], { 'Cache-Control': 'public, max-age=3600' });
+    if (mb) return redirigir(res, '/guias/' + mb[1], 301);
+    if (url.pathname === '/sitemap.xml') return enviar(res, 200, guias.sitemap(), 'application/xml; charset=utf-8', { 'Cache-Control': 'public, max-age=3600' });
+    if (url.pathname === '/robots.txt') return enviar(res, 200, guias.robots(), TIPOS['.txt'], { 'Cache-Control': 'public, max-age=3600' });
 
     // Mi zona: desde el enlace privado del plan se entra directamente.
     if (url.pathname === '/mi-zona') {
@@ -330,16 +397,19 @@ const servidor = http.createServer(async (req, res) => {
       }
       return servirArchivo(res, path.join(PUBLIC, 'mi-zona.html'));
     }
-    if (PAGINAS[url.pathname]) return servirArchivo(res, path.join(PUBLIC, PAGINAS[url.pathname]));
+    if (PAGINAS[url.pathname]) return enviar(res, 200, paginaFunnel(url.pathname), TIPOS['.html'], { 'Cache-Control': 'public, max-age=300' });
     if (ESTATICOS_CONTENT.includes(url.pathname)) return servirArchivo(res, path.join(__dirname, 'content', url.pathname.slice(1)));
     if (url.pathname === '/privacidad' || url.pathname === '/condiciones') {
+      const legal = { '/privacidad': ['Política de privacidad', `Cómo tratamos tus datos en ${CFG.marca}: qué datos pedimos, para qué, con qué base legal y cómo ejercer tus derechos.`], '/condiciones': ['Condiciones de compra', `Condiciones de compra de ${CFG.marca}: qué incluye el plan, la entrega, el desistimiento y la garantía de 14 días.`] }[url.pathname];
       const h = fs.readFileSync(path.join(PUBLIC, url.pathname.slice(1) + '.html'), 'utf8')
-        .replaceAll('{{MARCA}}', CFG.marca).replaceAll('{{EMAIL}}', CFG.emailContacto).replaceAll('{{TITULAR}}', CFG.titular);
+        .replace(/<head>[\s\S]*<\/head>/, `<head>\n${SEO.cabeza({ titulo: SEO.conMarca(legal[0]), descripcion: legal[1], ruta: url.pathname })}\n</head>`)
+        .replaceAll('{{MARCA}}', CFG.marca).replaceAll('{{BASE}}', CFG.baseUrl).replaceAll('{{EMAIL}}', CFG.emailContacto).replaceAll('{{TITULAR}}', CFG.titular);
       return html(res, 200, h);
     }
-    const archivo = path.normalize(path.join(PUBLIC, url.pathname === '/' ? 'index.html' : url.pathname));
+    if (url.pathname.endsWith('.html') && !['/admin.html', '/mi-zona.html'].includes(url.pathname)) return noEncontrado(res);
+    const archivo = path.normalize(path.join(PUBLIC, url.pathname));
     if (!archivo.startsWith(PUBLIC + path.sep)) return enviar(res, 403, 'Prohibido', 'text/plain');
-    servirArchivo(res, archivo);
+    fs.stat(archivo, (err, st) => (err || !st.isFile() ? noEncontrado(res) : servirArchivo(res, archivo)));
   } catch (e) {
     console.error(req.method, url.pathname, e);
     if (!res.headersSent) enviar(res, 500, { error: 'interno' });

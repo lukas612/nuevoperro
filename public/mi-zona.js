@@ -88,12 +88,12 @@
     app.querySelectorAll('.enlace-afil').forEach(function (a) { a.onclick = function () { evento('clic_afiliado', a.dataset.id); }; });
 
     // Lecturas del blog relacionadas
-    fetch('/blog/indice.json').then(function (r) { return r.ok ? r.json() : []; }).then(function (posts) {
+    fetch('/guias/indice.json').then(function (r) { return r.ok ? r.json() : []; }).then(function (posts) {
       var probs = d.planes.map(function (p) { return p.problema; });
       var lista = posts.filter(function (p) { return probs.indexOf(p.tema) >= 0; }).concat(posts.filter(function (p) { return probs.indexOf(p.tema) < 0; })).slice(0, 4);
       if (!lista.length) return;
       document.getElementById('lecturas').innerHTML = '<span class="etiqueta">Lecturas para ti</span>' + lista.map(function (p) {
-        return '<a class="atajo" href="/blog/' + esc(p.slug) + '" style="grid-column:auto">' + burbuja('estrella', 'sky') + '<span>' + esc(p.titulo) + '</span></a>';
+        return '<a class="atajo" href="/guias/' + esc(p.slug) + '" style="grid-column:auto">' + burbuja('estrella', 'sky') + '<span>' + esc(p.titulo) + '</span></a>';
       }).join('');
     }).catch(function () {});
   }
