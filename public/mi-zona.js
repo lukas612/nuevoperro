@@ -52,11 +52,11 @@
       var dia = Math.min(p.dias, Math.max(1, Math.floor((Date.now() - new Date(p.desde).getTime()) / 864e5) + 1));
       return '<a class="plan-tarjeta" href="/plan/' + esc(p.token) + '">' +
         '<span class="avatar">' + D.cara(p.razaId, { lengua: true }) + '</span>' +
-        '<span class="pila" style="gap:6px;min-width:0;flex:1"><small class="eti-peq">' + esc(p.titulo) + '</small><b>' + esc(p.nombre) + '</b>' +
+        '<span class="pila" style="gap:6px;min-width:0;flex:1"><small class="eti-peq">' + esc(p.titulo) + (p.extra ? ' · Programa extra' : '') + '</small><b>' + esc(p.nombre) + '</b>' +
         '<span class="peq suave">Día ' + dia + ' de ' + p.dias + ' · ' + hechas + (hechas === 1 ? ' tarea hecha' : ' tareas hechas') + '</span>' +
         '<span class="barra-mini"><i style="width:' + Math.max(3, hechas / p.dias * 100) + '%"></i></span></span>' +
         '<span class="eleccion-flecha">' + I('flecha') + '</span></a>';
-    }).join('') : '<div class="tarjeta"><p>Todavía no hay ningún plan enviado a este email. Si acabas de comprar, te llegará en menos de 24 horas.</p></div>';
+    }).join('') : '<div class="tarjeta"><p>Todavía no hay ningún plan enviado a este email. Si acabas de comprar, te llegará por email en unos minutos.</p></div>';
 
     var seguro = d.seguros;
     var botonSeguro = seguro.url

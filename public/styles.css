@@ -439,3 +439,42 @@ a.btn { text-decoration: none; }
 .menu-panel a, .menu-panel button { display: block; text-align: left; padding: 12px 14px; border-radius: 10px; color: var(--ink); text-decoration: none; font: inherit; font-weight: 600; background: none; border: 0; cursor: pointer; }
 .menu-panel a:hover, .menu-panel button:hover { background: var(--surface-2); }
 @media (max-width: 380px) { .menu summary span { display: none; } }
+
+/* ---------- Venta tras el test ---------- */
+.venta-aviso { display: flex; align-items: center; gap: 12px; margin-top: 6px; padding: 14px 16px; border-radius: 18px; background: linear-gradient(140deg, #22345a, #1b2a41 60%); color: #fff; text-decoration: none; box-shadow: var(--shadow); }
+.venta-aviso-txt { display: flex; flex-direction: column; gap: 3px; flex: 1; min-width: 0; }
+.venta-aviso-txt b { font-family: var(--display); font-size: 1.05rem; line-height: 1.2; }
+.venta-aviso-txt span { font-size: .82rem; color: #c5d0e3; line-height: 1.3; }
+.venta-aviso-btn { flex: none; display: inline-flex; align-items: center; gap: 6px; background: var(--primary); color: #1b2a41; font-weight: 800; border-radius: 12px; padding: 10px 12px; font-size: .9rem; }
+.venta-aviso-btn .ico { width: 16px; height: 16px; transform: rotate(180deg); }
+.linea-tiempo.plegada li.extra { display: none; }
+.linea-tiempo.plegada li:nth-child(5) { -webkit-mask-image: linear-gradient(#000 40%, transparent); mask-image: linear-gradient(#000 40%, transparent); }
+.venta-tit { font-size: 1.2rem; margin-top: 2px; }
+.venta-incluye { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.venta-pieza { background: var(--surface-2); border-radius: 16px; padding: 12px; display: flex; flex-direction: column; gap: 4px; }
+.venta-pieza .burbuja { width: 38px; height: 38px; border-radius: 12px; display: grid; place-items: center; margin-bottom: 4px; }
+.venta-pieza .burbuja .ico { width: 20px; height: 20px; }
+.venta-pieza b { font-size: .92rem; line-height: 1.25; }
+.venta-pieza > span:not(.burbuja) { font-size: .8rem; color: var(--muted); line-height: 1.3; }
+.venta-extras { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; font-size: .9rem; }
+.venta-extras li { display: flex; gap: 8px; align-items: flex-start; line-height: 1.35; }
+.venta-extras .ico { width: 18px; height: 18px; flex: none; color: var(--ok); margin-top: 1px; }
+.venta-compara { display: flex; flex-direction: column; border: 1px solid var(--line); border-radius: 16px; overflow: hidden; }
+.venta-compara div { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 12px 14px; font-size: .9rem; }
+.venta-compara div:first-child { color: var(--muted); }
+.venta-compara div:first-child b { font-weight: 700; white-space: nowrap; }
+.venta-compara .tu { background: var(--ok-bg); color: var(--ok); font-weight: 700; }
+.venta-compara .tu b { font-size: 1.1rem; color: var(--ink); white-space: nowrap; }
+.venta-faq { display: flex; flex-direction: column; gap: 8px; }
+.venta-faq details { background: var(--surface); border-radius: 16px; padding: 4px 16px; box-shadow: var(--shadow); }
+.venta-faq summary { cursor: pointer; font-weight: 700; padding: 12px 0; }
+.venta-faq p { margin: 0 0 12px; color: var(--muted); line-height: 1.45; }
+.check.falta { outline: 2px solid var(--warn, #b8432b); outline-offset: 4px; border-radius: 10px; animation: falta .4s; }
+@keyframes falta { 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
+.venta-barra { position: fixed; left: 0; right: 0; bottom: 0; z-index: 30; padding: 10px max(16px, env(safe-area-inset-left, 0px)) calc(10px + env(safe-area-inset-bottom, 0px)); background: var(--surface); box-shadow: 0 -8px 24px rgba(27, 42, 65, .12); }
+.venta-barra-in { max-width: 528px; margin: 0 auto; display: flex; align-items: center; gap: 12px; }
+.venta-barra-in > span { display: flex; flex-direction: column; flex: none; }
+.venta-barra-in b { font: 800 1.3rem/1 var(--display); }
+.venta-barra-in small { font-size: .72rem; color: var(--muted); margin-top: 3px; }
+.venta-barra .btn { flex: 1; min-width: 0; min-height: 46px; font-size: .95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+@media (prefers-reduced-motion: reduce) { .check.falta { animation: none; } }

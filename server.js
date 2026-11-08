@@ -18,7 +18,7 @@ const correo = require('./lib/email');
 const plantillasEmail = require('./lib/emails');
 const sesion = require('./lib/sesion');
 const meta = require('./lib/meta');
-const { entregarPlan, entregarPendientes } = require('./lib/entrega');
+const { entregarPlan, entregarPack, entregarPendientes } = require('./lib/entrega');
 const guias = require('./lib/guias');
 const SEO = require('./lib/seo');
 const zlib = require('zlib');
@@ -229,6 +229,7 @@ const rutas = {
       }, 'upsell_' + id);
       if (pi.status === 'succeeded') {
         await datos.insertar('pedidos', { session_id: id, sid: s.metadata.sid, email: s.customer_details?.email, importe: CFG.precioUpsell, tipo: 'upsell', pack: limpio(b.pack, 30), payment_intent: pi.id }, { ignorarDuplicado: true });
+        entregarPack(s.metadata.sid, limpio(b.pack, 30));
         const leadUp = await datos.primero('leads', { sid: s.metadata.sid });
         meta.evento('Purchase', { id: 'upsell_' + id, email: s.customer_details?.email, sid: s.metadata.sid, nav: meta.unir(leadUp?.meta, meta.datosNavegador(req, b)),
           valor: CFG.precioUpsell / 100, extra: { content_name: 'upsell_' + limpio(b.pack, 30), content_type: 'product', contents: [{ id: 'upsell', quantity: 1 }] } });
@@ -287,10 +288,11 @@ const rutas = {
     for (const p of planes) {
       const lead = await datos.primero('leads', { sid: p.sid });
       const r = lead?.respuestas || {};
-      const adulto = r.tipo === 'adulto' || r.tipo === 'adoptado';
-      const prog = adulto ? (PROGRAMAS_ADULTO[r.problema] || PROGRAMAS_ADULTO.correa) : null;
-      lista.push({ token: p.token, nombre: r.nombre || 'Tu perro', raza: r.raza || '', razaId: r.razaId || 'mestizo', tipo: r.tipo || 'cachorro', problema: r.problema || '',
-        titulo: adulto ? prog.titulo : 'Plan de 8 semanas', dias: adulto ? 42 : 56, desde: p.enviado_at || p.ts });
+      const adulto = !!p.pack || r.tipo === 'adulto' || r.tipo === 'adoptado';
+      const problema = p.pack || r.problema;
+      const prog = adulto ? (PROGRAMAS_ADULTO[problema] || PROGRAMAS_ADULTO.correa) : null;
+      lista.push({ token: p.token, nombre: r.nombre || 'Tu perro', raza: r.raza || '', razaId: r.razaId || 'mestizo', tipo: p.pack ? 'pack' : (r.tipo || 'cachorro'), problema: problema || '',
+        titulo: adulto ? prog.titulo : 'Plan de 8 semanas', dias: adulto ? 42 : 56, desde: p.enviado_at || p.ts, extra: !!p.pack });
     }
     const problemas = [...new Set(lista.map((p) => p.problema).filter(Boolean))];
     const productos = [...ZONA.PRODUCTOS.base, ...problemas.flatMap((k) => ZONA.PRODUCTOS[k] || [])].filter((x, i, a) => a.findIndex((y) => y.id === x.id) === i);

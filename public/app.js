@@ -51,6 +51,7 @@
     }
   }
   function pintar(html) {
+    if (window.VENTA) window.VENTA.quitarBarra();
     app.innerHTML = (CONF.demo ? '<div class="demo">Modo demo: los pagos se simulan.</div>' : '') + '<div class="entra">' + html + '</div>';
     window.scrollTo(0, 0);
     var f = app.querySelector('h1,h2');
@@ -363,14 +364,17 @@
       '<div class="pila-g">' +
       '<section class="pila"><div class="perfil"><span class="avatar">' + D.cara(razaId(), { lengua: true }) + '</span>' +
         '<div class="pila" style="gap:6px"><span class="chip ok">' + I('check') + 'Gratis para ti</span><h1 style="font-size:1.7rem">La rutina de mañana para ' + esc(nombre()) + '</h1></div></div>' +
-        '<div class="ajustes"><span class="suave peq">Ajustada a:</span>' + ajustes.map(function (a) { return '<span class="chip">' + I(a[0]) + esc(a[1]) + '</span>'; }).join('') + '</div></section>' +
+        '<div class="ajustes"><span class="suave peq">Ajustada a:</span>' + ajustes.map(function (a) { return '<span class="chip">' + I(a[0]) + esc(a[1]) + '</span>'; }).join('') + '</div>' +
+        window.VENTA.aviso({ nombre: nombre(), semanas: 8 }, { I: I, esc: esc }) + '</section>' +
 
-      '<section class="tarjeta pila"><ul class="linea-tiempo">' + rut.bloques.map(function (b) {
+      '<section class="tarjeta pila"><ul class="linea-tiempo plegada" id="rutina">' + rut.bloques.map(function (b, k) {
         var tb = tipoBloque(b[2]);
-        return '<li>' + burbuja(tb[0], tb[1]) + '<div><div class="hora">' + esc(b[0]) + '</div><div class="txt">' + esc(b[1]) + '</div></div></li>';
-      }).join('') + '</ul><p class="nota">' + I('chispa') + '<span>' + esc(rut.nota) + '</span></p>' +
+        return '<li' + (k >= 5 ? ' class="extra"' : '') + '>' + burbuja(tb[0], tb[1]) + '<div><div class="hora">' + esc(b[0]) + '</div><div class="txt">' + esc(b[1]) + '</div></div></li>';
+      }).join('') + '</ul>' + (rut.bloques.length > 5 ? '<button class="btn sec" id="ver-rutina">Ver el día completo (' + (rut.bloques.length - 5) + ' momentos más)</button>' : '') + '<p class="nota">' + I('chispa') + '<span>' + esc(rut.nota) + '</span></p>' +
         rut.avisosRaza.map(function (a) { return '<p class="nota raza-nota">' + I('huella') + '<span><b>Por ser ' + esc((D.raza(razaId()) || {}).nombre || 'tu perro').toLowerCase() + ':</b> ' + esc(a.charAt(0).toLowerCase() + a.slice(1)) + '</span></p>'; }).join('') + '</section>' +
 
+      '<section class="pila"><h2>Así es su plan de 8 semanas</h2>' + vistaPrevia() + '</section>' +
+      paywallHtml() +
       '<section class="pila"><h2>¿' + esc(nombre()) + ' está en regla?</h2>' +
         '<div class="tarjeta"><ul class="legal-lista">' + legalItems.map(function (x) {
           var hecho = tiene.indexOf(x.id) >= 0;
@@ -379,10 +383,11 @@
         }).join('') + '</ul><p class="peq suave" style="margin-top:8px">' + esc(P.LEGAL.aviso) + '</p>' +
         (faltaSeguro ? '<div style="margin-top:12px"><button class="btn sec" id="seguros">' + I('escudo') + 'Quiero comparar seguros</button></div>' : '') + '</div></section>' +
 
-      '<section class="pila"><h2>Así es su plan de 8 semanas</h2>' + vistaPrevia() + '</section>' +
-      paywallHtml() + '</div>';
+      window.VENTA.preguntas({ precio: CONF.precio }, { esc: esc, euros: euros }) + '</div>';
     pintar(html);
     evento('paywall_visto');
+    var vr = document.getElementById('ver-rutina');
+    if (vr) vr.onclick = function () { document.getElementById('rutina').classList.remove('plegada'); vr.remove(); };
 
     var bs = document.getElementById('seguros');
     if (bs) bs.onclick = function () { evento('clic_seguros'); bs.outerHTML = '<p class="chip ok">' + I('check') + 'Apuntado: te avisaremos con la comparativa</p>'; };
@@ -408,35 +413,31 @@
     return '<section class="tarjeta pila" id="paywall" style="gap:18px">' +
       '<div class="portada-plan"><div class="fila-p"><span class="avatar">' + D.cara(razaId()) + '</span><div><small>Plan de 8 semanas</small><h2>' + esc(nombre()) + '</h2></div></div>' +
         '<div class="semanas">' + [1, 2, 3, 4, 5, 6, 7, 8].map(function (s) { return '<span>S' + s + '</span>'; }).join('') + '</div></div>' +
-      '<ul class="lista-inc">' +
-        '<li>' + burbuja('calendario', 'butter') + 'Rutina diaria que se actualiza cada semana con su edad</li>' +
-        '<li>' + burbuja('estrella', 'peach') + 'Empezamos por ' + esc((P.PROBLEMAS[estado.r.problema] || 'su mayor problema').toLowerCase()) + ', paso a paso</li>' +
-        '<li>' + burbuja('huella', 'sky') + 'Protocolos para pis, mordiscos, noches y quedarse solo</li>' +
-        '<li>' + burbuja('personas', 'mint') + 'Checklist de socialización semana a semana</li>' +
-        '<li>' + burbuja('ley', 'lilac') + 'Salud y checklist legal de ' + esc(estado.r.comunidad || 'tu comunidad') + '</li>' +
-        '<li>' + burbuja('correo', 'sky') + 'Un email cada día con la tarea del día</li>' +
-        '<li>' + burbuja('casa', 'mint') + 'Mi zona en tu móvil, como una app: diario de progresos y clicker incluidos</li>' +
-      '</ul>' +
+      '<h3 class="venta-tit">Todo lo que tendrás para ' + esc(nombre()) + '</h3>' +
+      window.VENTA.incluye({ semanas: 8, prioridad: (P.PROBLEMAS[estado.r.problema] || 'su mayor problema').toLowerCase(), icono: ({ pis: 'gota', mordiscos: 'diente', noches: 'luna', solo: 'puerta' })[estado.r.problema],
+        extras: ['Protocolos para pis, mordiscos, noches y quedarse solo', 'Rutina que se actualiza cada semana con su edad', 'Checklist de socialización semana a semana', 'Salud y checklist legal de ' + (estado.r.comunidad || 'tu comunidad')] }, { I: I, burbuja: burbuja, esc: esc }) +
+      window.VENTA.comparativa({ nombre: nombre(), semanas: 8, precio: CONF.precio }, { esc: esc, euros: euros }) +
       '<div class="precio-fila"><span class="precio">' + euros(CONF.precio) + '</span><span class="suave">Pago único · menos de ' + dia + ' € al día</span></div>' +
       '<div class="garantia">' + I('escudo') + '<span>Garantía de 14 días: si no te sirve, te devolvemos el 100%, sin preguntas.</span></div>' +
       '<label class="check"><input type="checkbox" id="desist"> <span>Quiero recibir el plan ya. Acepto que, al empezar la entrega del contenido digital, pierdo el derecho legal de desistimiento (la garantía de 14 días sigue vigente). <a href="/condiciones" target="_blank">Condiciones</a>.</span></label>' +
       '<p class="error" id="err-pago"></p>' +
-      '<button class="btn" id="pagar" disabled>Quiero el plan de ' + esc(nombre()) + '</button>' +
+      '<button class="btn" id="pagar">Quiero el plan de ' + esc(nombre()) + ' · ' + euros(CONF.precio) + '</button>' +
       '<p class="micro"><span>' + I('candado') + 'Pago seguro con Stripe</span><span>Tarjeta · Apple Pay · Google Pay</span></p>' +
       '<p class="peq suave">El plan da rutinas y educación. No sustituye al veterinario ni al curso oficial de tenencia responsable.</p></section>';
   }
 
   function activarPaywall() {
-    var chk = document.getElementById('desist'), btn = document.getElementById('pagar'), err = document.getElementById('err-pago');
-    chk.onchange = function () { btn.disabled = !chk.checked; err.textContent = ''; };
-    btn.onclick = function () {
+    var V = { I: I, burbuja: burbuja, esc: esc, euros: euros };
+    window.VENTA.barra({ precio: CONF.precio, nombre: nombre() }, V);
+    window.VENTA.activarPago({ pagar: function (btn, err) {
       btn.disabled = true; btn.textContent = 'Abriendo el pago…';
       pixel('InitiateCheckout', { value: CONF.precio / 100, currency: 'EUR', content_name: estado.r.problema, num_items: 1 }, 'ic_' + sid);
       post('/api/checkout', { sid: sid, desistimiento: true, cm: cm() })
         .then(function (j) { location.href = j.url; })
         .catch(function (e) { err.textContent = (e && e.error) || 'No hemos podido abrir el pago. Inténtalo de nuevo.'; btn.disabled = false; btn.textContent = 'Quiero el plan de ' + nombre(); });
-    };
+    } });
   }
+
 
   // ---------- Vuelta del pago ----------
   function trasPago(sessionId) {
@@ -452,8 +453,8 @@
   function upsell(sessionId) {
     evento('upsell_visto');
     var packs = [
-      { id: 'separacion', ic: 'puerta', c: 'butter', t: 'Pack quedarse solo', d: 'Protocolo de 3 semanas para que ' + nombre() + ' aprenda a quedarse en casa con calma, con registro de progresos.' },
-      { id: 'correa', ic: 'correa', c: 'mint', t: 'Pack paseos sin tirones', d: 'Plan de 3 semanas para que aprenda a caminar con la correa floja desde el principio.' }
+      { id: 'separacion', ic: 'puerta', c: 'butter', t: 'Pack quedarse solo', d: 'Programa de 6 semanas, una tarea al día, para que ' + nombre() + ' aprenda a quedarse en casa con calma, con registro de progresos.' },
+      { id: 'correa', ic: 'correa', c: 'mint', t: 'Pack paseos sin tirones', d: 'Programa de 6 semanas, una tarea al día, para que aprenda a caminar con la correa floja desde el principio.' }
     ];
     if (estado.r.problema !== 'solo') packs.reverse();
     pintar('<div class="pila-g"><div class="pila"><span class="chip ok">' + I('check') + 'Pago confirmado</span>' +

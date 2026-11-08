@@ -38,6 +38,7 @@ const diasDesde = (fecha) => Math.floor((Date.now() - new Date(fecha).getTime())
   }
 
   for (const plan of planes) {
+    if (plan.pack) continue; // los programas extra no mandan email diario: se siguen desde su página
     if (bajas.has(plan.email) || reembolsados.has(plan.sid)) continue;
     const lead = porEmail.get(plan.email) || (await datos.primero('leads', { sid: plan.sid }));
     if (!lead) continue;

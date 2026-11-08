@@ -63,6 +63,7 @@
     }
   }
   function pintar(html) {
+    if (window.VENTA) window.VENTA.quitarBarra();
     app.innerHTML = (CONF.demo ? '<div class="demo">Modo demo: los pagos se simulan.</div>' : '') + '<div class="entra">' + html + '</div>';
     window.scrollTo(0, 0);
     var f = app.querySelector('h1,h2');
@@ -300,14 +301,15 @@
     var html = '<div class="pila-g">' +
       '<section class="pila"><div class="perfil"><span class="avatar">' + D.cara(razaId(), { lengua: true }) + '</span>' +
         '<div class="pila" style="gap:6px"><span class="chip ok">' + I('check') + 'Gratis para ti</span><h1 style="font-size:1.7rem">Los 3 primeros días de ' + esc(nombre()) + '</h1></div></div>' +
-        '<div class="ajustes"><span class="suave peq">Ajustado a:</span>' + ajustes.map(function (a) { return '<span class="chip">' + I(a[0]) + esc(a[1]) + '</span>'; }).join('') + '</div></section>' +
+        '<div class="ajustes"><span class="suave peq">Ajustado a:</span>' + ajustes.map(function (a) { return '<span class="chip">' + I(a[0]) + esc(a[1]) + '</span>'; }).join('') + '</div>' +
+        window.VENTA.aviso({ nombre: nombre(), semanas: 6 }, { I: I, esc: esc }) + '</section>' +
       '<section class="tarjeta pila"><h3>' + I(pg.icono) + ' Por qué lo hace</h3><p>' + esc(sus(pg.porQue)) + '</p>' +
         notas.map(function (x) { return '<p class="nota raza-nota">' + I('huella') + '<span>' + esc(x) + '</span></p>'; }).join('') + '</section>' +
       '<section class="tarjeta pila"><ul class="linea-tiempo">' + pg.primerosDias.map(function (d, k) {
         return '<li>' + burbuja(['estrella', 'chispa', 'check'][k], ['butter', 'peach', 'mint'][k]) + '<div><div class="hora">Día ' + (k + 1) + ' · ' + esc(d[0]) + '</div><div class="txt">' + esc(sus(d[1])) + '</div></div></li>';
       }).join('') + '</ul></section>' +
       '<section class="pila"><h2>Así es su plan de 6 semanas</h2>' + vistaPrevia() + '</section>' +
-      paywallHtml() + '</div>';
+      paywallHtml() + window.VENTA.preguntas({ precio: CONF.precio }, { esc: esc, euros: euros }) + '</div>';
     pintar(html);
     evento('paywall_visto');
     activarPaywall();
@@ -329,33 +331,30 @@
     return '<section class="tarjeta pila" id="paywall" style="gap:18px">' +
       '<div class="portada-plan"><div class="fila-p"><span class="avatar">' + D.cara(razaId()) + '</span><div><small>' + esc(pg.titulo) + ' · 6 semanas</small><h2>' + esc(nombre()) + '</h2></div></div>' +
         '<div class="semanas" style="grid-template-columns:repeat(6,1fr)">' + [1, 2, 3, 4, 5, 6].map(function (s) { return '<span>S' + s + '</span>'; }).join('') + '</div></div>' +
-      '<ul class="lista-inc">' +
-        '<li>' + burbuja('calendario', 'butter') + 'Una tarea cada día durante 6 semanas, de 5 a 15 minutos</li>' +
-        '<li>' + burbuja(pg.icono, 'peach') + 'Ajustado a cuándo y cómo le pasa a ' + esc(nombre()) + '</li>' +
-        '<li>' + burbuja('perro', 'sky') + 'Con lo que necesita su raza y su edad</li>' +
-        '<li>' + burbuja('check', 'mint') + 'Qué hacer y qué evitar, y cuándo pedir ayuda profesional</li>' +
-        '<li>' + burbuja('correo', 'lilac') + 'Un email cada día con la tarea del día</li>' +
-        '<li>' + burbuja('casa', 'mint') + 'Mi zona en tu móvil, como una app: diario de progresos y clicker incluidos</li>' +
-      '</ul>' +
+      '<h3 class="venta-tit">Todo lo que tendrás para ' + esc(nombre()) + '</h3>' +
+      window.VENTA.incluye({ semanas: 6, prioridad: pg.titulo.toLowerCase(), icono: pg.icono,
+        extras: ['Ajustado a cuándo y cómo le pasa a ' + nombre(), 'Con lo que necesita su raza y su edad', 'Qué hacer, qué evitar y cuándo pedir ayuda profesional'] }, { I: I, burbuja: burbuja, esc: esc }) +
+      window.VENTA.comparativa({ nombre: nombre(), semanas: 6, precio: CONF.precio }, { esc: esc, euros: euros }) +
       '<div class="precio-fila"><span class="precio">' + euros(CONF.precio) + '</span><span class="suave">Pago único · menos de ' + dia + ' € al día</span></div>' +
       '<div class="garantia">' + I('escudo') + '<span>Garantía de 14 días: si no te sirve, te devolvemos el 100%, sin preguntas.</span></div>' +
       '<label class="check"><input type="checkbox" id="desist"> <span>Quiero recibir el plan ya. Acepto que, al empezar la entrega del contenido digital, pierdo el derecho legal de desistimiento (la garantía de 14 días sigue vigente). <a href="/condiciones" target="_blank">Condiciones</a>.</span></label>' +
-      '<p class="error" id="err-pago"></p><button class="btn" id="pagar" disabled>Quiero el plan de ' + esc(nombre()) + '</button>' +
+      '<p class="error" id="err-pago"></p><button class="btn" id="pagar">Quiero el plan de ' + esc(nombre()) + ' · ' + euros(CONF.precio) + '</button>' +
       '<p class="micro"><span>' + I('candado') + 'Pago seguro con Stripe</span><span>Tarjeta · Apple Pay · Google Pay</span></p>' +
       '<p class="peq suave">El plan da pautas de educación en positivo. No sustituye a tu veterinario ni a un profesional que vea a tu perro en persona.</p></section>';
   }
 
   function activarPaywall() {
-    var chk = document.getElementById('desist'), btn = document.getElementById('pagar'), err = document.getElementById('err-pago');
-    chk.onchange = function () { btn.disabled = !chk.checked; err.textContent = ''; };
-    btn.onclick = function () {
+    var V = { I: I, burbuja: burbuja, esc: esc, euros: euros };
+    window.VENTA.barra({ precio: CONF.precio, nombre: nombre() }, V);
+    window.VENTA.activarPago({ pagar: function (btn, err) {
       btn.disabled = true; btn.textContent = 'Abriendo el pago…';
       pixel('InitiateCheckout', { value: CONF.precio / 100, currency: 'EUR', content_name: estado.r.problema, num_items: 1 }, 'ic_' + sid);
       post('/api/checkout', { sid: sid, desistimiento: true, cm: cm() })
         .then(function (j) { location.href = j.url; })
         .catch(function (e) { err.textContent = (e && e.error) || 'No hemos podido abrir el pago. Inténtalo de nuevo.'; btn.disabled = false; btn.textContent = 'Quiero el plan de ' + nombre(); });
-    };
+    } });
   }
+
 
   // ---------- Vuelta del pago ----------
   function trasPago(sessionId) {
