@@ -318,10 +318,12 @@
       '<section class="tarjeta pila"><ul class="linea-tiempo">' + pg.primerosDias.map(function (d, k) {
         return '<li>' + burbuja(['estrella', 'chispa', 'check'][k], ['butter', 'peach', 'mint'][k]) + '<div><div class="hora">Día ' + (k + 1) + ' · ' + esc(d[0]) + '</div><div class="txt">' + esc(sus(d[1])) + '</div></div></li>';
       }).join('') + '</ul></section>' +
-      '<section class="pila"><h2>Así es su plan de 6 semanas</h2>' + vistaPrevia() + '</section>' +
+      window.VENTA.panel({ semanas: 6, abiertos: 3, adulto: true }, { I: I, burbuja: burbuja, esc: esc }) +
+      window.VENTA.consejos({ nombre: nombre(), problema: r.problema }, { I: I, burbuja: burbuja, esc: esc }) +
       paywallHtml() + window.VENTA.preguntas({ precio: CONF.precio }, { esc: esc, euros: euros }) + '</div>';
     pintar(html);
     evento('paywall_visto');
+    window.VENTA.activarBloqueos(function (k) { evento('clic_bloqueado', k); });
     activarPaywall();
   }
 

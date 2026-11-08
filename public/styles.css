@@ -528,3 +528,21 @@ html.pago-abierto, html.pago-abierto body { overflow: hidden; }
 .bloq-cta .ico { width: 18px; height: 18px; flex: none; color: var(--primary); }
 .pasos-prot { margin: 0; padding-left: 22px; display: flex; flex-direction: column; gap: 8px; line-height: 1.45; }
 .hoy-gratis { border: 2px solid var(--primary); }
+
+/* Panel de vista previa: herramientas con candado */
+.tiles-bloq { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.tile-bloq { position: relative; display: flex; flex-direction: column; align-items: flex-start; gap: 3px; text-align: left; background: var(--surface); border: 0; border-radius: 18px; padding: 10px 10px 12px; box-shadow: var(--shadow); font: inherit; color: var(--ink); cursor: pointer; overflow: hidden; }
+.tile-vis { display: block; width: 100%; height: 86px; border-radius: 12px; overflow: hidden; background: var(--surface-2); margin-bottom: 6px; }
+.tile-vis img { width: 100%; height: 100%; object-fit: cover; object-position: top; display: block; filter: blur(3px); transform: scale(1.06); }
+.tile-vis .tile-ico { opacity: .55; }
+.tile-ico { display: grid; place-items: center; width: 100%; height: 100%; }
+.tile-ico .burbuja { width: 52px; height: 52px; border-radius: 16px; display: grid; place-items: center; }
+.tile-candado { position: absolute; top: 34px; left: calc(50% + 22px); transform: translateX(-50%); width: 40px; height: 40px; border-radius: 50%; background: var(--ink); color: var(--primary); display: grid; place-items: center; box-shadow: 0 6px 16px rgba(27, 42, 65, .3); }
+.tile-candado .ico { width: 20px; height: 20px; }
+.tile-bloq b { font-size: .92rem; line-height: 1.25; }
+.tile-bloq > span:last-child { font-size: .78rem; color: var(--muted); line-height: 1.3; }
+.consejo-item b { display: block; margin-bottom: 2px; }
+.consejo-item p { color: var(--muted); line-height: 1.45; }
+#paywall.resalta { animation: resalta 1.4s ease-out; }
+@keyframes resalta { 0% { box-shadow: 0 0 0 0 rgba(255, 200, 61, .9); } 100% { box-shadow: 0 0 0 18px rgba(255, 200, 61, 0); } }
+@media (prefers-reduced-motion: reduce) { #paywall.resalta { animation: none; } }

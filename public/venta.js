@@ -125,5 +125,48 @@
     }).catch(fallo);
   }
 
-  root.VENTA = { pagoIntegrado: pagoIntegrado, aviso: aviso, incluye: incluye, comparativa: comparativa, preguntas: preguntas, barra: barra, quitarBarra: quitarBarra, activarPago: activarPago };
+  // ---------- Vista previa del panel: herramientas con candado y consejos ----------
+  function panel(o, u) {
+    var img = function (f) { return '<img src="/email/' + f + '" alt="" loading="lazy">'; };
+    var ico = function (ic, color) { return '<span class="tile-ico">' + u.burbuja(ic, color) + '</span>'; };
+    var tiles = [
+      [ico('calendario', 'butter'), 'Semanas 2 a ' + o.semanas, (o.semanas * 7 - o.abiertos) + ' tareas más, una al día', 'semanas'],
+      [img(o.adulto ? 'plan-perro.jpg' : 'diario.jpg'), o.adulto ? 'Tu progreso' : 'Diario de pis y caca', o.adulto ? 'Lo que lleváis hecho, semana a semana' : 'Un toque y ves cómo mejora', 'diario'],
+      [img('clicker.jpg'), 'Clicker en tu móvil', 'Marca justo lo que hace bien', 'clicker'],
+      [ico(o.adulto ? 'escudo' : 'reloj', 'sky'), o.adulto ? 'Si hay una recaída' : 'Su rutina, hora a hora', o.adulto ? 'Qué hacer y cuándo pedir ayuda' : 'Ajustada cada semana a su edad', 'extra'],
+      [ico('personas', 'lilac'), 'Hacedlo juntos', 'Comparte el plan con tu pareja', 'juntos'],
+      [img('mi-zona.jpg'), 'Mi zona, como una app', 'En tu móvil, sin caducidad', 'app']
+    ];
+    return '<section class="pila"><span class="etiqueta">Tu panel</span><div class="tiles-bloq">' + tiles.map(function (t) {
+      return '<button type="button" class="tile-bloq" data-bloq="' + t[3] + '"><span class="tile-vis" aria-hidden="true">' + t[0] + '</span>' +
+        '<span class="tile-candado">' + u.I('candado') + '</span><b>' + u.esc(t[1]) + '</b><span>' + u.esc(t[2]) + '</span></button>';
+    }).join('') + '</div></section>';
+  }
+  function consejos(o, u) {
+    var Z = window.ZONA && window.ZONA.CONSEJOS;
+    if (!Z) return '';
+    var sus = function (t) { return String(t).replace(/\{n\}/g, o.nombre); };
+    var lista = (Z[o.problema] || []).concat(Z.general || []);
+    if (!lista.length) return '';
+    var abiertos = lista.slice(0, 2), resto = lista.slice(2, 5);
+    var item = function (c) { return '<div class="consejo-item"><b>' + u.esc(c[0]) + '</b><p>' + u.esc(sus(c[1])) + '</p></div>'; };
+    return '<section class="tarjeta pila"><div class="cab-consejo">' + u.burbuja('chispa', 'butter') + '<span class="etiqueta">Consejos para ' + u.esc(o.nombre) + '</span></div>' +
+      abiertos.map(item).join('') +
+      (resto.length ? '<div class="bloqueado"><div class="bloq-contenido" aria-hidden="true">' + resto.map(item).join('') + '</div>' +
+        '<a class="bloq-cta" href="#paywall" data-bloq="consejos">' + u.I('candado') + '<span>Ver ' + (lista.length - 2) + ' consejos más</span></a></div>' : '') + '</section>';
+  }
+  // Todo lo que tiene candado lleva al bloque de pago y lo resalta
+  function activarBloqueos(alTocar) {
+    document.querySelectorAll('[data-bloq], a[href="#paywall"]').forEach(function (el) {
+      el.addEventListener('click', function (e) {
+        var pw = document.getElementById('paywall'); if (!pw) return;
+        e.preventDefault();
+        if (alTocar && el.dataset.bloq) alTocar(el.dataset.bloq);
+        pw.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        pw.classList.remove('resalta'); void pw.offsetWidth; pw.classList.add('resalta');
+      });
+    });
+  }
+
+  root.VENTA = { panel: panel, consejos: consejos, activarBloqueos: activarBloqueos, pagoIntegrado: pagoIntegrado, aviso: aviso, incluye: incluye, comparativa: comparativa, preguntas: preguntas, barra: barra, quitarBarra: quitarBarra, activarPago: activarPago };
 })(typeof window !== 'undefined' ? window : this);

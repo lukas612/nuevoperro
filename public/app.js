@@ -394,7 +394,8 @@
           'Ver los ' + (Math.max(0, pasos.length - 2) + (prot.no || []).length) + ' pasos y consejos restantes') : '') +
         rut.avisosRaza.slice(0, 1).map(function (a) { return '<p class="nota raza-nota">' + I('huella') + '<span><b>Por ser ' + esc(nombreRaza) + ':</b> ' + esc(a.charAt(0).toLowerCase() + a.slice(1)) + '</span></p>'; }).join('') + '</section>' +
 
-      '<section class="pila"><h2>Así es su plan de 8 semanas</h2>' + vistaPrevia() + '</section>' +
+      window.VENTA.panel({ semanas: 8, abiertos: 1 }, { I: I, burbuja: burbuja, esc: esc }) +
+      window.VENTA.consejos({ nombre: n, problema: r.problema }, { I: I, burbuja: burbuja, esc: esc }) +
       paywallHtml() +
       '<section class="pila"><h2>¿' + esc(nombre()) + ' está en regla?</h2>' +
         '<div class="tarjeta"><ul class="legal-lista">' + legalItems.map(function (x) {
@@ -407,6 +408,7 @@
       window.VENTA.preguntas({ precio: CONF.precio }, { esc: esc, euros: euros }) + '</div>';
     pintar(html);
     evento('paywall_visto');
+    window.VENTA.activarBloqueos(function (k) { evento('clic_bloqueado', k); });
 
     var bs = document.getElementById('seguros');
     if (bs) bs.onclick = function () { evento('clic_seguros'); bs.outerHTML = '<p class="chip ok">' + I('check') + 'Apuntado: te avisaremos con la comparativa</p>'; };
