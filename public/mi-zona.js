@@ -98,27 +98,56 @@
     }).join('');
     var hayAfiliados = d.productos.some(function (x) { return x.url; });
 
-    app.innerHTML = '<div class="pila-g entra">' +
-      '<section class="pila"><h1 style="font-size:1.9rem">Hola' + (nombres.length === 1 ? ', aquí tienes todo lo de ' + esc(nombres[0]) : '') + '</h1><p class="suave peq">' + esc(d.email) + '</p></section>' +
-      '<section class="pila"><span class="etiqueta">' + (d.planes.length > 1 ? 'Tus planes' : 'Tu plan') + '</span>' + planes + '</section>' +
-      '<section class="tarjeta pila" id="juntos"></section>' +
-      '<section class="tarjeta pila" id="instalar"></section>' +
-      '<section class="tarjeta pila consejo"><div class="cab-consejo">' + burbuja('chispa', 'butter') + '<span class="etiqueta">Consejo de hoy</span></div>' +
-        '<h2 id="c-tit" style="font-size:1.3rem"></h2><p id="c-txt"></p><button class="btn texto" id="otro" style="align-self:flex-start;width:auto;padding-left:0">Otro consejo</button></section>' +
-      '<section class="tarjeta pila" id="diario"></section>' +
-      '<section class="tarjeta pila" id="clicker-caja"></section>' +
-      '<section class="club pila" id="club"></section>' +
-      '<section class="tarjeta pila">' + '<div class="cab-consejo">' + burbuja('escudo', 'mint') + '<h2 style="font-size:1.3rem">' + esc(seguro.titulo) + '</h2></div>' +
-        '<p>' + esc(seguro.texto) + '</p>' + botonSeguro + '<p class="peq suave">' + esc(seguro.aviso) + '</p></section>' +
-      '<section class="pila"><span class="etiqueta">Lo que te va a ayudar</span><div class="incluye-grid">' + productos + '</div>' +
-        (hayAfiliados ? '<p class="peq suave">Algunos enlaces son de afiliado: si compras, recibimos una pequeña comisión sin coste para ti.</p>' : '') + '</section>' +
-      '<section class="pila" id="lecturas"></section>' +
-      '</div>';
+    var compartido = d.planes.some(function (p) { return p.compartido || (p.miembros && p.miembros.length); });
+    var VISTAS = [
+      ['inicio', 'casa', 'Inicio'], ['diario', 'gota', 'Diario'], ['clicker', 'estrella', 'Clicker'],
+      ['juntos', 'personas', 'Juntos'], ['mas', 'corazon', 'Para ti']
+    ];
+    var atajo = function (v, ic, color, t, sub) { return '<button class="zona-atajo" data-ir="' + v + '">' + burbuja(ic, color) + '<b>' + t + '</b><span class="peq suave">' + sub + '</span></button>'; };
+    app.innerHTML = '<div class="entra zona-app">' +
+      '<div class="pila-g zona-vista" data-vista="inicio">' +
+        '<section class="pila"><h1 style="font-size:1.9rem">Hola' + (nombres.length === 1 ? ', aquí tienes todo lo de ' + esc(nombres[0]) : '') + '</h1><p class="suave peq">' + esc(d.email) + '</p></section>' +
+        '<section class="pila"><span class="etiqueta">' + (d.planes.length > 1 ? 'Tus planes' : 'Tu plan') + '</span>' + planes + '</section>' +
+        '<section class="zona-atajos">' +
+          atajo('diario', 'gota', 'sky', 'Diario', 'Apunta pis y caca') + atajo('clicker', 'estrella', 'butter', 'Clicker', 'Marca lo que hace bien') +
+          atajo('juntos', 'personas', 'lilac', 'Juntos', compartido ? 'Ya lo compartís' : 'Invita a alguien') + atajo('mas', 'corazon', 'peach', 'Para ti', 'Consejos y recomendaciones') +
+        '</section>' +
+        '<section class="tarjeta pila consejo"><div class="cab-consejo">' + burbuja('chispa', 'butter') + '<span class="etiqueta">Consejo de hoy</span></div>' +
+          '<h2 id="c-tit" style="font-size:1.3rem"></h2><p id="c-txt"></p><button class="btn texto" id="otro" style="align-self:flex-start;width:auto;padding-left:0">Otro consejo</button></section>' +
+        '<section class="tarjeta pila" id="instalar"></section>' +
+      '</div>' +
+      '<div class="pila-g zona-vista" data-vista="diario" hidden><section class="tarjeta pila" id="diario"></section></div>' +
+      '<div class="pila-g zona-vista" data-vista="clicker" hidden><section class="tarjeta pila" id="clicker-caja"></section></div>' +
+      '<div class="pila-g zona-vista" data-vista="juntos" hidden><section class="tarjeta pila" id="juntos"></section></div>' +
+      '<div class="pila-g zona-vista" data-vista="mas" hidden>' +
+        '<section class="pila"><span class="etiqueta">Lo que te va a ayudar</span><div class="incluye-grid">' + productos + '</div>' +
+          (hayAfiliados ? '<p class="peq suave">Algunos enlaces son de afiliado: si compras, recibimos una pequeña comisión sin coste para ti.</p>' : '') + '</section>' +
+        '<section class="tarjeta pila">' + '<div class="cab-consejo">' + burbuja('escudo', 'mint') + '<h2 style="font-size:1.3rem">' + esc(seguro.titulo) + '</h2></div>' +
+          '<p>' + esc(seguro.texto) + '</p>' + botonSeguro + '<p class="peq suave">' + esc(seguro.aviso) + '</p></section>' +
+        '<section class="club pila" id="club"></section>' +
+        '<section class="pila" id="lecturas"></section>' +
+      '</div>' +
+      '</div>' +
+      '<nav class="zona-nav" aria-label="Secciones de Mi zona"><div class="zona-nav-in">' + VISTAS.map(function (v) {
+        return '<button data-ir="' + v[0] + '" aria-current="false">' + I(v[1]) + '<span>' + v[2] + '</span></button>';
+      }).join('') + '</div></nav>';
+
+    // Navegación por pestañas, con el botón atrás del móvil funcionando (#diario, #clicker…)
+    function ir(v, sinHistorial) {
+      if (!VISTAS.some(function (x) { return x[0] === v; })) v = 'inicio';
+      app.querySelectorAll('.zona-vista').forEach(function (el) { el.hidden = el.dataset.vista !== v; });
+      document.querySelectorAll('.zona-nav [data-ir]').forEach(function (b) { b.setAttribute('aria-current', String(b.dataset.ir === v)); });
+      if (!sinHistorial && location.hash.slice(1) !== v) history.pushState(null, '', v === 'inicio' ? location.pathname + location.search : '#' + v);
+      window.scrollTo(0, 0);
+    }
+    document.querySelectorAll('[data-ir]').forEach(function (b) { b.addEventListener('click', function () { ir(b.dataset.ir); }); });
+    window.addEventListener('popstate', function () { ir(location.hash.slice(1) || 'inicio', true); });
+    ir(location.hash.slice(1) || 'inicio', true);
 
     var H = window.QBP_HERRAMIENTAS;
     if (H) {
       H.instalar(document.getElementById('instalar'));
-      H.diario(document.getElementById('diario'), nombres[0] || 'tu perro', d.planes.some(function (p) { return p.compartido || (p.miembros && p.miembros.length); }));
+      H.diario(document.getElementById('diario'), nombres[0] || 'tu perro', compartido);
       H.clicker(document.getElementById('clicker-caja'));
       H.club(document.getElementById('club'), d.enClub);
     }

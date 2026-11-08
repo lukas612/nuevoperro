@@ -485,3 +485,19 @@ a.btn { text-decoration: none; }
 .legal p, .legal li { line-height: 1.55; }
 .legal ul { padding-left: 20px; display: flex; flex-direction: column; gap: 6px; }
 .legal code { font-size: .85em; background: var(--surface-2); padding: 1px 5px; border-radius: 6px; }
+
+/* ---------- Mi zona como app: pestañas abajo ---------- */
+.zona-app { padding-bottom: 84px; }
+.zona-atajos { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.zona-atajo { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; text-align: left; background: var(--surface); border: 0; border-radius: 18px; padding: 14px; box-shadow: var(--shadow); font: inherit; color: var(--ink); cursor: pointer; }
+.zona-atajo .burbuja { width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; margin-bottom: 4px; }
+.zona-atajo b { font-size: .98rem; }
+.zona-nav { position: fixed; left: 0; right: 0; bottom: 0; z-index: 30; background: var(--surface); border-top: 1px solid var(--line); padding-bottom: env(safe-area-inset-bottom, 0px); }
+.zona-nav-in { max-width: 560px; margin: 0 auto; display: grid; grid-template-columns: repeat(5, 1fr); }
+.zona-nav button { background: none; border: 0; font: inherit; font-size: .7rem; font-weight: 700; color: var(--muted); display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 9px 2px 10px; cursor: pointer; min-height: 58px; }
+.zona-nav button .ico { width: 22px; height: 22px; }
+.zona-nav button[aria-current="true"] { color: var(--ink); }
+.zona-nav button[aria-current="true"] .ico { color: var(--brand); }
+.zona-nav button[aria-current="true"] span { position: relative; }
+.zona-nav button[aria-current="true"] span::after { content: ""; position: absolute; left: 20%; right: 20%; bottom: -5px; height: 3px; border-radius: 3px; background: var(--primary); }
+body:has(.zona-nav) .pie { padding-bottom: 84px; }

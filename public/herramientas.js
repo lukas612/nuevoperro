@@ -41,7 +41,7 @@
         : 'Apunta cada pis y cada caca durante unos días: verás su patrón y podrás adelantarte.';
 
       el.innerHTML = '<div class="cab-consejo">' + burbuja('gota', 'sky') + '<h2 style="font-size:1.3rem">Diario de pis y caca</h2></div>' +
-        '<p class="suave peq">Toca un botón cada vez que lo haga. Solo lo ves tú.</p>' +
+        '<p class="suave peq">Toca un botón cada vez que lo haga. ' + (compartido ? 'Lo veis todos los que compartís el plan.' : 'Solo lo ves tú.') + '</p>' +
         '<div class="diario-botones">' +
           '<button class="btn sec" data-t="pis" data-l="fuera">' + I('check') + 'Pis fuera</button>' +
           '<button class="btn sec" data-t="pis" data-l="dentro">' + I('gota') + 'Pis en casa</button>' +
