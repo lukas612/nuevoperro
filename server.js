@@ -237,16 +237,10 @@ const rutas = {
         sesionPago.return_url = sesionPago.success_url;
         delete sesionPago.success_url; delete sesionPago.cancel_url;
       }
-      const crear = async (params) => {
-        try { return await stripe('POST', '/checkout/sessions', params); }
-        catch (e) {
-          // Versiones nuevas de la API llaman distinto al modo integrado.
-          if (integrado && /ui_mode/.test(e.message) && params.ui_mode === 'embedded') return stripe('POST', '/checkout/sessions', { ...params, ui_mode: 'embedded_page' });
-          throw e;
-        }
-      };
+      const crear = (params) => stripe('POST', '/checkout/sessions', params);
       let s;
-      try { s = await crear({ ...sesionPago, branding_settings: marcaPago }); }
+      // La personalización de marca es para la página de Stripe; en el pago integrado ya estamos en nuestra web.
+      try { s = await crear(integrado ? sesionPago : { ...sesionPago, branding_settings: marcaPago }); }
       catch (e) {
         if (!/branding_settings|statement_descriptor/.test(e.message)) throw e;
         console.warn('checkout: sin personalización de marca:', e.message);
