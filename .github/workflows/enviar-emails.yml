@@ -2,9 +2,9 @@ name: Enviar emails diarios
 
 # Tareas diarias de los compradores, encuestas y emails a quien no compró.
 # Mismo patrón que send_lifecycle_emails.yml de Vigila.
+# Ya no se programa aquí: los envíos los hace el servidor de Render cada hora (server.js),
+# que tiene todas las claves. Se deja para lanzarlo a mano si hiciera falta (necesita los secretos del repo).
 on:
-  schedule:
-    - cron: "37 7 * * *"   # 08:37 / 09:37 en España (UTC+1 / UTC+2)
   workflow_dispatch: {}
 
 jobs:

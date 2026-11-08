@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 /*
- * Envíos programados. Se ejecuta una vez al día (GitHub Actions, como los de Vigila).
- *  - Quien no compra (con consentimiento comercial): emails de los días 2 y 5.
+ * Envíos programados. Los lanza el propio servidor (server.js) cada hora entre las 9 y las 21 h de España;
+ * cada email se envía una sola vez (tabla "emails"), así que repetir la ejecución no duplica nada.
+ *  - Quien no compra (con consentimiento comercial): un email al día durante 7 días, uno por cada ventaja del plan.
  *  - Compradores con el plan enviado: la tarea de cada día (1 a 56) y encuestas de los días 7 y 21.
  * Nunca envía dos veces el mismo email (tabla "emails") ni a quien se dio de baja.
  *
@@ -14,16 +15,16 @@ const datos = require('../lib/datos');
 const correo = require('../lib/email');
 const emails = require('../lib/emails');
 
-const PRUEBA = process.argv.includes('--prueba');
 const DIA = 864e5;
 const diasDesde = (fecha) => Math.floor((Date.now() - new Date(fecha).getTime()) / DIA);
 
-(async () => {
+async function enviarEmails({ prueba: PRUEBA = false } = {}) {
   const [leads, pedidos, planes, enviados] = await Promise.all([datos.listar('leads'), datos.listar('pedidos'), datos.listar('planes', { estado: 'enviado' }), datos.listar('emails')]);
   const hecho = new Set(enviados.map((e) => e.email + '|' + e.clave));
   const bajas = new Set(enviados.filter((e) => e.clave === 'baja').map((e) => e.email));
   // Quien tiene un pedido o un plan es comprador: nunca recibe los emails de "quien no compra".
   const compradores = new Set([...pedidos.filter((p) => p.tipo === 'plan').map((p) => p.sid), ...planes.map((p) => p.sid)]);
+  const emailsCompradores = new Set([...pedidos.filter((p) => p.tipo === 'plan').map((p) => p.email), ...planes.map((p) => p.email)].filter(Boolean));
   const reembolsados = new Set((await datos.listar('reembolsos')).filter((r) => r.tipo === 'plan').map((r) => r.sid));
   const cola = [];
 
@@ -32,9 +33,13 @@ const diasDesde = (fecha) => Math.floor((Date.now() - new Date(fecha).getTime())
   for (const l of leads) porEmail.set(l.email, l);
 
   for (const lead of porEmail.values()) {
-    if (bajas.has(lead.email) || compradores.has(lead.sid) || !lead.consentimientos?.comerciales) continue;
+    if (bajas.has(lead.email) || compradores.has(lead.sid) || emailsCompradores.has(lead.email) || !lead.consentimientos?.comerciales) continue;
     const d = diasDesde(lead.ts);
-    for (const n of [2, 5]) if (d >= n && d < n + 3) { const m = emails.nurture(n, lead); m.para = lead.email; cola.push(m); }
+    // Secuencia de 7 días, en orden y como mucho un email al día. Si se salta algún día, sigue donde lo dejó.
+    // No se empieza con leads de hace más de 10 días.
+    if (d < 1 || d > 10) continue;
+    const siguiente = emails.NURTURE_DIAS.find((n) => n <= d && !hecho.has(lead.email + '|nurture_' + n));
+    if (siguiente) { const m = emails.nurture(siguiente, lead); m.para = lead.email; cola.push(m); }
   }
 
   for (const plan of planes) {
@@ -54,5 +59,9 @@ const diasDesde = (fecha) => Math.floor((Date.now() - new Date(fecha).getTime())
     if (PRUEBA) { console.log(`[prueba] ${m.para} · ${m.clave} · ${m.asunto}`); continue; }
     if (await correo.enviarUnaVez(m.para, m.clave, m.asunto, m.html)) enviadosHoy++;
   }
-  console.log(PRUEBA ? `${cola.length} emails candidatos.` : `${enviadosHoy} emails enviados.`);
-})().catch((e) => { console.error(e.message); process.exit(1); });
+  console.log(PRUEBA ? `${cola.length} emails candidatos.` : `[emails] ${enviadosHoy} enviados.`);
+  return enviadosHoy;
+}
+
+module.exports = { enviarEmails };
+if (require.main === module) enviarEmails({ prueba: process.argv.includes('--prueba') }).catch((e) => { console.error(e.message); process.exit(1); });

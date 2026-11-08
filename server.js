@@ -8,7 +8,7 @@
  * Sin STRIPE_SECRET_KEY arranca en MODO DEMO: el pago se simula para probar el funnel.
  */
 'use strict';
-const { CFG, precioPara, firmaBaja } = require('./lib/config');
+const { CFG, precioPara, firmaBaja, firmaRetomar } = require('./lib/config');
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
@@ -114,6 +114,14 @@ const rutas = {
     enviar(res, 200, { ok: true });
   },
 
+  'GET /api/retomar': async (req, res, url) => {
+    const [sid, firma] = String(url.searchParams.get('t') || '').split('.');
+    if (!sid || !firma || firma !== firmaRetomar(sid)) return enviar(res, 400, { error: 'enlace' });
+    const lead = await datos.primero('leads', { sid });
+    if (!lead) return enviar(res, 404, { error: 'lead' });
+    enviar(res, 200, { sid: lead.sid, email: lead.email, respuestas: lead.respuestas, consentimientos: lead.consentimientos });
+  },
+
   'POST /api/lead': async (req, res) => {
     const b = await json(req);
     if (!emailValido(b.email)) return enviar(res, 400, { error: 'email' });
@@ -139,11 +147,10 @@ const rutas = {
     meta.evento('Lead', { id: 'lead_' + lead.sid, email: lead.email, sid: lead.sid, nav: lead.meta, extra: { content_name: lead.respuestas.problema, content_category: lead.respuestas.tipo } });
     await datos.insertar('eventos', { tipo: 'form_completo', sid: lead.sid, utm: lead.utm });
     enviar(res, 200, { ok: true });
-    // Email inmediato con su rutina, solo con consentimiento comercial. Sin bloquear la respuesta.
-    if (lead.consentimientos.comerciales) {
-      const m = plantillasEmail.nurture(0, lead);
-      correo.enviarUnaVez(lead.email, m.clave, m.asunto, m.html).catch((e) => console.error('nurture_0', e.message));
-    }
+    // Email inmediato con el resultado que ha pedido (rutina o 3 primeros días). Es la respuesta a su
+    // solicitud, así que va a todos; la secuencia comercial de los días 1 a 7 solo con consentimiento.
+    const m = plantillasEmail.nurture(0, lead);
+    correo.enviarUnaVez(lead.email, m.clave, m.asunto, m.html).catch((e) => console.error('nurture_0', e.message));
   },
 
   'POST /api/checkout': async (req, res) => {
@@ -525,6 +532,19 @@ if (require.main === module) {
     console.log(MODO_DEMO ? 'MODO DEMO: sin Stripe, los pagos se simulan.' : 'Stripe activo.');
     console.log('Emails:', correo.configurado() ? 'Resend' : 'desactivados (sin RESEND_API_KEY)');
     if (!MODO_DEMO) entregarPendientes().catch((e) => console.error('entregas pendientes', e.message));
+    // Emails programados (secuencia de 7 días a leads, tarea diaria a compradores, encuestas).
+    // Cada hora, solo de 9 a 21 h en España. Cada email sale una sola vez aunque se repita la ejecución.
+    if (correo.configurado() && datos.USA_SUPABASE) {
+      let enCurso = false;
+      const tanda = () => {
+        const hora = Number(new Intl.DateTimeFormat('es-ES', { timeZone: 'Europe/Madrid', hour: 'numeric', hour12: false }).format(new Date()));
+        if (enCurso || hora < 9 || hora >= 21) return;
+        enCurso = true;
+        require('./scripts/enviar-emails').enviarEmails().catch((e) => console.error('[emails]', e.message)).finally(() => { enCurso = false; });
+      };
+      setTimeout(tanda, 60000);
+      setInterval(tanda, 60 * 60000);
+    }
     console.log('Precios en test:', CFG.precios.map((p) => (p / 100).toFixed(2) + ' €').join(' / '));
   });
 }

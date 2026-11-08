@@ -513,10 +513,30 @@
     portada();
   }
 
+  // ---------- Volver desde un email: recupera sus respuestas y le lleva a su resultado ----------
+  function retomar(t) {
+    return fetch('/api/retomar?t=' + encodeURIComponent(t)).then(function (r) { if (!r.ok) throw 0; return r.json(); }).then(function (j) {
+      var r = j.respuestas || {};
+      PREGUNTAS.forEach(function (q) {
+        var lista = q.lista || (q.listaFn ? (function () { try { estado.r = r; return q.listaFn(); } catch (e) { return null; } })() : null);
+        if (!lista || r[q.id] == null || Array.isArray(r[q.id])) return;
+        var o = lista.filter(function (x) { return String(x[0]) === String(r[q.id]); })[0];
+        if (o && typeof o[2] === 'string') r[q.id + 'Texto'] = o[2];
+      });
+      sid = j.sid; lsSet('pc_sid', sid);
+      estado = { paso: 'resultado', r: r, email: j.email, consent: j.consentimientos || {} };
+      guardarEstado();
+      evento('visita');
+      render();
+      setTimeout(function () { var pw = document.getElementById('paywall'); if (pw && location.hash === '#paywall') pw.scrollIntoView({ block: 'start' }); }, 150);
+    }).catch(function () { render(); });
+  }
+
   fetch('/api/config?sid=' + sid).then(function (r) { return r.json(); }).then(function (c) { CONF = c; }).catch(function () {}).then(function () {
     document.getElementById('pie-contacto').textContent = CONF.emailContacto || '';
     document.title = CONF.marca + ' · El plan para tu cachorro';
     gestionarCookies();
+    if (params.get('r')) return retomar(params.get('r'));
     if (params.get('pago') === 'ok' && params.get('session_id')) return trasPago(params.get('session_id'));
     if (params.get('pago') === 'cancelado') { evento('checkout_cancelado'); estado.paso = 'resultado'; }
     if (estado.paso === 0) evento('visita');
