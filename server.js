@@ -114,6 +114,53 @@ const rutas = {
     enviar(res, 200, { ok: true });
   },
 
+  // Progreso del plan compartido entre quienes lo siguen. Basta con el token del plan (el mismo que da acceso a su página).
+  'GET /api/progreso': async (req, res, url) => {
+    const t = limpio(url.searchParams.get('t'), 40);
+    const plan = /^[a-f0-9]{32}$/.test(t) && (await datos.primero('planes', { token: t }));
+    if (!plan) return enviar(res, 404, { error: 'plan' });
+    const yo = await quienEnPlan(sesion.deCookie(req), plan);
+    const miembros = (await datos.listar('miembros', { token: t })).map((m) => m.nombre || nombreDeEmail(m.email));
+    enviar(res, 200, { progreso: plan.progreso || {}, yo: yo?.nombre || null, miembros, dueno: nombreDeEmail(plan.email) });
+  },
+  'POST /api/progreso': async (req, res) => {
+    const b = await json(req);
+    const t = limpio(b.t, 40);
+    const plan = /^[a-f0-9]{32}$/.test(t) && (await datos.primero('planes', { token: t }));
+    if (!plan) return enviar(res, 404, { error: 'plan' });
+    const cambios = Array.isArray(b.cambios) ? b.cambios.slice(0, 100) : [];
+    const yo = await quienEnPlan(sesion.deCookie(req), plan);
+    const progreso = { ...(plan.progreso || {}) };
+    for (const c of cambios) {
+      const k = String(c.k || '');
+      if (!/^[a-z0-9_-]{1,24}$/i.test(k)) continue;
+      progreso[k] = { v: !!c.v, por: yo?.nombre || null, ts: Date.now() };
+    }
+    await datos.actualizar('planes', { token: t }, { progreso });
+    enviar(res, 200, { progreso });
+  },
+  'POST /api/invitar': async (req, res) => {
+    const b = await json(req);
+    const t = limpio(b.t, 40);
+    const email = limpio(b.email, 200).toLowerCase();
+    const nombre = limpio(b.nombre, 30);
+    const plan = /^[a-f0-9]{32}$/.test(t) && (await datos.primero('planes', { token: t }));
+    if (!plan || plan.estado !== 'enviado') return enviar(res, 404, { error: 'Plan no encontrado.' });
+    if (!emailValido(email)) return enviar(res, 400, { error: 'Revisa el email.' });
+    if (email === plan.email) return enviar(res, 400, { error: 'Ese email ya es el del plan.' });
+    const miembros = await datos.listar('miembros', { token: t });
+    if (miembros.some((m) => m.email === email)) return enviar(res, 200, { ok: true, ya: true });
+    if (miembros.length >= 5) return enviar(res, 400, { error: 'Como mucho 5 personas por plan.' });
+    if ((invitacionesRecientes.get(t) || 0) > Date.now() - 20000) return enviar(res, 429, { error: 'Espera unos segundos y vuelve a intentarlo.' });
+    invitacionesRecientes.set(t, Date.now());
+    const quien = (await quienEnPlan(sesion.deCookie(req), plan))?.nombre || nombreDeEmail(plan.email);
+    await datos.insertar('miembros', { token: t, email, nombre: nombre || null, invitado_por: quien }, { ignorarDuplicado: true });
+    const lead = await datos.primero('leads', { sid: plan.sid });
+    const m = plantillasEmail.invitacion(email, { quien, nombre, perro: lead?.respuestas?.nombre, urlPlan: `${CFG.baseUrl}/plan/${t}`, urlZona: sesion.enlaceMagico(email) });
+    correo.enviar(email, m.asunto, m.html).catch((e) => console.error('invitacion', e.message));
+    enviar(res, 200, { ok: true });
+  },
+
   'GET /api/retomar': async (req, res, url) => {
     const [sid, firma] = String(url.searchParams.get('t') || '').split('.');
     if (!sid || !firma || firma !== firmaRetomar(sid)) return enviar(res, 400, { error: 'enlace' });
@@ -281,8 +328,7 @@ const rutas = {
     enviar(res, 200, { ok: true });
     if (!emailValido(email) || pedidosAcceso.get(email) > Date.now() - 120000) return;
     pedidosAcceso.set(email, Date.now());
-    const planes = await datos.listar('planes', { email });
-    if (!planes.some((p) => p.estado === 'enviado')) return;
+    if (!(await planesDe(email)).length) return;
     const m = plantillasEmail.acceso(email, sesion.enlaceMagico(email));
     correo.enviar(email, m.asunto, m.html).catch((e) => console.error('acceso', e.message));
   },
@@ -290,7 +336,9 @@ const rutas = {
   'GET /api/mi-zona': async (req, res) => {
     const email = sesion.deCookie(req);
     if (!email) return enviar(res, 401, { error: 'sesion' });
-    const planes = (await datos.listar('planes', { email })).filter((p) => p.estado === 'enviado');
+    const planes = await planesDe(email);
+    // Al entrar, la invitación queda aceptada (desde ahí recibe también la tarea diaria por email).
+    for (const m of await datos.listar('miembros', { email })) if (!m.aceptado_at) datos.actualizar('miembros', { id: m.id }, { aceptado_at: new Date().toISOString() }).catch(() => {});
     const lista = [];
     for (const p of planes) {
       const lead = await datos.primero('leads', { sid: p.sid });
@@ -299,7 +347,10 @@ const rutas = {
       const problema = p.pack || r.problema;
       const prog = adulto ? (PROGRAMAS_ADULTO[problema] || PROGRAMAS_ADULTO.correa) : null;
       lista.push({ token: p.token, nombre: r.nombre || 'Tu perro', raza: r.raza || '', razaId: r.razaId || 'mestizo', tipo: p.pack ? 'pack' : (r.tipo || 'cachorro'), problema: problema || '',
-        titulo: adulto ? prog.titulo : 'Plan de 8 semanas', dias: adulto ? 42 : 56, desde: p.enviado_at || p.ts, extra: !!p.pack });
+        titulo: adulto ? prog.titulo : 'Plan de 8 semanas', dias: adulto ? 42 : 56, desde: p.enviado_at || p.ts, extra: !!p.pack,
+        compartido: !!p.compartido, invitadoPor: p.invitadoPor || null, progreso: p.progreso || {},
+        miembros: (await datos.listar('miembros', { token: p.token })).map((m) => ({ nombre: m.nombre || nombreDeEmail(m.email), email: m.email, aceptado: !!m.aceptado_at })),
+        dueno: p.compartido ? nombreDeEmail(p.email) : null });
     }
     const problemas = [...new Set(lista.map((p) => p.problema).filter(Boolean))];
     const productos = [...ZONA.PRODUCTOS.base, ...problemas.flatMap((k) => ZONA.PRODUCTOS[k] || [])].filter((x, i, a) => a.findIndex((y) => y.id === x.id) === i);
@@ -313,23 +364,27 @@ const rutas = {
     const email = sesion.deCookie(req);
     if (!email) return enviar(res, 401, { error: 'sesion' });
     const desde = Date.now() - 14 * 864e5;
-    const filas = (await datos.listar('diario', { email }, { orden: 'ts.desc', limite: 500 })).filter((f) => new Date(f.ts).getTime() >= desde);
-    enviar(res, 200, { registros: filas.map(({ id, ts, tipo, lugar }) => ({ id, ts, tipo, lugar })) });
+    const cuenta = await cuentaDiario(email);
+    const filas = (await datos.listar('diario', { email: cuenta }, { orden: 'ts.desc', limite: 500 })).filter((f) => new Date(f.ts).getTime() >= desde);
+    enviar(res, 200, { registros: filas.map(({ id, ts, tipo, lugar, por }) => ({ id, ts, tipo, lugar, por: por || null })) });
   },
   'POST /api/diario': async (req, res) => {
     const email = sesion.deCookie(req);
     if (!email) return enviar(res, 401, { error: 'sesion' });
     const b = await json(req);
     if (!['pis', 'caca'].includes(b.tipo) || !['fuera', 'dentro'].includes(b.lugar)) return enviar(res, 400, { error: 'datos' });
-    const fila = await datos.insertar('diario', { email, tipo: b.tipo, lugar: b.lugar }, { devolver: true });
-    enviar(res, 200, { registro: { id: fila.id, ts: fila.ts, tipo: fila.tipo, lugar: fila.lugar } });
+    const cuenta = await cuentaDiario(email);
+    const m = cuenta !== email ? await datos.primero('miembros', { email }) : null;
+    const por = cuenta !== email ? (m?.nombre || nombreDeEmail(email)) : nombreDeEmail(email);
+    const fila = await datos.insertar('diario', { email: cuenta, tipo: b.tipo, lugar: b.lugar, por }, { devolver: true });
+    enviar(res, 200, { registro: { id: fila.id, ts: fila.ts, tipo: fila.tipo, lugar: fila.lugar, por } });
   },
   'POST /api/diario/borrar': async (req, res) => {
     const email = sesion.deCookie(req);
     if (!email) return enviar(res, 401, { error: 'sesion' });
     const b = await json(req);
     if (!/^\d+$/.test(String(b.id || ''))) return enviar(res, 400, { error: 'id' });
-    await datos.borrar('diario', { email, id: String(b.id) });
+    await datos.borrar('diario', { email: await cuentaDiario(email), id: String(b.id) });
     enviar(res, 200, { ok: true });
   },
 
@@ -392,6 +447,34 @@ const rutas = {
   'POST /api/admin/salir': async (req, res) => enviar(res, 200, { ok: true }, 'application/json', { 'Set-Cookie': sesion.cerrarAdmin() })
 
 };
+
+// ---------- Planes compartidos ----------
+const nombreDeEmail = (email) => { const x = String(email || '').split('@')[0].split(/[._+-]/)[0]; return x ? x.charAt(0).toUpperCase() + x.slice(1) : 'Alguien'; };
+/** Planes que ve un email en Mi zona: los suyos y los que le han compartido. */
+async function planesDe(email) {
+  const propios = (await datos.listar('planes', { email })).filter((p) => p.estado === 'enviado');
+  const lista = [...propios];
+  for (const m of await datos.listar('miembros', { email })) {
+    const p = await datos.primero('planes', { token: m.token });
+    if (p && p.estado === 'enviado' && p.email !== email && !lista.some((x) => x.token === p.token)) lista.push({ ...p, compartido: true, invitadoPor: m.invitado_por });
+  }
+  return lista;
+}
+/** Quién es esta persona dentro de un plan (para "marcado por"). */
+async function quienEnPlan(email, plan) {
+  if (!email) return null;
+  if (email === plan.email) return { rol: 'dueno', nombre: nombreDeEmail(email) };
+  const m = await datos.primero('miembros', { token: plan.token, email });
+  return m ? { rol: 'miembro', nombre: m.nombre || nombreDeEmail(email) } : null;
+}
+/** El diario se comparte: los miembros escriben en el del dueño del plan. */
+async function cuentaDiario(email) {
+  if (await datos.primero('planes', { email })) return email;
+  const m = await datos.primero('miembros', { email });
+  const p = m && (await datos.primero('planes', { token: m.token }));
+  return p ? p.email : email;
+}
+const invitacionesRecientes = new Map();
 
 async function registrarPedido(s) {
   if (await datos.primero('pedidos', { session_id: s.id, tipo: 'plan' })) return;
@@ -469,7 +552,9 @@ const servidor = http.createServer(async (req, res) => {
     if (m) {
       const plan = await datos.primero('planes', { token: m[1] });
       if (!plan) return html(res, 404, pagina('Plan no encontrado', '<h1>No encontramos este plan</h1><p>Revisa el enlace del email o escríbenos.</p>'));
-      return enviar(res, 200, plan.html, TIPOS['.html'], { 'X-Robots-Tag': 'noindex' });
+      // Plan compartido: sincroniza el progreso y añade el botón de invitar (vale también para planes ya entregados).
+      const conCompartir = plan.html.replace(/<body([^>]*)>/, (b) => `${b}<script src="/plan-compartido.js" data-t="${plan.token}"></script>`);
+      return enviar(res, 200, conCompartir, TIPOS['.html'], { 'X-Robots-Tag': 'noindex' });
     }
     // Páginas indexables (generadas en el servidor)
     const CACHE_HTML = { 'Cache-Control': 'public, max-age=600' };

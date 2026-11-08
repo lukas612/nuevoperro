@@ -12,7 +12,7 @@
   function hora(ts) { var d = new Date(ts); return (d.getHours() < 10 ? '0' : '') + d.getHours() + ':' + (d.getMinutes() < 10 ? '0' : '') + d.getMinutes(); }
 
   // ---------- Diario de pis y caca ----------
-  function diario(el, nombre) {
+  function diario(el, nombre, compartido) {
     var registros = [];
     function pintar() {
       var hoy = new Date(), kHoy = clave(hoy);
@@ -54,7 +54,7 @@
         }).join('') + '</div>' +
         '<p class="nota">' + I('chispa') + '<span>' + consejo + '</span></p>' +
         (deHoy.length ? '<ul class="diario-hoy">' + deHoy.slice(0, 6).map(function (r) {
-          return '<li><span>' + hora(r.ts) + ' · ' + (r.tipo === 'pis' ? 'Pis' : 'Caca') + ' ' + (r.lugar === 'fuera' ? 'fuera' : 'en casa') + '</span><button class="btn texto" data-borrar="' + esc(r.id) + '" style="width:auto;min-height:32px;padding:0 6px">Deshacer</button></li>';
+          return '<li><span>' + hora(r.ts) + ' · ' + (r.tipo === 'pis' ? 'Pis' : 'Caca') + ' ' + (r.lugar === 'fuera' ? 'fuera' : 'en casa') + (compartido && r.por ? ' <span class="suave">· ' + esc(r.por) + '</span>' : '') + '</span><button class="btn texto" data-borrar="' + esc(r.id) + '" style="width:auto;min-height:32px;padding:0 6px">Deshacer</button></li>';
         }).join('') + '</ul>' : '');
 
       el.querySelectorAll('[data-t]').forEach(function (b) {

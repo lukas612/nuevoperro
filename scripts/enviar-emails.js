@@ -25,6 +25,7 @@ async function enviarEmails({ prueba: PRUEBA = false } = {}) {
   // Quien tiene un pedido o un plan es comprador: nunca recibe los emails de "quien no compra".
   const compradores = new Set([...pedidos.filter((p) => p.tipo === 'plan').map((p) => p.sid), ...planes.map((p) => p.sid)]);
   const emailsCompradores = new Set([...pedidos.filter((p) => p.tipo === 'plan').map((p) => p.email), ...planes.map((p) => p.email)].filter(Boolean));
+  const miembros = await datos.listar('miembros');
   const reembolsados = new Set((await datos.listar('reembolsos')).filter((r) => r.tipo === 'plan').map((r) => r.sid));
   const cola = [];
 
@@ -52,7 +53,13 @@ async function enviarEmails({ prueba: PRUEBA = false } = {}) {
     if (!lead) continue;
     const dia = diasDesde(plan.enviado_at); // el día 1 es el día siguiente a la entrega
     const url = `${CFG.baseUrl}/plan/${plan.token}`;
-    if (dia >= 1 && dia <= emails.DIAS(lead.respuestas)) { const m = emails.diario(plan.email, lead.respuestas, dia, url); if (m) { m.para = plan.email; cola.push(m); } }
+    if (dia >= 1 && dia <= emails.DIAS(lead.respuestas)) {
+      const m = emails.diario(plan.email, lead.respuestas, dia, url); if (m) { m.para = plan.email; cola.push(m); }
+      // Quien comparte el plan (y ya ha entrado) también recibe la tarea del día.
+      for (const mb of miembros.filter((x) => x.token === plan.token && x.aceptado_at && !bajas.has(x.email))) {
+        const mm = emails.diario(mb.email, lead.respuestas, dia, url); if (mm) { mm.para = mb.email; cola.push(mm); }
+      }
+    }
     for (const e of [7, 21]) if (dia >= e && dia < e + 3) { const m = emails.encuesta(plan.email, lead.respuestas, e, url); m.para = plan.email; cola.push(m); }
   }
 

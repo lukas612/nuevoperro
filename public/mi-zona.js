@@ -41,6 +41,33 @@
     };
   }
 
+  // ---------- Hacedlo juntos: invitar a otra persona al plan ----------
+  function juntos(d) {
+    var el = document.getElementById('juntos');
+    var planes = d.planes.filter(function (p) { return !p.extra; });
+    if (!el || !planes.length) { if (el) el.remove(); return; }
+    var p = planes[0];
+    var gente = [p.compartido ? p.dueno : 'Tú'].concat((p.miembros || []).map(function (m) { return m.nombre + (m.aceptado ? '' : ' (invitado)'); }));
+    el.innerHTML = '<div class="cab-consejo">' + burbuja('personas', 'lilac') + '<h2 style="font-size:1.3rem">Hacedlo juntos</h2></div>' +
+      '<p class="suave">Invita a tu pareja o a quien también cuide de ' + esc(p.nombre) + '. Veréis el mismo plan, lo que marca cada uno y compartiréis el diario.</p>' +
+      (gente.length > 1 ? '<div class="ajustes">' + gente.map(function (g) { return '<span class="chip">' + I('persona') + esc(g) + '</span>'; }).join('') + '</div>' : '') +
+      (planes.length > 1 ? '<select id="j-plan">' + planes.map(function (x, k) { return '<option value="' + k + '">' + esc(x.nombre + ' · ' + x.titulo) + '</option>'; }).join('') + '</select>' : '') +
+      '<input id="j-nombre" type="text" maxlength="30" placeholder="Su nombre (opcional)" autocomplete="off">' +
+      '<input id="j-email" type="email" placeholder="Su email" autocomplete="off">' +
+      '<p class="error" id="j-err"></p><button class="btn" id="j-enviar">Enviar invitación</button>';
+    document.getElementById('j-enviar').onclick = function () {
+      var b = this, err = document.getElementById('j-err');
+      var sel = document.getElementById('j-plan'), plan = planes[sel ? Number(sel.value) : 0];
+      var email = document.getElementById('j-email').value.trim(), nombre = document.getElementById('j-nombre').value.trim();
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { err.textContent = 'Revisa el email.'; return; }
+      b.disabled = true; b.textContent = 'Enviando…'; err.textContent = '';
+      post('/api/invitar', { t: plan.token, email: email, nombre: nombre }).then(function (j) {
+        if (j.error) throw j;
+        el.innerHTML = '<div class="cab-consejo">' + burbuja('personas', 'lilac') + '<h2 style="font-size:1.3rem">' + (j.ya ? 'Ya estaba invitado' : 'Invitación enviada') + '</h2></div><p class="suave">Le hemos mandado un email a <b>' + esc(email) + '</b> con el acceso al plan de ' + esc(plan.nombre) + '.</p>';
+      }).catch(function (e) { err.textContent = (e && e.error) || 'No se ha podido enviar.'; b.disabled = false; b.textContent = 'Enviar invitación'; });
+    };
+  }
+
   function zona(d) {
     cabecera(true);
     var hoy = Math.floor(Date.now() / 864e5), idxConsejo = hoy % d.consejos.length;
@@ -48,13 +75,15 @@
     var sus = function (t) { return String(t).replace(/\{n\}/g, nombres[0] || 'tu perro'); };
 
     var planes = d.planes.length ? d.planes.map(function (p) {
-      var hechas = progreso(p.token, p.dias);
+      var hechas = Math.max(progreso(p.token, p.dias), Object.keys(p.progreso || {}).filter(function (k) { return /^d\d+$/.test(k) && p.progreso[k].v && Number(k.slice(1)) <= p.dias; }).length);
       var dia = Math.min(p.dias, Math.max(1, Math.floor((Date.now() - new Date(p.desde).getTime()) / 864e5) + 1));
       return '<a class="plan-tarjeta" href="/plan/' + esc(p.token) + '">' +
         '<span class="avatar">' + D.cara(p.razaId, { lengua: true }) + '</span>' +
         '<span class="pila" style="gap:6px;min-width:0;flex:1"><small class="eti-peq">' + esc(p.titulo) + (p.extra ? ' · Programa extra' : '') + '</small><b>' + esc(p.nombre) + '</b>' +
         '<span class="peq suave">Día ' + dia + ' de ' + p.dias + ' · ' + hechas + (hechas === 1 ? ' tarea hecha' : ' tareas hechas') + '</span>' +
-        '<span class="barra-mini"><i style="width:' + Math.max(3, hechas / p.dias * 100) + '%"></i></span></span>' +
+        '<span class="barra-mini"><i style="width:' + Math.max(3, hechas / p.dias * 100) + '%"></i></span>' +
+        (p.compartido ? '<span class="peq suave">' + I('personas') + ' Te lo compartió ' + esc(p.dueno) + '</span>' : (p.miembros && p.miembros.length ? '<span class="peq suave">' + I('personas') + ' Con ' + esc(p.miembros.map(function (m) { return m.nombre; }).join(', ')) + '</span>' : '')) +
+        '</span>' +
         '<span class="eleccion-flecha">' + I('flecha') + '</span></a>';
     }).join('') : '<div class="tarjeta"><p>Todavía no hay ningún plan enviado a este email. Si acabas de comprar, te llegará por email en unos minutos.</p></div>';
 
@@ -72,6 +101,7 @@
     app.innerHTML = '<div class="pila-g entra">' +
       '<section class="pila"><h1 style="font-size:1.9rem">Hola' + (nombres.length === 1 ? ', aquí tienes todo lo de ' + esc(nombres[0]) : '') + '</h1><p class="suave peq">' + esc(d.email) + '</p></section>' +
       '<section class="pila"><span class="etiqueta">' + (d.planes.length > 1 ? 'Tus planes' : 'Tu plan') + '</span>' + planes + '</section>' +
+      '<section class="tarjeta pila" id="juntos"></section>' +
       '<section class="tarjeta pila" id="instalar"></section>' +
       '<section class="tarjeta pila consejo"><div class="cab-consejo">' + burbuja('chispa', 'butter') + '<span class="etiqueta">Consejo de hoy</span></div>' +
         '<h2 id="c-tit" style="font-size:1.3rem"></h2><p id="c-txt"></p><button class="btn texto" id="otro" style="align-self:flex-start;width:auto;padding-left:0">Otro consejo</button></section>' +
@@ -88,10 +118,11 @@
     var H = window.QBP_HERRAMIENTAS;
     if (H) {
       H.instalar(document.getElementById('instalar'));
-      H.diario(document.getElementById('diario'), nombres[0] || 'tu perro');
+      H.diario(document.getElementById('diario'), nombres[0] || 'tu perro', d.planes.some(function (p) { return p.compartido || (p.miembros && p.miembros.length); }));
       H.clicker(document.getElementById('clicker-caja'));
       H.club(document.getElementById('club'), d.enClub);
     }
+    juntos(d);
     function pintaConsejo() { var c = d.consejos[idxConsejo % d.consejos.length]; document.getElementById('c-tit').textContent = c[0]; document.getElementById('c-txt').textContent = sus(c[1]); }
     pintaConsejo();
     document.getElementById('otro').onclick = function () { idxConsejo++; pintaConsejo(); };
