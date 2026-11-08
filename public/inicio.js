@@ -8,10 +8,10 @@
     return '<a class="eleccion" href="' + href + '"><span class="eleccion-cara">' + D.cara(cara, { lengua: true }) + '</span>' +
       '<span class="eleccion-txt"><b>' + titulo + '</b><small>' + sub + '</small></span><span class="eleccion-flecha">' + I('flecha') + '</span></a>';
   }
-  var marca = 'Plan Cachorro';
-  document.getElementById('barra').innerHTML = '<span class="marca"><span class="logo">' + I('huella') + '</span><span id="marca">' + marca + '</span></span>';
+  var marca = 'Qué Buen Perro';
+  document.getElementById('barra').innerHTML = '<a class="marca" href="/" style="text-decoration:none;color:inherit">' + D.logo() + '<span id="marca">' + D.nombreMarca(marca) + '</span></a>';
   fetch('/api/config').then(function (r) { return r.json(); }).then(function (c) {
-    document.getElementById('marca').textContent = c.marca; document.getElementById('pie-contacto').textContent = c.emailContacto || '';
+    document.getElementById('marca').innerHTML = D.nombreMarca(c.marca); document.getElementById('pie-contacto').textContent = c.emailContacto || '';
   }).catch(function () {});
 
   var problemas = [

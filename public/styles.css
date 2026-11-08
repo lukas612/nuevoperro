@@ -70,8 +70,6 @@ h1[tabindex="-1"]:focus, h2[tabindex="-1"]:focus { outline: none; }
 .barra { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg); }
 .barra-in { max-width: 560px; margin: 0 auto; height: 60px; display: flex; align-items: center; gap: 12px; }
 .marca { display: flex; align-items: center; gap: 8px; font-family: var(--display); font-weight: 800; font-size: 1.15rem; letter-spacing: -.02em; }
-.marca .logo { width: 30px; height: 30px; border-radius: 10px; background: var(--primary); color: var(--primary-ink); display: grid; place-items: center; }
-.marca .logo .ico { width: 18px; height: 18px; }
 .atras { width: 40px; height: 40px; border-radius: 12px; border: 0; background: var(--surface); color: var(--ink); display: grid; place-items: center; cursor: pointer; box-shadow: var(--shadow); flex: none; }
 .progreso { flex: 1; height: 10px; background: var(--line); border-radius: 99px; overflow: hidden; }
 #progreso-relleno { height: 100%; width: 0; background: var(--primary); border-radius: 99px; transition: width .35s ease; }
@@ -342,3 +340,11 @@ label.check input { margin-top: 2px; width: 20px; height: 20px; flex: none; acce
 .atajo:hover { box-shadow: var(--shadow); }
 .atajo .burbuja { width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center; flex: none; }
 .atajo .burbuja .ico { width: 18px; height: 18px; }
+
+/* Logo: pegatina con aviso */
+.sello-marca { position: relative; display: inline-block; width: 40px; height: 40px; flex: none; }
+.sello-marca .sm-cara { position: absolute; left: 0; bottom: 0; width: 34px; height: 34px; border-radius: 50%; background: #ffe0cc; box-shadow: 0 0 0 2px #fff, 0 2px 6px rgba(27,42,65,.18); display: grid; place-items: center; }
+.sello-marca .sm-svg { width: 30px; height: 30px; display: block; }
+.sello-marca .sm-aviso { position: absolute; right: -3px; top: -3px; width: 19px; height: 19px; transform: rotate(8deg); }
+.nombre-marca { font-family: var(--display); font-weight: 800; letter-spacing: -.02em; white-space: nowrap; }
+.nm-perro { background: linear-gradient(transparent 55%, var(--primary) 55%, var(--primary) 92%, transparent 92%); padding: 0 3px; margin-left: -3px; }

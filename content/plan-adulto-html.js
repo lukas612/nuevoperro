@@ -22,7 +22,7 @@
     var n = r.nombre || 'tu perro';
     var sus = function (txt) { return String(txt).replace(/\{n\}/g, n); };
     var prog = PR.PROGRAMAS[r.problema] || PR.PROGRAMAS.correa;
-    var marca = datos.marca || 'Plan Cachorro';
+    var marca = datos.marca || 'Qué Buen Perro';
     var id = datos.id || 'demo';
     var inicio = datos.inicio ? new Date(datos.inicio) : new Date();
     var razaId = r.razaId || 'mestizo';
@@ -54,12 +54,13 @@
 
     var html = '<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><meta name="robots" content="noindex">' +
       '<title>Plan de ' + esc(n) + ' · ' + esc(marca) + '</title>' +
+      '<link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="/apple-touch-icon.png">' +
       '<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>' +
       '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=Figtree:wght@400;500;600;700&display=swap">' +
       '<style>' + PH.CSS + '.porque{font-size:1rem;line-height:1.6}.tabs{grid-template-columns:repeat(6,1fr)}@media (max-width:480px){.tabs{grid-template-columns:repeat(3,1fr)}}</style></head><body>' +
       (datos.volver ? '<button class="volver" id="volver">' + I('flecha') + 'Volver a la demo</button>' : '') +
       '<header class="hero"><div class="in">' +
-        '<div class="hero-top"><span class="marca"><span class="logo">' + I('huella') + '</span>' + esc(marca) + '</span><span class="desde">Desde el ' + fechaLarga(inicio) + '</span></div>' +
+        '<div class="hero-top"><span class="marca">' + D.logo() + D.nombreMarca(marca) + '</span><span class="desde">Desde el ' + fechaLarga(inicio) + '</span></div>' +
         '<div class="hero-main"><span class="av">' + D.cara(razaId, { lengua: true }) + '</span><div><span class="eti cl">' + esc(prog.titulo) + ' · 6 semanas</span><h1>' + esc(n) + '</h1>' +
         '<div class="chips">' + chips.map(function (c) { return '<span>' + esc(c) + '</span>'; }).join('') + '</div></div></div>' +
         '<div class="progreso"><div class="pr-txt"><b id="pr-sem">Semana 1 de 6</b><span id="pr-pct">0 tareas hechas</span></div><div class="barra"><i id="pr-bar"></i></div></div>' +

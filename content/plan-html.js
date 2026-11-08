@@ -42,7 +42,7 @@
     var r = datos.respuestas || {};
     var pf = perfilDe(r);
     var n = pf.nombre;
-    var marca = datos.marca || 'Plan Cachorro';
+    var marca = datos.marca || 'Qué Buen Perro';
     var id = datos.id || 'demo';
     var inicio = datos.inicio ? new Date(datos.inicio) : new Date();
     var raza = D.raza(pf.razaId) || D.raza('mestizo');
@@ -108,13 +108,14 @@
 
     var html = '<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><meta name="robots" content="noindex">' +
       '<title>Plan de ' + esc(n) + ' · ' + esc(marca) + '</title>' +
+      '<link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="/apple-touch-icon.png">' +
       '<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>' +
       '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=Figtree:wght@400;500;600;700&display=swap">' +
       '<style>' + CSS + '</style></head><body>' +
       (datos.volver ? '<button class="volver" id="volver">' + I('flecha') + 'Volver a la demo</button>' : '') +
 
       '<header class="hero"><div class="in">' +
-        '<div class="hero-top"><span class="marca"><span class="logo">' + I('huella') + '</span>' + esc(marca) + '</span><span class="desde">Desde el ' + fechaLarga(inicio) + '</span></div>' +
+        '<div class="hero-top"><span class="marca">' + D.logo() + D.nombreMarca(marca) + '</span><span class="desde">Desde el ' + fechaLarga(inicio) + '</span></div>' +
         '<div class="hero-main"><span class="av">' + D.cara(pf.razaId, { lengua: true }) + '</span><div><span class="eti cl">Plan de 8 semanas</span><h1>' + esc(n) + '</h1>' +
         '<div class="chips">' + chips.map(function (c) { return '<span>' + esc(c) + '</span>'; }).join('') + '</div></div></div>' +
         '<div class="progreso"><div class="pr-txt"><b id="pr-sem">Semana 1 de 8</b><span id="pr-pct">0 tareas hechas</span></div><div class="barra"><i id="pr-bar"></i></div></div>' +
@@ -175,7 +176,8 @@
     '.volver{position:fixed;z-index:30;bottom:calc(14px + env(safe-area-inset-bottom,0px));right:max(14px,env(safe-area-inset-right,0px));padding:12px 16px!important;display:flex;align-items:center;gap:6px;border:0;border-radius:99px;padding:8px 14px;font:700 .85rem var(--body);background:var(--primary);color:#1b2a41;cursor:pointer;box-shadow:var(--shadow)}',
     '.hero{background:linear-gradient(150deg,#26396a,#1b2a41 65%);color:#fff;padding-block:18px 26px;position:relative;overflow:hidden}.hero::after{content:"";position:absolute;width:320px;height:320px;border-radius:50%;background:#ffc83d;opacity:.12;right:-120px;top:-140px}',
     '.hero .in{position:relative;z-index:1;display:flex;flex-direction:column;gap:20px}.hero-top{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}',
-    '.marca{display:flex;align-items:center;gap:8px;font:800 1.05rem var(--display)}.logo{width:28px;height:28px;border-radius:9px;background:var(--primary);color:#1b2a41;display:grid;place-items:center}.logo .ico{width:17px;height:17px}.desde{font-size:.85rem;color:#c5d0e3}',
+    '.sello-marca{position:relative;display:inline-block;width:40px;height:40px;flex:none}.sello-marca .sm-cara{position:absolute;left:0;bottom:0;width:34px;height:34px;border-radius:50%;background:#ffe0cc;box-shadow:0 0 0 2px #fff;display:grid;place-items:center}.sello-marca .sm-svg{width:30px;height:30px;display:block}.sello-marca .sm-aviso{position:absolute;right:-3px;top:-3px;width:19px;height:19px;transform:rotate(8deg)}.nombre-marca{font-family:var(--display);font-weight:800;letter-spacing:-.02em;white-space:nowrap}.nm-perro{color:#ffc83d}',
+    '.marca{display:flex;align-items:center;gap:10px;font:800 1.05rem var(--display)}.logo{width:28px;height:28px;border-radius:9px;background:var(--primary);color:#1b2a41;display:grid;place-items:center}.logo .ico{width:17px;height:17px}.desde{font-size:.85rem;color:#c5d0e3}',
     '.hero-main{display:flex;gap:18px;align-items:center}.av{width:104px;height:104px;flex:none;filter:drop-shadow(0 8px 16px rgba(0,0,0,.25))}.hero h1{font-size:clamp(2.2rem,9vw,3rem);line-height:1;color:#fff;margin:4px 0 10px}',
     '.chips{display:flex;flex-wrap:wrap;gap:6px}.chips span{background:rgba(255,255,255,.12);border-radius:99px;padding:4px 10px;font-size:.8rem;font-weight:600}',
     '.progreso{background:rgba(255,255,255,.08);border-radius:16px;padding:12px 14px;display:flex;flex-direction:column;gap:8px}.pr-txt{display:flex;justify-content:space-between;gap:8px;font-size:.88rem;flex-wrap:wrap}.pr-txt span{color:#c5d0e3}.barra{height:8px;border-radius:99px;background:rgba(255,255,255,.15);overflow:hidden}.barra i{display:block;height:100%;width:3%;background:var(--primary);border-radius:99px;transition:width .3s}',

@@ -4,7 +4,7 @@
   'use strict';
   var P = window.PLANTILLAS, D = window.PERROS, PR = window.PROGRAMAS, I = D.icono;
   var app = document.getElementById('app'), barra = document.getElementById('barra');
-  var CONF = { precio: 1999, precioUpsell: 999, demo: false, marca: 'Plan Cachorro', pixelId: '', emailContacto: '' };
+  var CONF = { precio: 1999, precioUpsell: 999, demo: false, marca: 'Qué Buen Perro', pixelId: '', emailContacto: '' };
 
   function lsGet(k) { try { return JSON.parse(localStorage.getItem(k)); } catch (e) { return null; } }
   function lsSet(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { /* sin almacenamiento */ } }
@@ -55,7 +55,7 @@
       requestAnimationFrame(function () { var b = document.getElementById('progreso-relleno'); if (b) b.style.width = Math.max(4, Math.round(modo.progreso * 100)) + '%'; });
       document.getElementById('atras').onclick = modo.atras;
     } else {
-      barra.innerHTML = '<a class="marca" href="/" style="text-decoration:none;color:inherit"><span class="logo">' + I('huella') + '</span>' + esc(CONF.marca) + '</a>';
+      barra.innerHTML = '<a class="marca" href="/" style="text-decoration:none;color:inherit">' + D.logo() + D.nombreMarca(CONF.marca) + '</a>';
     }
   }
   function pintar(html) {

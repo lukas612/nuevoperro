@@ -207,7 +207,19 @@
     return '<svg viewBox="0 0 24 24" class="' + (clase || 'ico') + '" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + (P[nombre] || '') + '</svg>';
   }
 
-  var api = { RAZAS: RAZAS, raza: function (id) { return porId[id]; }, buscar: buscar, cara: cara, icono: icono };
+  // ---------- Logo (A+B 3: la pegatina con aviso) ----------
+  var BOCADILLO = '<svg class="sm-aviso" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg"><path d="M8,4 H40 A6,6 0 0 1 46,10 V32 A6,6 0 0 1 40,38 H30 L20,46 V38 H8 A6,6 0 0 1 2,32 V10 A6,6 0 0 1 8,4 Z" fill="#ffc83d" stroke="#1b2a41" stroke-width="3" stroke-linejoin="round"/>' +
+    '<circle cx="18" cy="12.5" r="3.2" fill="#1b2a41"/><rect x="15" y="18" width="6" height="14" rx="3" fill="#1b2a41"/><rect x="27" y="8" width="6" height="14" rx="3" fill="#1b2a41"/><circle cx="30" cy="27.5" r="3.2" fill="#1b2a41"/></svg>';
+  function logo() {
+    return '<span class="sello-marca" aria-hidden="true"><span class="sm-cara">' + cara('mestizo', { lengua: true, sinFondo: true, clase: 'sm-svg' }) + '</span>' + BOCADILLO + '</span>';
+  }
+  function nombreMarca(marca) {
+    var m = String(marca || '').replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; });
+    if (/^qu[eé] buen perro$/i.test(m.trim())) return '<span class="nombre-marca">¡Qué buen <span class="nm-perro">perro!</span></span>';
+    return '<span class="nombre-marca">' + m + '</span>';
+  }
+
+  var api = { RAZAS: RAZAS, raza: function (id) { return porId[id]; }, buscar: buscar, cara: cara, icono: icono, logo: logo, nombreMarca: nombreMarca, BOCADILLO: BOCADILLO };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.PERROS = api;
 })(this);
