@@ -256,7 +256,7 @@ const rutas = {
       enviar(res, 200, integrado ? { clientSecret: s.client_secret } : { url: s.url });
     } catch (e) {
       console.error('checkout', e.message);
-      enviar(res, 502, { error: 'No hemos podido iniciar el pago. Inténtalo de nuevo.' });
+      enviar(res, 502, { error: 'No hemos podido iniciar el pago. Inténtalo de nuevo.', detalle: b.integrado ? String(e.message).slice(0, 300) : undefined }); // TEMPORAL: diagnóstico del pago integrado
     }
   },
 
