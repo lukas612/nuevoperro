@@ -40,6 +40,17 @@
     .grafico text { fill: var(--muted); font-size: 10px; font-family: inherit; }
     .tip { position: absolute; pointer-events: none; background: var(--ink); color: var(--bg); border-radius: 10px; padding: 6px 10px; font-size: .78rem; line-height: 1.35; white-space: nowrap; transform: translate(-50%, -110%); z-index: 5; }
     .embudo { display: flex; flex-direction: column; gap: 8px; }
+    .envio-form { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; align-items: start; }
+    .envio-form .campos { display: flex; flex-direction: column; gap: 10px; }
+    .envio-form label { display: flex; flex-direction: column; gap: 4px; font-weight: 700; font-size: .85rem; }
+    .envio-form input, .envio-form select, .envio-form textarea { font: inherit; font-weight: 400; border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; background: var(--surface); color: var(--ink); }
+    .envio-form textarea { min-height: 180px; resize: vertical; }
+    .envio-form .canales { display: flex; gap: 8px; flex-wrap: wrap; }
+    .envio-form .canales label { flex-direction: row; align-items: center; font-weight: 600; }
+    .envio-form .botones { display: flex; gap: 8px; flex-wrap: wrap; }
+    .envio-form .botones .btn { width: auto; min-height: 42px; padding: 8px 14px; font-size: .9rem; }
+    #envio-vista { width: 100%; height: 620px; border: 1px solid var(--line); border-radius: 14px; background: #f5f7fb; }
+    @media (max-width: 900px) { .envio-form { grid-template-columns: 1fr; } }
     .email-caja { display: flex; flex-direction: column; gap: 6px; }
     .email-caja iframe { width: 100%; height: 560px; border: 1px solid var(--line); border-radius: 14px; background: #f5f7fb; }
     .emails-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 14px; }
@@ -84,8 +95,9 @@
 
     <div id="panel" hidden>
       <div class="pila-g" style="gap:22px">
-        <div class="cab-panel"><div class="seg" role="group" aria-label="Sección"><button data-sec="resumen" aria-pressed="true">Resumen</button><button data-sec="emails">Emails</button></div><span class="yo" id="yo"></span><button class="btn texto" id="salir" style="width:auto">Salir</button></div>
+        <div class="cab-panel"><div class="seg" role="group" aria-label="Sección"><button data-sec="resumen" aria-pressed="true">Resumen</button><button data-sec="emails">Emails</button><button data-sec="envios">Envíos</button></div><span class="yo" id="yo"></span><button class="btn texto" id="salir" style="width:auto">Salir</button></div>
         <div id="sec-emails" hidden></div>
+        <div id="sec-envios" hidden></div>
         <div id="sec-resumen" class="pila-g" style="gap:22px">
         <div class="controles">
           <div class="seg" role="group" aria-label="Periodo">
@@ -329,7 +341,8 @@
     var emailsCargados = false;
     function verSeccion(sec) {
       document.querySelectorAll('[data-sec]').forEach(function (b) { b.setAttribute('aria-pressed', String(b.dataset.sec === sec)); });
-      $('sec-resumen').hidden = sec !== 'resumen'; $('sec-emails').hidden = sec !== 'emails';
+      $('sec-resumen').hidden = sec !== 'resumen'; $('sec-emails').hidden = sec !== 'emails'; $('sec-envios').hidden = sec !== 'envios';
+      if (sec === 'envios') pintarEnvios();
       if (sec === 'emails' && !emailsCargados) {
         emailsCargados = true; $('sec-emails').innerHTML = '<p class="suave">Cargando…</p>';
         fetch('/api/admin/emails').then(function (r) { return r.json(); }).then(function (j) {
@@ -345,6 +358,55 @@
       }
     }
     document.querySelectorAll('[data-sec]').forEach(function (b) { b.onclick = function () { verSeccion(b.dataset.sec); }; });
+
+    // ---------- Envíos manuales ----------
+    function pintarEnvios() {
+      var el = $('sec-envios');
+      if (!el.dataset.listo) {
+        el.dataset.listo = '1';
+        el.innerHTML = '<section class="caja pila"><h2>Enviar un email o un aviso</h2><p class="suave peq">Aparte de los ciclos automáticos. Nunca se envía a quien se dio de baja, y a los leads solo si aceptaron emails.</p>' +
+          '<div class="envio-form"><div class="campos">' +
+            '<label>A quién<select id="e-seg"><option value="">Cargando…</option></select></label>' +
+            '<div class="canales"><label><input type="radio" name="e-canal" value="email" checked> Email</label><label><input type="radio" name="e-canal" value="push"> Aviso en el móvil</label><label><input type="radio" name="e-canal" value="ambos"> Los dos</label></div>' +
+            '<label>Asunto (en el móvil, el título)<input id="e-asunto" maxlength="150" placeholder="Por ejemplo: Nuevo programa: Menos ladridos"></label>' +
+            '<label>Texto<textarea id="e-texto" placeholder="Separa los párrafos con una línea en blanco. **Así** sale en negrita."></textarea></label>' +
+            '<label>Texto del botón (opcional)<input id="e-boton" maxlength="40" placeholder="Ver en Mi zona"></label>' +
+            '<label>Enlace del botón o del aviso (opcional)<input id="e-url" placeholder="/mi-zona#salud"></label>' +
+            '<p class="error" id="e-err"></p><p class="suave peq" id="e-ok"></p>' +
+            '<div class="botones"><button class="btn sec" id="e-vista">Vista previa</button><button class="btn sec" id="e-prueba">Enviarme una prueba</button><button class="btn" id="e-enviar">Enviar</button></div>' +
+          '</div><iframe id="envio-vista" title="Vista previa del email"></iframe></div></section>' +
+          '<section class="caja"><h2>Historial</h2><div class="tabla" id="e-hist"></div></section>';
+        var datosForm = function () { var c = document.querySelector('input[name="e-canal"]:checked'); return { segmento: $('e-seg').value, canal: c ? c.value : 'email', asunto: $('e-asunto').value, texto: $('e-texto').value, boton: $('e-boton').value, url: $('e-url').value }; };
+        var postJ = function (u, b) { return fetch(u, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(b) }).then(function (r) { return r.json().then(function (j) { if (!r.ok) throw j; return j; }); }); };
+        var vista = function () { postJ('/api/admin/envios/vista', datosForm()).then(function (j) { $('envio-vista').srcdoc = j.html; }).catch(function () {}); };
+        $('e-vista').onclick = vista;
+        $('e-prueba').onclick = function () {
+          $('e-err').textContent = ''; $('e-ok').textContent = 'Enviando prueba…';
+          var f = datosForm(); f.prueba = true;
+          postJ('/api/admin/envios', f).then(function (j) { $('e-ok').textContent = 'Prueba enviada a tu email' + (j.avisos ? ' y a tu móvil' : '') + '.'; }).catch(function (e) { $('e-ok').textContent = ''; $('e-err').textContent = (e && e.error) || 'No se ha podido enviar.'; });
+        };
+        $('e-enviar').onclick = function () {
+          var f = datosForm(), opt = $('e-seg').selectedOptions[0];
+          $('e-err').textContent = '';
+          if (!f.segmento) { $('e-err').textContent = 'Elige a quién enviarlo.'; return; }
+          if (!confirm('¿Enviar «' + f.asunto + '» a ' + (opt ? opt.textContent : '') + '? No se puede deshacer.')) return;
+          $('e-enviar').disabled = true;
+          postJ('/api/admin/envios', f).then(function (j) { $('e-ok').textContent = 'Enviando a ' + j.destinatarios + ' personas. El historial se actualiza al terminar.'; setTimeout(cargarEnvios, 4000); })
+            .catch(function (e) { $('e-err').textContent = (e && e.error) || 'No se ha podido enviar.'; }).finally(function () { $('e-enviar').disabled = false; });
+        };
+        vista();
+      }
+      cargarEnvios();
+    }
+    function cargarEnvios() {
+      fetch('/api/admin/envios').then(function (r) { return r.json(); }).then(function (j) {
+        var sel = $('e-seg'), actual = sel.value;
+        sel.innerHTML = '<option value="">Elige…</option>' + Object.keys(j.segmentos).map(function (k) { var s = j.segmentos[k]; return '<option value="' + k + '"' + (k === actual ? ' selected' : '') + '>' + esc(s.nombre) + ' (' + s.personas + ')</option>'; }).join('');
+        var canal = { email: 'Email', push: 'Aviso', ambos: 'Email + aviso' };
+        $('e-hist').innerHTML = j.historial.length ? '<table><thead><tr><th>Fecha</th><th>Asunto</th><th>A quién</th><th>Canal</th><th class="n">Personas</th><th class="n">Emails</th><th class="n">Avisos</th><th>Estado</th></tr></thead><tbody>' +
+          j.historial.map(function (h) { return '<tr><td>' + fecha(h.ts) + '</td><td>' + esc(h.asunto) + '</td><td>' + esc((j.segmentos[h.segmento] || {}).nombre || h.segmento) + '</td><td>' + (canal[h.canal] || h.canal) + '</td><td class="n">' + h.destinatarios + '</td><td class="n">' + h.emails + '</td><td class="n">' + h.avisos + '</td><td>' + esc(h.estado) + '</td></tr>'; }).join('') + '</tbody></table>' : '<p class="suave">Todavía no has enviado nada.</p>';
+      });
+    }
 
     var tRes; window.addEventListener('resize', function () { clearTimeout(tRes); tRes = setTimeout(function () { if (estado.datos) pintar(estado.datos); }, 200); });
     cargar();

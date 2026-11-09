@@ -660,6 +660,33 @@ const rutas = {
     enviar(res, 200, { emails: L });
   },
 
+  // ---------- Envíos manuales (panel → Envíos) ----------
+  'GET /api/admin/envios': async (req, res) => {
+    if (!sesion.adminDeCookie(req)) return enviar(res, 401, { error: 'sesion' });
+    const env = require('./lib/envios');
+    enviar(res, 200, { segmentos: await env.recuento(), historial: await datos.listar('campanas', {}, { orden: 'ts.desc', limite: 30 }) });
+  },
+  'POST /api/admin/envios/vista': async (req, res) => {
+    if (!sesion.adminDeCookie(req)) return enviar(res, 401, { error: 'sesion' });
+    const b = await json(req);
+    enviar(res, 200, plantillasEmail.libre('ejemplo@quebuenperro.com', { asunto: limpio(b.asunto, 150) || 'Asunto', texto: String(b.texto || '').slice(0, 5000), boton: limpio(b.boton, 40), url: b.url ? String(b.url).slice(0, 300) : null }));
+  },
+  'POST /api/admin/envios': async (req, res) => {
+    const admin = sesion.adminDeCookie(req);
+    if (!admin) return enviar(res, 401, { error: 'sesion' });
+    const b = await json(req);
+    const env = require('./lib/envios');
+    const o = { segmento: limpio(b.segmento, 40), canal: ['email', 'push', 'ambos'].includes(b.canal) ? b.canal : 'email', asunto: limpio(b.asunto, 150), texto: String(b.texto || '').slice(0, 5000),
+      boton: limpio(b.boton, 40), url: b.url ? String(b.url).slice(0, 300) : null, por: admin, prueba: b.prueba ? admin : null };
+    if (!o.asunto || !o.texto.trim()) return enviar(res, 400, { error: 'Pon asunto y texto.' });
+    if (!o.prueba && !env.SEGMENTOS[o.segmento]) return enviar(res, 400, { error: 'Elige a quién enviarlo.' });
+    if (o.prueba) return enviar(res, 200, await env.enviar(o));
+    // Envío real: en segundo plano (puede tardar si son muchos); el historial muestra cuándo termina.
+    const n = (await env.destinatarios(o.segmento)).length;
+    env.enviar(o).catch((e) => console.error('[envio]', e.message));
+    enviar(res, 200, { ok: true, destinatarios: n });
+  },
+
   'GET /api/admin/panel': async (req, res, url) => {
     if (!sesion.adminDeCookie(req)) return enviar(res, 401, { error: 'sesion' });
     const dias = Number(url.searchParams.get('dias')) || 30;
