@@ -578,3 +578,6 @@ html.pago-abierto, html.pago-abierto body { overflow: hidden; }
 .multi-d span { display: inline-block; padding: 8px 12px; border-radius: 99px; border: 1.5px solid var(--line); font-size: .88rem; cursor: pointer; background: var(--surface); }
 .multi-d input:checked + span { border-color: var(--ok); background: var(--ok-bg); color: var(--ok); font-weight: 700; }
 .multi-d input:focus-visible + span { outline: 2px solid var(--brand); outline-offset: 2px; }
+
+.prog-cat .btn { width: auto; align-self: flex-start; }
+.confirma { margin-top: 4px; }

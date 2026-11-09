@@ -166,6 +166,71 @@ const rutas = {
     enviar(res, 200, { ok: true, respuestas });
   },
 
+  // Comprar otro programa desde Mi zona: cobro en un clic con la tarjeta de su compra; si el banco
+  // pide confirmación, se abre el pago normal (integrado o en Stripe).
+  'POST /api/programa': async (req, res) => {
+    const email = sesion.deCookie(req);
+    if (!email) return enviar(res, 401, { error: 'sesion' });
+    const b = await json(req);
+    const programa = limpio(b.programa, 20);
+    if (!PROGRAMAS_ADULTO[programa] || programa === 'derivar') return enviar(res, 400, { error: 'Programa no válido.' });
+    if (!b.desistimiento) return enviar(res, 400, { error: 'Marca la casilla para recibirlo al momento.' });
+    const base = (await datos.listar('planes', { email })).find((p) => p.estado === 'enviado' && !p.pack);
+    if (!base) return enviar(res, 400, { error: 'Necesitas tener un plan para comprar a precio de cliente.' });
+    const sid = base.sid;
+    if ((await datos.listar('planes', { sid })).some((p) => p.pack === programa)) return enviar(res, 200, { ok: true, ya: true });
+    const precio = CFG.precioCliente;
+    const registrar = async (pi, sessionId) => {
+      await datos.insertar('pedidos', { session_id: sessionId, sid, email, importe: precio, tipo: 'programa', pack: programa, payment_intent: pi }, { ignorarDuplicado: true });
+      await entregarPack(sid, programa);
+      const lead = await datos.primero('leads', { sid });
+      meta.evento('Purchase', { id: 'prog_' + sessionId, email, sid, nav: meta.unir(lead?.meta, meta.datosNavegador(req, b)), valor: precio / 100, extra: { content_name: 'programa_' + programa, content_type: 'product', contents: [{ id: 'programa', quantity: 1 }] } });
+    };
+    if (MODO_DEMO) { await registrar(null, 'demo_prog_' + sid + '_' + programa); return enviar(res, 200, { ok: true }); }
+    const pedido = (await datos.listar('pedidos', { sid })).find((p) => p.tipo === 'plan' && p.payment_intent && !p.demo);
+    // 1) En un clic, con la tarjeta guardada de su compra
+    if (pedido) {
+      try {
+        const original = await stripe('GET', '/payment_intents/' + encodeURIComponent(pedido.payment_intent));
+        if (original.customer && original.payment_method) {
+          const pi = await stripe('POST', '/payment_intents', {
+            amount: precio, currency: 'eur', customer: original.customer, payment_method: original.payment_method, off_session: 'true', confirm: 'true',
+            description: 'Programa ' + PROGRAMAS_ADULTO[programa].titulo, statement_descriptor_suffix: 'QUEBUENPERRO',
+            metadata: { sid, tipo: 'programa', app: 'cachorro', pack: programa, desistimiento: 'aceptado_' + new Date().toISOString() }
+          }, 'prog_' + sid + '_' + programa);
+          if (pi.status === 'succeeded') { await registrar(pi.id, 'pi_' + pi.id); return enviar(res, 200, { ok: true }); }
+        }
+      } catch (e) { console.warn('programa: sin cobro en un clic:', e.message); }
+    }
+    // 2) Pago normal
+    try {
+      const integrado = !!(b.integrado && CFG.stripePk);
+      const vuelta = `${CFG.baseUrl}/mi-zona?programa=ok&session_id={CHECKOUT_SESSION_ID}`;
+      const params = {
+        mode: 'payment', customer_email: email, locale: 'es', adaptive_pricing: { enabled: 'false' },
+        line_items: { 0: { quantity: 1, price_data: { currency: 'eur', unit_amount: precio, product_data: { name: 'Programa ' + PROGRAMAS_ADULTO[programa].titulo + ' (6 semanas)' } } } },
+        payment_intent_data: { metadata: { sid, tipo: 'programa', app: 'cachorro', pack: programa } },
+        metadata: { sid, tipo: 'programa', app: 'cachorro', pack: programa, desistimiento: 'aceptado_' + new Date().toISOString() },
+        ...(integrado ? { ui_mode: 'embedded', return_url: vuelta } : { success_url: vuelta, cancel_url: `${CFG.baseUrl}/mi-zona#mas` })
+      };
+      const ses = await stripe('POST', '/checkout/sessions', params);
+      enviar(res, 200, integrado ? { clientSecret: ses.client_secret } : { url: ses.url });
+    } catch (e) {
+      console.error('programa', e.message);
+      enviar(res, 502, { error: 'No hemos podido iniciar el pago. Inténtalo de nuevo.' });
+    }
+  },
+  // Vuelta del pago normal de un programa
+  'GET /api/programa/estado': async (req, res, url) => {
+    const id = limpio(url.searchParams.get('session_id'), 200);
+    if (!id.startsWith('cs_')) return enviar(res, 400, { error: 'id' });
+    try {
+      const s = await stripe('GET', '/checkout/sessions/' + encodeURIComponent(id));
+      if (s.payment_status === 'paid' && s.metadata?.tipo === 'programa') await registrarPrograma(s);
+      enviar(res, 200, { pagado: s.payment_status === 'paid' });
+    } catch (e) { enviar(res, 502, { error: 'No hemos podido comprobar el pago.' }); }
+  },
+
   'POST /api/invitar': async (req, res) => {
     const b = await json(req);
     const t = limpio(b.t, 40);
@@ -341,7 +406,7 @@ const rutas = {
     const ev = JSON.parse(raw);
     const obj = ev.data?.object || {};
     // La cuenta de Stripe puede ser compartida: solo procesamos lo que es del cachorro.
-    if (ev.type === 'checkout.session.completed' && obj.metadata?.app === 'cachorro' && obj.payment_status === 'paid') await registrarPedido(obj);
+    if (ev.type === 'checkout.session.completed' && obj.metadata?.app === 'cachorro' && obj.payment_status === 'paid') await (obj.metadata?.tipo === 'programa' ? registrarPrograma(obj) : registrarPedido(obj));
     if (ev.type === 'charge.refunded' && obj.metadata?.app === 'cachorro') {
       await datos.insertar('reembolsos', { charge: obj.id, payment_intent: obj.payment_intent, importe: obj.amount_refunded, sid: obj.metadata?.sid, tipo: obj.metadata?.tipo }, { ignorarDuplicado: true });
     }
@@ -394,7 +459,14 @@ const rutas = {
     const productos = [...ZONA.PRODUCTOS.base, ...problemas.flatMap((k) => ZONA.PRODUCTOS[k] || [])].filter((x, i, a) => a.findIndex((y) => y.id === x.id) === i);
     const consejos = [...problemas.flatMap((k) => ZONA.CONSEJOS[k] || []), ...ZONA.CONSEJOS.general];
     const enClub = !!(await datos.primero('emails', { email, clave: 'club' }));
-    enviar(res, 200, { email, planes: lista, consejos, productos, seguros: ZONA.SEGUROS, marca: CFG.marca, enClub });
+    // Catálogo: los programas que aún no tiene, a precio de cliente (solo para quien compró el plan).
+    const propio = lista.find((p) => !p.compartido && !p.extra);
+    const tiene = new Set(lista.filter((p) => !p.compartido).map((p) => p.problema));
+    const catalogo = propio ? Object.entries(PROGRAMAS_ADULTO).filter(([k]) => !tiene.has(k) && k !== 'derivar').map(([k, pg]) => ({
+      id: k, titulo: pg.titulo, icono: pg.icono, texto: String(pg.porQue || '').replace(/\{n\}/g, propio.nombre).split('. ')[0] + '.', semanas: pg.semanas.length
+    })) : [];
+    enviar(res, 200, { email, planes: lista, consejos, productos, seguros: ZONA.SEGUROS, marca: CFG.marca, enClub,
+      catalogo, catalogoPara: propio ? propio.nombre : null, precioCliente: CFG.precioCliente, precioNormal: CFG.precios[0], stripePk: MODO_DEMO ? '' : CFG.stripePk });
   },
 
   // Diario de pis y caca (Mi zona)
@@ -513,6 +585,14 @@ async function cuentaDiario(email) {
   return p ? p.email : email;
 }
 const invitacionesRecientes = new Map();
+
+async function registrarPrograma(s) {
+  const sid = s.metadata?.sid, programa = s.metadata?.pack;
+  if (!sid || !programa || (await datos.primero('pedidos', { session_id: s.id }))) return;
+  await datos.insertar('pedidos', { session_id: s.id, sid, email: s.customer_details?.email || s.customer_email, importe: s.amount_total, tipo: 'programa', pack: programa,
+    payment_intent: typeof s.payment_intent === 'object' ? s.payment_intent?.id : s.payment_intent, desistimiento: s.metadata?.desistimiento }, { ignorarDuplicado: true });
+  await entregarPack(sid, programa);
+}
 
 async function registrarPedido(s) {
   if (await datos.primero('pedidos', { session_id: s.id, tipo: 'plan' })) return;

@@ -41,6 +41,45 @@
     };
   }
 
+  // ---------- Catálogo: otros programas a precio de cliente ----------
+  function catalogo(d) {
+    var el = document.getElementById('catalogo');
+    if (!el || !d.catalogo || !d.catalogo.length) { if (el) el.remove(); return; }
+    var euros = function (c) { return (c / 100).toFixed(2).replace('.', ',') + ' €'; };
+    el.innerHTML = '<span class="etiqueta">Más programas para ' + esc(d.catalogoPara) + '</span>' +
+      '<p class="suave peq">Precio para clientes: <b>' + euros(d.precioCliente) + '</b> cada uno (normalmente ' + euros(d.precioNormal) + '). Pago único, para siempre.</p>' +
+      d.catalogo.map(function (c) {
+        return '<div class="tarjeta pila prog-cat"><div class="cab-consejo">' + burbuja(c.icono || 'estrella', 'mint') + '<div><b>' + esc(c.titulo) + '</b><span class="peq suave"> · ' + c.semanas + ' semanas</span></div></div>' +
+          '<p class="suave">' + esc(c.texto) + '</p><button class="btn sec" data-comprar="' + esc(c.id) + '">Añadir por ' + euros(d.precioCliente) + '</button></div>';
+      }).join('');
+    el.querySelectorAll('[data-comprar]').forEach(function (b) {
+      b.onclick = function () {
+        var c = d.catalogo.filter(function (x) { return x.id === b.dataset.comprar; })[0];
+        var caja = b.parentNode;
+        caja.querySelector('.confirma') || caja.insertAdjacentHTML('beforeend', '<div class="confirma pila"><label class="check"><input type="checkbox" class="c-des"> <span>Quiero recibirlo ya. Acepto que, al empezar la entrega del contenido digital, pierdo el derecho de desistimiento. <a href="/condiciones" target="_blank">Términos</a>.</span></label>' +
+          '<p class="peq suave">Se cobra en la tarjeta con la que compraste; si tu banco pide confirmarlo, te lo pedimos aquí.</p><p class="error c-err"></p><button class="btn c-ok">Comprar ' + esc(c.titulo) + ' · ' + euros(d.precioCliente) + '</button></div>');
+        b.remove();
+        var ok = caja.querySelector('.c-ok'), err = caja.querySelector('.c-err');
+        ok.onclick = function () {
+          if (!caja.querySelector('.c-des').checked) { err.textContent = 'Marca la casilla para recibirlo al momento.'; return; }
+          ok.disabled = true; ok.textContent = 'Comprando…'; err.textContent = '';
+          var cuerpo = { programa: c.id, desistimiento: true, integrado: !!d.stripePk };
+          post('/api/programa', cuerpo).then(function (j) {
+            if (j.ok) { caja.innerHTML = '<div class="cab-consejo">' + burbuja('check', 'mint') + '<b>¡Añadido!</b></div><p>' + esc(c.titulo) + ' ya está en tu plan. Te lo hemos enviado también por email.</p>'; setTimeout(function () { location.href = '/mi-zona'; }, 2200); return; }
+            if (j.url) { location.href = j.url; return; }
+            if (j.clientSecret && window.VENTA) {
+              window.VENTA.pagoIntegrado({ pk: d.stripePk, titulo: c.titulo + ' · ' + euros(d.precioCliente), pedir: function () { return Promise.resolve(j.clientSecret); },
+                alCerrar: function () { ok.disabled = false; ok.textContent = 'Comprar ' + c.titulo + ' · ' + euros(d.precioCliente); },
+                alFallar: function () { err.textContent = 'No se ha podido abrir el pago. Inténtalo de nuevo.'; ok.disabled = false; } });
+              return;
+            }
+            throw j;
+          }).catch(function (e) { err.textContent = (e && e.error) || 'No se ha podido completar. Inténtalo de nuevo.'; ok.disabled = false; ok.textContent = 'Comprar ' + c.titulo + ' · ' + euros(d.precioCliente); });
+        };
+      };
+    });
+  }
+
   // ---------- Editar los datos del plan ----------
   function editor(token) {
     var el = document.getElementById('editar');
@@ -150,7 +189,7 @@
           d.planes.filter(function (p) { return !p.extra; }).map(function (p) { return '<button class="btn texto editar-btn" data-editar="' + esc(p.token) + '">' + I('persona') + 'Editar los datos de ' + esc(p.nombre) + '</button>'; }).join('') + '</section>' +
         '<section class="zona-atajos">' +
           atajo('diario', 'gota', 'sky', 'Diario', 'Apunta pis y caca') + atajo('clicker', 'estrella', 'butter', 'Clicker', 'Marca lo que hace bien') +
-          atajo('juntos', 'personas', 'lilac', 'Juntos', compartido ? 'Ya lo compartís' : 'Invita a alguien') + atajo('mas', 'corazon', 'peach', 'Para ti', 'Consejos y recomendaciones') +
+          atajo('juntos', 'personas', 'lilac', 'Juntos', compartido ? 'Ya lo compartís' : 'Invita a alguien') + atajo('mas', 'corazon', 'peach', 'Para ti', d.catalogo && d.catalogo.length ? 'Más programas desde ' + (d.precioCliente / 100).toFixed(2).replace('.', ',') + ' €' : 'Consejos y recomendaciones') +
         '</section>' +
         '<section class="tarjeta pila consejo"><div class="cab-consejo">' + burbuja('chispa', 'butter') + '<span class="etiqueta">Consejo de hoy</span></div>' +
           '<h2 id="c-tit" style="font-size:1.3rem"></h2><p id="c-txt"></p><button class="btn texto" id="otro" style="align-self:flex-start;width:auto;padding-left:0">Otro consejo</button></section>' +
@@ -161,6 +200,7 @@
       '<div class="pila-g zona-vista" data-vista="juntos" hidden><section class="tarjeta pila" id="juntos"></section></div>' +
       '<div class="pila-g zona-vista" data-vista="editar" hidden><section class="tarjeta pila" id="editar"></section></div>' +
       '<div class="pila-g zona-vista" data-vista="mas" hidden>' +
+        '<section class="pila" id="catalogo"></section>' +
         '<section class="pila"><span class="etiqueta">Lo que te va a ayudar</span><div class="incluye-grid">' + productos + '</div>' +
           (hayAfiliados ? '<p class="peq suave">Algunos enlaces son de afiliado: si compras, recibimos una pequeña comisión sin coste para ti.</p>' : '') + '</section>' +
         '<section class="tarjeta pila">' + '<div class="cab-consejo">' + burbuja('escudo', 'mint') + '<h2 style="font-size:1.3rem">' + esc(seguro.titulo) + '</h2></div>' +
@@ -195,6 +235,7 @@
       H.club(document.getElementById('club'), d.enClub);
     }
     juntos(d);
+    catalogo(d);
     function pintaConsejo() { var c = d.consejos[idxConsejo % d.consejos.length]; document.getElementById('c-tit').textContent = c[0]; document.getElementById('c-txt').textContent = sus(c[1]); }
     pintaConsejo();
     document.getElementById('otro').onclick = function () { idxConsejo++; pintaConsejo(); };
@@ -214,7 +255,16 @@
     }).catch(function () {});
   }
 
-  fetch('/api/mi-zona').then(function (r) { if (r.status === 401) return null; return r.json(); })
-    .then(function (d) { if (d && d.planes) zona(d); else entrar(); })
-    .catch(entrar);
+  function cargar() {
+    return fetch('/api/mi-zona').then(function (r) { if (r.status === 401) return null; return r.json(); })
+      .then(function (d) { if (d && d.planes) zona(d); else entrar(); })
+      .catch(entrar);
+  }
+  // Vuelta del pago de un programa: se confirma y se recarga Mi zona con el programa ya dentro
+  var qs = new URLSearchParams(location.search);
+  if (qs.get('programa') === 'ok' && qs.get('session_id')) {
+    fetch('/api/programa/estado?session_id=' + encodeURIComponent(qs.get('session_id'))).catch(function () {}).then(function () {
+      history.replaceState(null, '', '/mi-zona'); cargar();
+    });
+  } else cargar();
 })();
