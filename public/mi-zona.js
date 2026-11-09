@@ -56,12 +56,12 @@
       b.onclick = function () {
         var c = d.catalogo.filter(function (x) { return x.id === b.dataset.comprar; })[0];
         var caja = b.parentNode;
-        caja.querySelector('.confirma') || caja.insertAdjacentHTML('beforeend', '<div class="confirma pila"><label class="check"><input type="checkbox" class="c-des"> <span>Quiero recibirlo ya. Acepto que, al empezar la entrega del contenido digital, pierdo el derecho de desistimiento. <a href="/condiciones" target="_blank">Términos</a>.</span></label>' +
+        caja.querySelector('.confirma') || caja.insertAdjacentHTML('beforeend', '<div class="confirma pila"><label class="check"><input type="checkbox" class="c-des"> <span>Acepto los <a href="/condiciones" target="_blank">términos y condiciones</a>.</span></label>' +
           '<p class="peq suave">Se cobra en la tarjeta con la que compraste; si tu banco pide confirmarlo, te lo pedimos aquí.</p><p class="error c-err"></p><button class="btn c-ok">Comprar ' + esc(c.titulo) + ' · ' + euros(d.precioCliente) + '</button></div>');
         b.remove();
         var ok = caja.querySelector('.c-ok'), err = caja.querySelector('.c-err');
         ok.onclick = function () {
-          if (!caja.querySelector('.c-des').checked) { err.textContent = 'Marca la casilla para recibirlo al momento.'; return; }
+          if (!caja.querySelector('.c-des').checked) { err.textContent = 'Acepta los términos y condiciones para continuar.'; return; }
           ok.disabled = true; ok.textContent = 'Comprando…'; err.textContent = '';
           var cuerpo = { programa: c.id, desistimiento: true, integrado: !!d.stripePk };
           post('/api/programa', cuerpo).then(function (j) {

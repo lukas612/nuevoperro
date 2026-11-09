@@ -454,7 +454,7 @@
       window.VENTA.incluye({ semanas: 8, prioridad: (P.PROBLEMAS[estado.r.problema] || 'su mayor problema').toLowerCase(), icono: ({ pis: 'gota', mordiscos: 'diente', noches: 'luna', solo: 'puerta' })[estado.r.problema],
         extras: ['Acceso para siempre al plan y a Mi zona, sin caducidad', 'Protocolos para pis, mordiscos, noches y quedarse solo', 'Rutina que se actualiza cada semana con su edad', 'Checklist de socialización semana a semana', 'Salud y checklist legal de ' + (estado.r.comunidad || 'tu comunidad')] }, { I: I, burbuja: burbuja, esc: esc }) +
       window.VENTA.comparativa({ nombre: nombre(), semanas: 8, precio: CONF.precio }, { esc: esc, euros: euros }) +
-      '<label class="check"><input type="checkbox" id="desist"> <span>Quiero recibir el plan ya. Acepto que, al empezar la entrega del contenido digital, pierdo el derecho legal de desistimiento. <a href="/condiciones" target="_blank">Términos y condiciones</a>.</span></label>' +
+      '<label class="check"><input type="checkbox" id="desist"> <span>Acepto los <a href="/condiciones" target="_blank">términos y condiciones</a>.</span></label>' +
       '<p class="error" id="err-pago"></p>' +
       '<button class="btn" id="pagar">Quiero el plan de ' + esc(nombre()) + ' · ' + euros(CONF.precio) + '</button>' +
       '<p class="micro"><span>Pago único · para siempre</span><span>' + I('candado') + 'Pago seguro con Stripe</span><span>Tarjeta · Apple Pay · Google Pay</span></p>' +

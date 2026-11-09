@@ -354,7 +354,7 @@
       window.VENTA.incluye({ semanas: 6, prioridad: pg.titulo.toLowerCase(), icono: pg.icono,
         extras: ['Acceso para siempre al plan y a Mi zona, sin caducidad', 'Ajustado a cuándo y cómo le pasa a ' + nombre(), 'Con lo que necesita su raza y su edad', 'Qué hacer, qué evitar y cuándo pedir ayuda profesional'] }, { I: I, burbuja: burbuja, esc: esc }) +
       window.VENTA.comparativa({ nombre: nombre(), semanas: 6, precio: CONF.precio }, { esc: esc, euros: euros }) +
-      '<label class="check"><input type="checkbox" id="desist"> <span>Quiero recibir el plan ya. Acepto que, al empezar la entrega del contenido digital, pierdo el derecho legal de desistimiento. <a href="/condiciones" target="_blank">Términos y condiciones</a>.</span></label>' +
+      '<label class="check"><input type="checkbox" id="desist"> <span>Acepto los <a href="/condiciones" target="_blank">términos y condiciones</a>.</span></label>' +
       '<p class="error" id="err-pago"></p><button class="btn" id="pagar">Quiero el plan de ' + esc(nombre()) + ' · ' + euros(CONF.precio) + '</button>' +
       '<p class="micro"><span>Pago único · para siempre</span><span>' + I('candado') + 'Pago seguro con Stripe</span><span>Tarjeta · Apple Pay · Google Pay</span></p>' +
       '<p class="peq suave">El plan da pautas de educación en positivo. No sustituye a tu veterinario ni a un profesional que vea a tu perro en persona.</p></section>';

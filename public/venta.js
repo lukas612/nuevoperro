@@ -76,7 +76,7 @@
     chk.onchange = function () { err.textContent = ''; caja.classList.remove('falta'); };
     btn.onclick = function () {
       if (!chk.checked) {
-        err.textContent = 'Marca la casilla de arriba para recibir el plan al momento.';
+        err.textContent = 'Marca la casilla de los términos y condiciones para continuar.';
         caja.classList.remove('falta'); void caja.offsetWidth; caja.classList.add('falta');
         caja.scrollIntoView({ behavior: 'smooth', block: 'center' });
         return;

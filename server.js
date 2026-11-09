@@ -174,7 +174,7 @@ const rutas = {
     const b = await json(req);
     const programa = limpio(b.programa, 20);
     if (!PROGRAMAS_ADULTO[programa] || programa === 'derivar') return enviar(res, 400, { error: 'Programa no válido.' });
-    if (!b.desistimiento) return enviar(res, 400, { error: 'Marca la casilla para recibirlo al momento.' });
+    if (!b.desistimiento) return enviar(res, 400, { error: 'Acepta los términos y condiciones para continuar.' });
     const base = (await datos.listar('planes', { email })).find((p) => p.estado === 'enviado' && !p.pack);
     if (!base) return enviar(res, 400, { error: 'Necesitas tener un plan para comprar a precio de cliente.' });
     const sid = base.sid;
@@ -197,7 +197,7 @@ const rutas = {
           const pi = await stripe('POST', '/payment_intents', {
             amount: precio, currency: 'eur', customer: original.customer, payment_method: original.payment_method, off_session: 'true', confirm: 'true',
             description: 'Programa ' + PROGRAMAS_ADULTO[programa].titulo, statement_descriptor_suffix: 'QUEBUENPERRO',
-            metadata: { sid, tipo: 'programa', app: 'cachorro', pack: programa, desistimiento: 'aceptado_' + new Date().toISOString() }
+            metadata: { sid, tipo: 'programa', app: 'cachorro', pack: programa, desistimiento: 'terminos_aceptados_' + new Date().toISOString() }
           }, 'prog_' + sid + '_' + programa);
           if (pi.status === 'succeeded') {
             // Cobro hecho: pase lo que pase al guardarlo, nunca se ofrece otro pago (la conciliación lo completa).
@@ -220,7 +220,7 @@ const rutas = {
         mode: 'payment', customer_email: email, locale: 'es', adaptive_pricing: { enabled: 'false' },
         line_items: { 0: { quantity: 1, price_data: { currency: 'eur', unit_amount: precio, product_data: { name: 'Programa ' + PROGRAMAS_ADULTO[programa].titulo + ' (6 semanas)' } } } },
         payment_intent_data: { metadata: { sid, tipo: 'programa', app: 'cachorro', pack: programa } },
-        metadata: { sid, tipo: 'programa', app: 'cachorro', pack: programa, desistimiento: 'aceptado_' + new Date().toISOString() },
+        metadata: { sid, tipo: 'programa', app: 'cachorro', pack: programa, desistimiento: 'terminos_aceptados_' + new Date().toISOString() },
         ...(integrado ? { ui_mode: 'embedded', return_url: vuelta } : { success_url: vuelta, cancel_url: `${CFG.baseUrl}/mi-zona#mas` })
       };
       const ses = await stripe('POST', '/checkout/sessions', params);
@@ -338,7 +338,7 @@ const rutas = {
 
   'POST /api/checkout': async (req, res) => {
     const b = await json(req);
-    if (!b.desistimiento) return enviar(res, 400, { error: 'Debes aceptar el inicio inmediato del contenido digital.' });
+    if (!b.desistimiento) return enviar(res, 400, { error: 'Debes aceptar los términos y condiciones.' });
     const sid = limpio(b.sid, 64);
     const lead = await datos.primero('leads', { sid });
     if (!lead) return enviar(res, 400, { error: 'Completa primero el formulario.' });
@@ -361,7 +361,7 @@ const rutas = {
         adaptive_pricing: { enabled: 'false' },
         line_items: { 0: { quantity: 1, price_data: { currency: 'eur', unit_amount: precio, product_data: { name: nombreProducto, description: 'Plan personalizado, una tarea al día y Mi zona en tu móvil.' } } } },
         payment_intent_data: { setup_future_usage: 'off_session', metadata: { sid, tipo: 'plan', app: 'cachorro' } },
-        metadata: { sid, precio, app: 'cachorro', desistimiento: 'aceptado_' + new Date().toISOString() },
+        metadata: { sid, precio, app: 'cachorro', desistimiento: 'terminos_aceptados_' + new Date().toISOString() },
         success_url: `${CFG.baseUrl}${pagina}?pago=ok&session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: `${CFG.baseUrl}${pagina}?pago=cancelado`
       };
