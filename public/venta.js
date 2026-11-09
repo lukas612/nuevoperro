@@ -227,7 +227,7 @@
   function contador(id) {
     cargarActividad().then(function (d) {
       var el = document.getElementById(id);
-      if (el && d && d.semana >= 10) el.innerHTML = '<span class="ps-punto"></span>' + d.semana + ' perros han hecho el test esta semana';
+      if (el && d && d.total >= 20) el.innerHTML = '<span class="ps-punto"></span>' + d.total + ' perros ya han empezado su plan con Qué Buen Perro';
     });
   }
   function hace(min) { return min < 60 ? 'hace ' + min + ' min' : min < 120 ? 'hace 1 h' : 'hace ' + Math.round(min / 60) + ' h'; }
@@ -244,7 +244,7 @@
         var x = lista[i++ % lista.length]; actividadMostrados++;
         var t = document.createElement('div');
         t.className = 'ps-toast'; t.setAttribute('role', 'status');
-        t.innerHTML = '<span class="ps-cara">' + (window.PERROS ? window.PERROS.cara(x.razaId) : '') + '</span><span><b>Alguien' + (x.zona ? ' en ' + x.zona.replace(/^Comunidad (de |Foral de )?/, '') : '') + '</b> ha hecho el test para ' + x.quien +
+        t.innerHTML = '<span class="ps-cara">' + (window.PERROS ? window.PERROS.cara(x.razaId) : '') + '</span><span><b>' + (x.perro || 'Un perro') + (x.zona ? ' de ' + x.zona.replace(/^Comunidad (de |Foral de |Valenciana)?/, '').replace(/^$/, 'Valencia') : '') + '</b> ha empezado su plan' +
           (x.problema ? ' · ' + x.problema : '') + '<small>' + hace(x.min) + '</small></span><button aria-label="Cerrar">×</button>';
         document.body.appendChild(t);
         t.querySelector('button').onclick = function () { t.remove(); clearInterval(actividadTimer); };

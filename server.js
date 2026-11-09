@@ -347,16 +347,19 @@ const rutas = {
     if (!cacheActividad.t || ahora - cacheActividad.t > 60000) {
       const D = require('./public/perros.js');
       const PROB = { pis: 'el pis en casa', mordiscos: 'los mordiscos', noches: 'las noches', solo: 'quedarse solo', correa: 'tirar de la correa', ladridos: 'los ladridos', adaptacion: 'su adaptación' };
-      const leads = (await datos.listar('leads', {}, { orden: 'ts.desc', limite: 400 })).filter((l) => !EXCLUIR_PRUEBAS.has(String(l.email || '').toLowerCase()));
+      const todosLeads = (await datos.listar('leads')).filter((l) => !EXCLUIR_PRUEBAS.has(String(l.email || '').toLowerCase()));
+      const leads = todosLeads.slice().sort((x, y) => new Date(y.ts) - new Date(x.ts)).slice(0, 400);
+      const total = new Set(todosLeads.map((l) => l.email)).size;
       const semana = leads.filter((l) => ahora - new Date(l.ts).getTime() < 7 * 864e5).length;
       const recientes = leads.filter((l) => ahora - new Date(l.ts).getTime() < 48 * 36e5).slice(0, 15).map((l) => {
         const r = l.respuestas || {};
         const raza = r.razaId && r.razaId !== 'otra' && r.razaId !== 'mestizo' ? (D.raza(r.razaId) || {}).nombre : null;
         const adulto = ['adulto', 'adoptado'].includes(r.tipo);
-        return { quien: (raza ? (adulto ? 'su ' : 'su cachorro de ') + raza.toLowerCase() : (adulto ? 'su perro' : 'su cachorro')),
+        return { perro: raza ? (adulto ? 'Un ' : 'Un cachorro de ') + raza.toLowerCase() : (adulto ? 'Un perro' : 'Un cachorro'),
+          quien: (raza ? (adulto ? 'su ' : 'su cachorro de ') + raza.toLowerCase() : (adulto ? 'su perro' : 'su cachorro')),
           problema: PROB[r.problema] || null, zona: r.comunidad || null, razaId: r.razaId || 'mestizo', min: Math.max(1, Math.round((ahora - new Date(l.ts).getTime()) / 60000)) };
       });
-      cacheActividad.t = ahora; cacheActividad.datos = { semana, recientes };
+      cacheActividad.t = ahora; cacheActividad.datos = { semana, total, recientes };
     }
     enviar(res, 200, cacheActividad.datos, 'application/json', { 'Cache-Control': 'public, max-age=60' });
   },
