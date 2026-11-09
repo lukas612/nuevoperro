@@ -65,7 +65,7 @@
           ok.disabled = true; ok.textContent = 'Comprando…'; err.textContent = '';
           var cuerpo = { programa: c.id, desistimiento: true, integrado: !!d.stripePk };
           post('/api/programa', cuerpo).then(function (j) {
-            if (j.ok) { caja.innerHTML = '<div class="cab-consejo">' + burbuja('check', 'mint') + '<b>¡Añadido!</b></div><p>' + esc(c.titulo) + ' ya está en tu plan. Te lo hemos enviado también por email.</p>'; setTimeout(function () { location.href = '/mi-zona'; }, 2200); return; }
+            if (j.ok) { caja.innerHTML = '<div class="cab-consejo">' + burbuja('check', 'mint') + '<b>¡Añadido!</b></div><p>' + esc(c.titulo) + ' ya es tuyo. Te llevamos a él…</p>'; setTimeout(function () { location.href = j.token ? '/plan/' + j.token : '/mi-zona'; }, 1500); return; }
             if (j.url) { location.href = j.url; return; }
             if (j.clientSecret && window.VENTA) {
               window.VENTA.pagoIntegrado({ pk: d.stripePk, titulo: c.titulo + ' · ' + euros(d.precioCliente), pedir: function () { return Promise.resolve(j.clientSecret); },
@@ -263,7 +263,8 @@
   // Vuelta del pago de un programa: se confirma y se recarga Mi zona con el programa ya dentro
   var qs = new URLSearchParams(location.search);
   if (qs.get('programa') === 'ok' && qs.get('session_id')) {
-    fetch('/api/programa/estado?session_id=' + encodeURIComponent(qs.get('session_id'))).catch(function () {}).then(function () {
+    fetch('/api/programa/estado?session_id=' + encodeURIComponent(qs.get('session_id'))).then(function (r) { return r.json(); }).catch(function () { return {}; }).then(function (j) {
+      if (j && j.token) { location.replace('/plan/' + j.token); return; }
       history.replaceState(null, '', '/mi-zona'); cargar();
     });
   } else cargar();

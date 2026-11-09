@@ -182,11 +182,12 @@ const rutas = {
     const precio = CFG.precioCliente;
     const registrar = async (pi, sessionId) => {
       await datos.insertar('pedidos', { session_id: sessionId, sid, email, importe: precio, tipo: 'programa', pack: programa, payment_intent: pi }, { ignorarDuplicado: true });
-      await entregarPack(sid, programa);
+      const token = await entregarPack(sid, programa);
       const lead = await datos.primero('leads', { sid });
       meta.evento('Purchase', { id: 'prog_' + sessionId, email, sid, nav: meta.unir(lead?.meta, meta.datosNavegador(req, b)), valor: precio / 100, extra: { content_name: 'programa_' + programa, content_type: 'product', contents: [{ id: 'programa', quantity: 1 }] } });
+      return token;
     };
-    if (MODO_DEMO) { await registrar(null, 'demo_prog_' + sid + '_' + programa); return enviar(res, 200, { ok: true }); }
+    if (MODO_DEMO) return enviar(res, 200, { ok: true, token: await registrar(null, 'demo_prog_' + sid + '_' + programa) });
     const pedido = (await datos.listar('pedidos', { sid })).find((p) => p.tipo === 'plan' && p.payment_intent && !p.demo);
     // 1) En un clic, con la tarjeta guardada de su compra
     if (pedido) {
@@ -198,9 +199,12 @@ const rutas = {
             description: 'Programa ' + PROGRAMAS_ADULTO[programa].titulo, statement_descriptor_suffix: 'QUEBUENPERRO',
             metadata: { sid, tipo: 'programa', app: 'cachorro', pack: programa, desistimiento: 'aceptado_' + new Date().toISOString() }
           }, 'prog_' + sid + '_' + programa);
-          if (pi.status === 'succeeded') { await registrar(pi.id, 'pi_' + pi.id); return enviar(res, 200, { ok: true }); }
+          if (pi.status === 'succeeded') return enviar(res, 200, { ok: true, token: await registrar(pi.id, 'pi_' + pi.id) });
         }
-      } catch (e) { console.warn('programa: sin cobro en un clic:', e.message); }
+      } catch (e) {
+        console.warn('programa: sin cobro en un clic:', e.message);
+        datos.insertar('eventos', { tipo: 'error', sid, paso: ('programa1clic: ' + e.message).slice(0, 200) }).catch(() => {});
+      }
     }
     // 2) Pago normal
     try {
@@ -217,6 +221,7 @@ const rutas = {
       enviar(res, 200, integrado ? { clientSecret: ses.client_secret } : { url: ses.url });
     } catch (e) {
       console.error('programa', e.message);
+      datos.insertar('eventos', { tipo: 'error', sid, paso: ('programa: ' + e.message).slice(0, 200) }).catch(() => {});
       enviar(res, 502, { error: 'No hemos podido iniciar el pago. Inténtalo de nuevo.' });
     }
   },
@@ -227,7 +232,8 @@ const rutas = {
     try {
       const s = await stripe('GET', '/checkout/sessions/' + encodeURIComponent(id));
       if (s.payment_status === 'paid' && s.metadata?.tipo === 'programa') await registrarPrograma(s);
-      enviar(res, 200, { pagado: s.payment_status === 'paid' });
+      const plan = s.metadata?.sid && (await datos.listar('planes', { sid: s.metadata.sid })).find((p) => p.pack === s.metadata.pack);
+      enviar(res, 200, { pagado: s.payment_status === 'paid', token: plan?.token || null });
     } catch (e) { enviar(res, 502, { error: 'No hemos podido comprobar el pago.' }); }
   },
 
@@ -586,6 +592,29 @@ async function cuentaDiario(email) {
 }
 const invitacionesRecientes = new Map();
 
+// Conciliación: registra y entrega cualquier pago de los últimos días que no quedara guardado
+// (cierre de la pestaña, un fallo puntual, el webhook sin llegar…). Es idempotente.
+async function conciliarStripe() {
+  if (MODO_DEMO) return;
+  const desde = Math.floor(Date.now() / 1000) - 5 * 86400;
+  const sesiones = await stripe('GET', '/checkout/sessions', { limit: 100, status: 'complete', created: { gte: desde } });
+  for (const s of sesiones.data || []) {
+    if (s.metadata?.app !== 'cachorro' || s.payment_status !== 'paid') continue;
+    if (s.metadata?.tipo === 'programa') await registrarPrograma(s); else await registrarPedido(s);
+  }
+  const pagos = await stripe('GET', '/payment_intents', { limit: 100, created: { gte: desde } });
+  for (const pi of pagos.data || []) {
+    const m = pi.metadata || {};
+    if (pi.status !== 'succeeded' || m.app !== 'cachorro' || !['programa', 'upsell'].includes(m.tipo) || !m.sid || !m.pack) continue;
+    if (await datos.primero('pedidos', { payment_intent: pi.id })) continue;
+    const base = (await datos.listar('planes', { sid: m.sid })).find((p) => !p.pack);
+    await datos.insertar('pedidos', { session_id: m.tipo === 'upsell' ? m.session_id : 'pi_' + pi.id, sid: m.sid, email: base?.email || pi.receipt_email, importe: pi.amount_received || pi.amount,
+      tipo: m.tipo, pack: m.pack, payment_intent: pi.id, desistimiento: m.desistimiento }, { ignorarDuplicado: true });
+    await entregarPack(m.sid, m.pack);
+    console.log('conciliación: registrado', m.tipo, m.pack, pi.id);
+  }
+}
+
 async function registrarPrograma(s) {
   const sid = s.metadata?.sid, programa = s.metadata?.pack;
   if (!sid || !programa || (await datos.primero('pedidos', { session_id: s.id }))) return;
@@ -736,6 +765,11 @@ if (require.main === module) {
     console.log(MODO_DEMO ? 'MODO DEMO: sin Stripe, los pagos se simulan.' : 'Stripe activo.');
     console.log('Emails:', correo.configurado() ? 'Resend' : 'desactivados (sin RESEND_API_KEY)');
     if (!MODO_DEMO) entregarPendientes().catch((e) => console.error('entregas pendientes', e.message));
+    if (!MODO_DEMO) {
+      const conciliar = () => conciliarStripe().catch((e) => console.error('conciliación', e.message));
+      setTimeout(conciliar, 20000);
+      setInterval(conciliar, 60 * 60000);
+    }
     // Emails programados (secuencia de 7 días a leads, tarea diaria a compradores, encuestas).
     // Cada hora, solo de 9 a 21 h en España. Cada email sale una sola vez aunque se repita la ejecución.
     if (correo.configurado() && datos.USA_SUPABASE) {
