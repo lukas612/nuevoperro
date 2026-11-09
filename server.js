@@ -108,7 +108,7 @@ const rutas = {
 
   'POST /api/evento': async (req, res) => {
     const b = await json(req);
-    const permitidos = ['visita', 'inicio_form', 'paso', 'form_completo', 'resultado_visto', 'paywall_visto', 'checkout_inicio', 'checkout_cancelado', 'upsell_visto', 'upsell_rechazado', 'clic_seguros', 'derivado', 'clic_afiliado', 'visita_web', 'clic_bloqueado', 'tarea_previa', 'herramienta_gratis'];
+    const permitidos = ['visita', 'inicio_form', 'paso', 'form_completo', 'resultado_visto', 'paywall_visto', 'checkout_inicio', 'checkout_cancelado', 'upsell_visto', 'upsell_rechazado', 'clic_seguros', 'derivado', 'clic_afiliado', 'visita_web', 'clic_bloqueado', 'tarea_previa', 'herramienta_gratis', 'como_hacerlo'];
     if (!permitidos.includes(b.tipo)) return enviar(res, 400, { error: 'tipo' });
     await datos.insertar('eventos', { tipo: b.tipo, sid: limpio(b.sid, 64), paso: limpio(b.paso, 40), utm: objeto(b.utm) });
     enviar(res, 200, { ok: true });
@@ -342,6 +342,16 @@ const rutas = {
   },
 
   // Actividad real y anónima para la prueba social: raza, problema, zona y hace cuánto. Sin nombres ni emails.
+  // Muestra gratis del paso a paso: solo los días abiertos de la vista previa (1-3). El resto es de pago.
+  'GET /api/muestra': async (req, res) => {
+    const DET = require('./content/detalle/index.js');
+    const p = new URL(req.url, 'http://x').searchParams.get('p') || 'cachorro';
+    const fuente = p === 'cachorro' ? DET.CACHORRO : DET.PROGRAMAS[p];
+    if (!fuente) return enviar(res, 404, { error: 'no' });
+    const dias = {};
+    for (const d of [1, 2, 3]) if (fuente.DETALLE[d]) dias[d] = fuente.DETALLE[d];
+    return enviar(res, 200, { semana: fuente.SEMANAS[1]?.meta || '', dias }, 'application/json', { 'Cache-Control': 'public, max-age=3600' });
+  },
   'GET /api/actividad': async (req, res) => {
     const ahora = Date.now();
     if (!cacheActividad.t || ahora - cacheActividad.t > 60000) {

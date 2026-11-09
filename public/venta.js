@@ -194,6 +194,34 @@
         '<a class="bloq-cta mp-cta" href="#paywall" data-bloq="dias">' + u.I('candado') + '<span>Desbloquea los ' + (o.total - o.abiertos) + ' días restantes</span></a>' +
       '</div></section>';
   }
+  /* Paso a paso real de los días abiertos (el día 1 ya desplegado) y candado en el de los demás. */
+  function muestra(caja, o) {
+    var esc = function (x) { return String(x == null ? '' : x).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
+    var sus = function (x) { return esc(String(x || '').replace(/\{n\}/g, o.nombre)); };
+    fetch('/api/muestra?p=' + encodeURIComponent(o.muestra)).then(function (r) { return r.ok ? r.json() : null; }).then(function (m) {
+      if (!m || !m.dias) return;
+      var lis = caja.querySelectorAll('.mp-lista > li');
+      [].forEach.call(lis, function (li, k) {
+        var d = m.dias[k + 1];
+        if (d) {
+          var meta = [d.tiempo, d.material].filter(Boolean).map(sus).join(' · ');
+          var det = document.createElement('details');
+          det.className = 'mp-como'; if (k === 0) det.open = true;
+          det.innerHTML = '<summary>Cómo hacerlo</summary><div class="mp-det">' +
+            (d.objetivo ? '<p class="mp-obj">' + sus(d.objetivo) + '</p>' : '') + (meta ? '<p class="mp-meta">' + meta + '</p>' : '') +
+            '<ol>' + d.pasos.map(function (x) { return '<li>' + sus(x) + '</li>'; }).join('') + '</ol>' +
+            (d.exito ? '<p class="mp-ok"><b>Va bien si</b>' + sus(d.exito) + '</p>' : '') +
+            (d.siNo ? '<p class="mp-no"><b>Si no sale</b>' + sus(d.siNo) + '</p>' : '') + '</div>';
+          det.addEventListener('toggle', function () { if (det.open && o.alAbrir) o.alAbrir('d' + (k + 1)); });
+          li.appendChild(det);
+        } else if (li.classList.contains('mp-bloq')) {
+          // nada: ya está bloqueado y difuminado
+        }
+      });
+      var msg = document.getElementById('mp-msg');
+      if (m.semana && msg && !msg.classList.contains('ok')) msg.innerHTML = '<b>Esta semana:</b> ' + sus(m.semana) + ' Cada día trae su paso a paso: así es el del día 1.';
+    }).catch(function () {});
+  }
   function activarMiniPlan(o) {
     var caja = document.getElementById('mini-plan'); if (!caja) return;
     var msg = document.getElementById('mp-msg');
@@ -210,6 +238,7 @@
       if (o.alGuardar) o.alGuardar(keys);
       return keys;
     };
+    if (o.muestra) muestra(caja, o);
     caja.querySelectorAll('input[data-d]').forEach(function (c) {
       c.addEventListener('change', function () {
         pintar(c.checked ? c.dataset.d : null);

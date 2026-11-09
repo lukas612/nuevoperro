@@ -343,7 +343,7 @@
     window.VENTA.contador('ps-res'); window.VENTA.notificaciones({ espera: 15000, max: 3, saltarMin: 3 });
     window.VENTA.activarBloqueos(function (k) { evento('clic_bloqueado', k); });
     window.VENTA.activarGratis({ nombre: nombre(), adulto: true, alUsar: function (k) { evento('herramienta_gratis', k); }, alDiario: function (regs) { post('/api/previo', { sid: sid, diario: regs }).catch(function () {}); } });
-    window.VENTA.activarMiniPlan({ total: 42, abiertos: 3, nombre: nombre(),
+    window.VENTA.activarMiniPlan({ total: 42, abiertos: 3, muestra: (PR.PROGRAMAS[estado.r.problema] ? estado.r.problema : 'correa'), alAbrir: function (k) { evento('como_hacerlo', k); }, nombre: nombre(),
       alGuardar: function (keys) { estado.previo = keys; guardarEstado(); post('/api/previo', { sid: sid, previo: keys }).catch(function () {}); },
       alMarcar: function (k) { evento('tarea_previa', k); pixel('TareaPrevia', { content_name: k }, null, 1); } });
     activarPaywall();
