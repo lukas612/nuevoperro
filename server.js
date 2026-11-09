@@ -594,12 +594,15 @@ const invitacionesRecientes = new Map();
 
 // Conciliación: registra y entrega cualquier pago de los últimos días que no quedara guardado
 // (cierre de la pestaña, un fallo puntual, el webhook sin llegar…). Es idempotente.
+const ESTADO_CONCILIACION = { ultima: null, revisados: 0, registrados: 0, error: null };
 async function conciliarStripe() {
   if (MODO_DEMO) return;
+  Object.assign(ESTADO_CONCILIACION, { ultima: new Date().toISOString(), revisados: 0, registrados: 0, error: null });
   const desde = Math.floor(Date.now() / 1000) - 5 * 86400;
   const sesiones = await stripe('GET', '/checkout/sessions', { limit: 100, status: 'complete', created: { gte: desde } });
   for (const s of sesiones.data || []) {
     if (s.metadata?.app !== 'cachorro' || s.payment_status !== 'paid') continue;
+    ESTADO_CONCILIACION.revisados++;
     if (s.metadata?.tipo === 'programa') await registrarPrograma(s); else await registrarPedido(s);
   }
   const pagos = await stripe('GET', '/payment_intents', { limit: 100, created: { gte: desde } });
@@ -611,6 +614,7 @@ async function conciliarStripe() {
     await datos.insertar('pedidos', { session_id: m.tipo === 'upsell' ? m.session_id : 'pi_' + pi.id, sid: m.sid, email: base?.email || pi.receipt_email, importe: pi.amount_received || pi.amount,
       tipo: m.tipo, pack: m.pack, payment_intent: pi.id, desistimiento: m.desistimiento }, { ignorarDuplicado: true });
     await entregarPack(m.sid, m.pack);
+    ESTADO_CONCILIACION.registrados++;
     console.log('conciliación: registrado', m.tipo, m.pack, pi.id);
   }
 }
@@ -692,7 +696,7 @@ const servidor = http.createServer(async (req, res) => {
     const ruta = rutas[`${req.method} ${url.pathname}`];
     if (ruta) return await ruta(req, res, url);
     if (req.method !== 'GET' && req.method !== 'HEAD') return enviar(res, 405, { error: 'método' });
-    if (url.pathname === '/salud') return enviar(res, 200, { ok: true, supabase: datos.USA_SUPABASE, stripe: !MODO_DEMO, email: correo.configurado(), metaCapi: meta.configurado() });
+    if (url.pathname === '/salud') return enviar(res, 200, { ok: true, supabase: datos.USA_SUPABASE, stripe: !MODO_DEMO, email: correo.configurado(), metaCapi: meta.configurado(), conciliacion: ESTADO_CONCILIACION });
 
     // Página privada del plan: /plan/<token de 32 hex>
     const m = url.pathname.match(/^\/plan\/([a-f0-9]{32})$/);
@@ -766,7 +770,7 @@ if (require.main === module) {
     console.log('Emails:', correo.configurado() ? 'Resend' : 'desactivados (sin RESEND_API_KEY)');
     if (!MODO_DEMO) entregarPendientes().catch((e) => console.error('entregas pendientes', e.message));
     if (!MODO_DEMO) {
-      const conciliar = () => conciliarStripe().catch((e) => console.error('conciliación', e.message));
+      const conciliar = () => conciliarStripe().catch((e) => { ESTADO_CONCILIACION.error = e.message; console.error('conciliación', e.message); });
       setTimeout(conciliar, 20000);
       setInterval(conciliar, 60 * 60000);
     }
