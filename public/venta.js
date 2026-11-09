@@ -236,7 +236,7 @@
   function hace(min) { return min < 60 ? 'hace ' + min + ' min' : min < 120 ? 'hace 1 h' : 'hace ' + Math.round(min / 60) + ' h'; }
   function notificaciones(o) {
     o = o || {};
-    if (actividadTimer || (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches)) return;
+    if (actividadTimer) return; // con «reducir animaciones» también se muestran (sin animación, por CSS)
     cargarActividad().then(function (d) {
       if (!d || !d.recientes) return;
       var lista = d.recientes.filter(function (x) { return x.min >= (o.saltarMin || 0); });

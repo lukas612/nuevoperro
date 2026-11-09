@@ -633,3 +633,4 @@ body:has(.venta-barra:not([hidden])) .ps-toast { bottom: calc(84px + env(safe-ar
 .pr-pausa { position: relative; }
 .pr-pausa > *:not(.pr-pausa-cta) { filter: blur(4px); pointer-events: none; user-select: none; }
 .pr-pausa-cta { position: absolute; left: 50%; top: 40%; transform: translate(-50%, -50%); }
+@media (prefers-reduced-motion: reduce) { .ps-toast { transition: none; } }

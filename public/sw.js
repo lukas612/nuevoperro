@@ -1,7 +1,7 @@
 /* Service worker de Qué Buen Perro: permite instalar la web como app y abrir el plan sin conexión.
    Páginas: primero la red y, si no hay, la copia guardada. Estáticos: copia guardada y se actualiza por detrás.
    La API y los pagos nunca pasan por la caché. */
-const VERSION = 'qbp-v2';
+const VERSION = 'qbp-v3';
 const PRECARGA = ['/offline.html', '/styles.css', '/perros.js', '/herramientas.js', '/mi-zona.js', '/favicon.svg', '/icon-192.png'];
 
 self.addEventListener('install', (e) => {
@@ -25,7 +25,12 @@ self.addEventListener('fetch', (e) => {
     );
     return;
   }
-  if (/\.(css|js|svg|png|webmanifest)$/.test(url.pathname)) {
+  if (/\.(css|js)$/.test(url.pathname)) {
+    // Código: siempre la última versión; la copia guardada solo si no hay conexión
+    e.respondWith(fetch(req).then((r) => { if (r.ok) { const copia = r.clone(); caches.open(VERSION).then((c) => c.put(req, copia)); } return r; }).catch(() => caches.match(req)));
+    return;
+  }
+  if (/\.(svg|png|webmanifest)$/.test(url.pathname)) {
     e.respondWith(caches.open(VERSION).then((c) => c.match(req).then((guardado) => {
       const red = fetch(req).then((r) => { if (r.ok) c.put(req, r.clone()); return r; }).catch(() => guardado);
       return guardado || red;
