@@ -199,7 +199,13 @@ const rutas = {
             description: 'Programa ' + PROGRAMAS_ADULTO[programa].titulo, statement_descriptor_suffix: 'QUEBUENPERRO',
             metadata: { sid, tipo: 'programa', app: 'cachorro', pack: programa, desistimiento: 'aceptado_' + new Date().toISOString() }
           }, 'prog_' + sid + '_' + programa);
-          if (pi.status === 'succeeded') return enviar(res, 200, { ok: true, token: await registrar(pi.id, 'pi_' + pi.id) });
+          if (pi.status === 'succeeded') {
+            // Cobro hecho: pase lo que pase al guardarlo, nunca se ofrece otro pago (la conciliación lo completa).
+            let token = null;
+            try { token = await registrar(pi.id, 'pi_' + pi.id); }
+            catch (e) { console.error('programa: cobrado pero sin registrar', e.message); datos.insertar('eventos', { tipo: 'error', sid, paso: ('programa cobrado sin registrar: ' + e.message).slice(0, 200) }).catch(() => {}); conciliarStripe().catch(() => {}); }
+            return enviar(res, 200, { ok: true, token });
+          }
         }
       } catch (e) {
         console.warn('programa: sin cobro en un clic:', e.message);
