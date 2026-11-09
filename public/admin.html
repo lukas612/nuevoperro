@@ -281,6 +281,7 @@
       var it = [
         ['Clientes (total histórico)', num(o.clientesTotales)], ['Ingresos (total histórico)', eur(o.ingresosTotales)],
         ['Visitas a la home', num(o.visitasHome) + (o.visitasHomeMeta ? ' (' + num(o.visitasHomeMeta) + ' de Meta)' : '')], ['Visitas a la web (home, guías, razas)', num(o.visitasWeb)],
+        ['Avisos en el móvil activados', num(o.avisosPersonas) + ' personas · ' + num(o.avisosMoviles) + ' móviles'], ['Carnets de salud en uso', num(o.carnetsSalud)],
         ['Planes entregados', num(o.planesEntregados)], ['Packs entregados', num(o.packsEntregados)],
         ['Emails enviados (periodo)', num(o.emailsTotal)]
       ].concat(Object.keys(o.emails).sort().map(function (k) { return ['· ' + (nombres[k] || k), num(o.emails[k])]; })).concat([
