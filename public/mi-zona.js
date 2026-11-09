@@ -186,7 +186,7 @@
       '<div class="pila-g zona-vista" data-vista="inicio">' +
         '<section class="pila"><h1 style="font-size:1.9rem">Hola' + (nombres.length === 1 ? ', aquí tienes todo lo de ' + esc(nombres[0]) : '') + '</h1><p class="suave peq">' + esc(d.email) + '</p></section>' +
         '<section class="pila"><span class="etiqueta">' + (d.planes.length > 1 ? 'Tus planes' : 'Tu plan') + '</span>' + planes +
-          d.planes.filter(function (p) { return !p.extra; }).map(function (p) { return '<button class="btn texto editar-btn" data-editar="' + esc(p.token) + '">' + I('persona') + 'Editar los datos de ' + esc(p.nombre) + '</button>'; }).join('') + '</section>' +
+          d.planes.filter(function (p) { return !p.extra; }).map(function (p) { return '<div class="acciones-plan"><button class="btn texto editar-btn" data-editar="' + esc(p.token) + '">' + I('persona') + 'Editar sus datos</button><a class="btn texto editar-btn" href="/plan/' + esc(p.token) + '/nevera">' + I('calendario') + 'Imprimir para la nevera</a></div>'; }).join('') + '</section>' +
         '<section class="zona-atajos">' +
           atajo('diario', 'gota', 'sky', 'Diario', 'Apunta pis y caca') + atajo('clicker', 'estrella', 'butter', 'Clicker', 'Marca lo que hace bien') +
           atajo('juntos', 'personas', 'lilac', 'Juntos', compartido ? 'Ya lo compartís' : 'Invita a alguien') + atajo('mas', 'corazon', 'peach', 'Para ti', d.catalogo && d.catalogo.length ? 'Más programas desde ' + (d.precioCliente / 100).toFixed(2).replace('.', ',') + ' €' : 'Consejos y recomendaciones') +

@@ -581,3 +581,4 @@ html.pago-abierto, html.pago-abierto body { overflow: hidden; }
 
 .prog-cat .btn { width: auto; align-self: flex-start; }
 .confirma { margin-top: 4px; }
+.acciones-plan { display: flex; gap: 14px; flex-wrap: wrap; }

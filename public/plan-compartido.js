@@ -74,7 +74,7 @@
     var css = document.createElement('style');
     css.textContent = '.por-quien{font-weight:600;color:var(--ok,#17885c);font-size:.78rem;font-family:var(--body,inherit)}' +
       '.inv-btn{position:fixed;right:max(16px,env(safe-area-inset-right,0px));bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:40;display:inline-flex;align-items:center;gap:8px;border:0;border-radius:99px;padding:12px 16px;background:var(--primary,#ffc83d);color:#1b2a41;font:700 .95rem var(--body,system-ui);box-shadow:0 8px 24px rgba(27,42,65,.22);cursor:pointer}' +
-      '.inv-btn svg{width:20px;height:20px}' +
+      '.inv-btn svg{width:20px;height:20px}.imp-btn{right:auto;left:max(16px,env(safe-area-inset-left,0px));background:var(--surface,#fff);color:var(--ink,#1b2a41);text-decoration:none;border:1px solid var(--line,#dde3ec)}@media print{.inv-btn{display:none!important}}' +
       '.inv-dlg{border:0;border-radius:22px;padding:0;max-width:420px;width:calc(100% - 32px);background:var(--surface,#fff);color:var(--ink,#1b2a41);box-shadow:0 24px 64px rgba(0,0,0,.3)}' +
       '.inv-dlg::backdrop{background:rgba(15,23,36,.5)}.inv-in{padding:22px;display:flex;flex-direction:column;gap:12px;font-family:var(--body,system-ui)}' +
       '.inv-in h2{font-size:1.35rem}.inv-in p{color:var(--muted,#5c6b80);line-height:1.45}.inv-in input{height:46px;border:1px solid var(--line,#dde3ec);border-radius:12px;padding:0 12px;font:inherit;background:var(--surface,#fff);color:var(--ink,#1b2a41)}' +
@@ -86,6 +86,10 @@
     b.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.2"/><path d="M3 19c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5"/><path d="M18 8v6M15 11h6"/></svg>' +
       (info.miembros && info.miembros.length ? 'Compartido' : 'Invitar');
     document.body.appendChild(b);
+    var imp = document.createElement('a');
+    imp.className = 'inv-btn imp-btn'; imp.href = '/plan/' + t + '/nevera';
+    imp.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 9V3h10v6"/><rect x="3" y="9" width="18" height="8" rx="2"/><path d="M7 14h10v7H7z"/></svg>Imprimir';
+    document.body.appendChild(imp);
     var d = document.createElement('dialog');
     d.className = 'inv-dlg';
     document.body.appendChild(d);

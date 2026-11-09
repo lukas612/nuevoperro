@@ -730,6 +730,13 @@ const servidor = http.createServer(async (req, res) => {
     if (url.pathname === '/salud') return enviar(res, 200, { ok: true, supabase: datos.USA_SUPABASE, stripe: !MODO_DEMO, email: correo.configurado(), metaCapi: meta.configurado(), conciliacion: ESTADO_CONCILIACION });
 
     // Página privada del plan: /plan/<token de 32 hex>
+    const mn = url.pathname.match(/^\/plan\/([a-f0-9]{32})\/nevera$/);
+    if (mn) {
+      const plan = await datos.primero('planes', { token: mn[1] });
+      if (!plan || plan.estado !== 'enviado') return html(res, 404, pagina('Plan no encontrado', '<h1>No encontramos este plan</h1>'));
+      if (!plan.respuestas) plan.respuestas = (await datos.primero('leads', { sid: plan.sid }))?.respuestas || {};
+      return enviar(res, 200, require('./lib/nevera').render(plan, url.searchParams.get('semana')), TIPOS['.html'], { 'X-Robots-Tag': 'noindex' });
+    }
     const m = url.pathname.match(/^\/plan\/([a-f0-9]{32})$/);
     if (m) {
       const plan = await datos.primero('planes', { token: m[1] });
