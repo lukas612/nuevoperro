@@ -541,6 +541,31 @@ const rutas = {
     enviar(res, 200, await calcular({ gasto: url.searchParams.get('gasto') ? Number(url.searchParams.get('gasto')) : null }));
   },
 
+  // Vista previa de todos los emails, con las plantillas reales y datos de ejemplo
+  'GET /api/admin/emails': async (req, res) => {
+    if (!sesion.adminDeCookie(req)) return enviar(res, 401, { error: 'sesion' });
+    const E = plantillasEmail, ej = 'ejemplo@quebuenperro.com', plan = `${CFG.baseUrl}/plan/ejemplo`;
+    const cachorro = { sid: 'ejemplo', email: ej, precio: CFG.precios[0], respuestas: { nombre: 'Luna', raza: 'Labrador', razaId: 'labrador', edadSemanas: 10, tamano: 'grande', vivienda: 'piso', horasSolo: 4, problema: 'pis' } };
+    const adulto = { sid: 'ejemplo', email: ej, precio: CFG.precios[0], respuestas: { tipo: 'adulto', nombre: 'Thor', raza: 'Husky', razaId: 'husky', edadPerro: 'adulto', problema: 'correa', detalle: 'siempre' } };
+    const L = [];
+    const add = (grupo, cuando, m, quien) => L.push({ grupo, cuando, quien: quien || '', asunto: m.asunto, html: m.html });
+    add('Quien deja su email y no compra', 'Al momento de hacer el test · a todos', E.nurture(0, cachorro), 'Cachorro');
+    add('Quien deja su email y no compra', 'Al momento de hacer el test · a todos', E.nurture(0, adulto), 'Perro adulto');
+    const QUE = { 1: 'El plan por dentro', 2: 'Su problema: lo que se hace mal', 3: 'Mi zona como app', 4: 'El clicker', 5: 'El diario / 5 minutos al día', 6: '¿Merece la pena? (precio)', 7: 'Último aviso' };
+    for (const d of E.NURTURE_DIAS) {
+      add('Quien deja su email y no compra', `Día ${d} (${QUE[d]}) · solo si marcó la casilla de emails · a las 9:00`, E.nurture(d, cachorro), 'Cachorro');
+      add('Quien deja su email y no compra', `Día ${d} (${QUE[d]}) · solo si marcó la casilla de emails · a las 9:00`, E.nurture(d, adulto), 'Perro adulto');
+    }
+    add('Quien compra', 'Al pagar: entrega del plan', E.entrega(ej, cachorro.respuestas, plan, false), 'Cachorro');
+    add('Quien compra', 'Cada mañana desde el día 2 (hasta el 56 o el 42): la tarea del día', E.diario(ej, cachorro.respuestas, 2, plan), 'Cachorro');
+    add('Quien compra', 'Cada mañana desde el día 2 (hasta el 56 o el 42): la tarea del día', E.diario(ej, adulto.respuestas, 2, plan), 'Perro adulto');
+    add('Quien compra', 'Días 7 y 21: encuesta de 1 clic', E.encuesta(ej, cachorro.respuestas, 7, plan), 'Cachorro');
+    add('Quien compra', 'Al comprar el pack o un programa extra', E.pack(ej, cachorro.respuestas, 'correa', plan), 'Cachorro');
+    add('Quien compra', 'Cuando pide entrar en Mi zona', E.acceso(ej, `${CFG.baseUrl}/mi-zona`), '');
+    add('Quien compra', 'Cuando alguien le invita a compartir un plan', E.invitacion(ej, { quien: 'Lukas', nombre: 'Adriana', perro: 'Luna', urlPlan: plan, urlZona: `${CFG.baseUrl}/mi-zona` }), '');
+    enviar(res, 200, { emails: L });
+  },
+
   'GET /api/admin/panel': async (req, res, url) => {
     if (!sesion.adminDeCookie(req)) return enviar(res, 401, { error: 'sesion' });
     const dias = Number(url.searchParams.get('dias')) || 30;

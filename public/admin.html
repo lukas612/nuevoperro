@@ -40,6 +40,10 @@
     .grafico text { fill: var(--muted); font-size: 10px; font-family: inherit; }
     .tip { position: absolute; pointer-events: none; background: var(--ink); color: var(--bg); border-radius: 10px; padding: 6px 10px; font-size: .78rem; line-height: 1.35; white-space: nowrap; transform: translate(-50%, -110%); z-index: 5; }
     .embudo { display: flex; flex-direction: column; gap: 8px; }
+    .email-caja { display: flex; flex-direction: column; gap: 6px; }
+    .email-caja iframe { width: 100%; height: 560px; border: 1px solid var(--line); border-radius: 14px; background: #f5f7fb; }
+    .emails-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 14px; }
+    .email-meta { font-size: .8rem; color: var(--muted); }
     .emb { display: grid; grid-template-columns: 190px minmax(0, 1fr) 170px; gap: 10px; align-items: center; font-size: .85rem; }
     .emb .pista { height: 26px; background: var(--surface-2); border-radius: 6px; overflow: hidden; }
     .emb .pista i { display: block; height: 100%; background: var(--serie); border-radius: 0 4px 4px 0; min-width: 2px; }
@@ -80,7 +84,9 @@
 
     <div id="panel" hidden>
       <div class="pila-g" style="gap:22px">
-        <div class="cab-panel"><h1>Resumen</h1><span class="yo" id="yo"></span><button class="btn texto" id="salir" style="width:auto">Salir</button></div>
+        <div class="cab-panel"><div class="seg" role="group" aria-label="Sección"><button data-sec="resumen" aria-pressed="true">Resumen</button><button data-sec="emails">Emails</button></div><span class="yo" id="yo"></span><button class="btn texto" id="salir" style="width:auto">Salir</button></div>
+        <div id="sec-emails" hidden></div>
+        <div id="sec-resumen" class="pila-g" style="gap:22px">
         <div class="controles">
           <div class="seg" role="group" aria-label="Periodo">
             <button data-dias="1">Hoy</button><button data-dias="7">7 días</button><button data-dias="30" aria-pressed="true">30 días</button><button data-dias="90">90 días</button><button data-dias="9999">Todo</button>
@@ -122,6 +128,7 @@
           <div class="fila-t"><h2>Últimos pedidos</h2></div>
           <div class="tabla" id="pedidos"></div>
         </section>
+        </div>
       </div>
     </div>
   </main>
@@ -316,6 +323,27 @@
           return '<tr><td>' + fecha(p.ts) + '</td><td>' + esc(p.email) + '</td><td>' + (p.tipo === 'plan' ? 'Plan' : 'Pack ' + esc(p.pack)) + '</td><td>' + esc(p.angulo) + '</td><td>' + (p.reembolsado ? '<span class="pill-s ko">Reembolsado</span>' : '<span class="pill-s ok">Pagado</span>') + '</td><td class="n">' + eur(p.importe) + '</td></tr>';
         }).join('') + '</tbody></table>' : '<p class="suave">Todavía no hay pedidos.</p>';
     }
+
+    // ---------- Emails: vista previa con las plantillas reales ----------
+    var emailsCargados = false;
+    function verSeccion(sec) {
+      document.querySelectorAll('[data-sec]').forEach(function (b) { b.setAttribute('aria-pressed', String(b.dataset.sec === sec)); });
+      $('sec-resumen').hidden = sec !== 'resumen'; $('sec-emails').hidden = sec !== 'emails';
+      if (sec === 'emails' && !emailsCargados) {
+        emailsCargados = true; $('sec-emails').innerHTML = '<p class="suave">Cargando…</p>';
+        fetch('/api/admin/emails').then(function (r) { return r.json(); }).then(function (j) {
+          var grupos = {};
+          j.emails.forEach(function (m) { (grupos[m.grupo] = grupos[m.grupo] || []).push(m); });
+          $('sec-emails').innerHTML = Object.keys(grupos).map(function (g) {
+            return '<section class="pila"><h2>' + esc(g) + '</h2><div class="emails-grid">' + grupos[g].map(function (m, k) {
+              return '<div class="caja email-caja"><b>' + esc(m.asunto) + '</b><span class="email-meta">' + esc(m.cuando) + (m.quien ? ' · ' + esc(m.quien) : '') + '</span><iframe loading="lazy" title="' + esc(m.asunto) + '" data-k="' + g + '|' + k + '"></iframe></div>';
+            }).join('') + '</div></section>';
+          }).join('');
+          document.querySelectorAll('.email-caja iframe').forEach(function (f) { var p = f.dataset.k.split('|'); f.srcdoc = grupos[p[0]][Number(p[1])].html; });
+        }).catch(function () { $('sec-emails').innerHTML = '<p class="error">No se han podido cargar.</p>'; });
+      }
+    }
+    document.querySelectorAll('[data-sec]').forEach(function (b) { b.onclick = function () { verSeccion(b.dataset.sec); }; });
 
     var tRes; window.addEventListener('resize', function () { clearTimeout(tRes); tRes = setTimeout(function () { if (estado.datos) pintar(estado.datos); }, 200); });
     cargar();
