@@ -108,7 +108,7 @@ const rutas = {
 
   'POST /api/evento': async (req, res) => {
     const b = await json(req);
-    const permitidos = ['visita', 'inicio_form', 'paso', 'form_completo', 'resultado_visto', 'paywall_visto', 'checkout_inicio', 'checkout_cancelado', 'upsell_visto', 'upsell_rechazado', 'clic_seguros', 'derivado', 'clic_afiliado', 'visita_web', 'clic_bloqueado', 'tarea_previa'];
+    const permitidos = ['visita', 'inicio_form', 'paso', 'form_completo', 'resultado_visto', 'paywall_visto', 'checkout_inicio', 'checkout_cancelado', 'upsell_visto', 'upsell_rechazado', 'clic_seguros', 'derivado', 'clic_afiliado', 'visita_web', 'clic_bloqueado', 'tarea_previa', 'herramienta_gratis'];
     if (!permitidos.includes(b.tipo)) return enviar(res, 400, { error: 'tipo' });
     await datos.insertar('eventos', { tipo: b.tipo, sid: limpio(b.sid, 64), paso: limpio(b.paso, 40), utm: objeto(b.utm) });
     enviar(res, 200, { ok: true });
@@ -271,6 +271,26 @@ const rutas = {
     const lead = await datos.primero('leads', { sid });
     if (!lead) return enviar(res, 404, { error: 'lead' });
     enviar(res, 200, { sid: lead.sid, email: lead.email, respuestas: lead.respuestas, consentimientos: lead.consentimientos });
+  },
+
+  // Actividad real y anónima para la prueba social: raza, problema, zona y hace cuánto. Sin nombres ni emails.
+  'GET /api/actividad': async (req, res) => {
+    const ahora = Date.now();
+    if (!cacheActividad.t || ahora - cacheActividad.t > 60000) {
+      const D = require('./public/perros.js');
+      const PROB = { pis: 'el pis en casa', mordiscos: 'los mordiscos', noches: 'las noches', solo: 'quedarse solo', correa: 'tirar de la correa', ladridos: 'los ladridos', adaptacion: 'su adaptación' };
+      const leads = (await datos.listar('leads', {}, { orden: 'ts.desc', limite: 400 })).filter((l) => !EXCLUIR_PRUEBAS.has(String(l.email || '').toLowerCase()));
+      const semana = leads.filter((l) => ahora - new Date(l.ts).getTime() < 7 * 864e5).length;
+      const recientes = leads.filter((l) => ahora - new Date(l.ts).getTime() < 48 * 36e5).slice(0, 15).map((l) => {
+        const r = l.respuestas || {};
+        const raza = r.razaId && r.razaId !== 'otra' && r.razaId !== 'mestizo' ? (D.raza(r.razaId) || {}).nombre : null;
+        const adulto = ['adulto', 'adoptado'].includes(r.tipo);
+        return { quien: (raza ? (adulto ? 'su ' : 'su cachorro de ') + raza.toLowerCase() : (adulto ? 'su perro' : 'su cachorro')),
+          problema: PROB[r.problema] || null, zona: r.comunidad || null, razaId: r.razaId || 'mestizo', min: Math.max(1, Math.round((ahora - new Date(l.ts).getTime()) / 60000)) };
+      });
+      cacheActividad.t = ahora; cacheActividad.datos = { semana, recientes };
+    }
+    enviar(res, 200, cacheActividad.datos, 'application/json', { 'Cache-Control': 'public, max-age=60' });
   },
 
   'POST /api/lead': async (req, res) => {
@@ -626,6 +646,8 @@ async function cuentaDiario(email) {
   return p ? p.email : email;
 }
 const invitacionesRecientes = new Map();
+const cacheActividad = { t: 0, datos: null };
+const EXCLUIR_PRUEBAS = new Set((process.env.PANEL_EXCLUIR || 'lukas@witme.es,lukas@lukasochoa.com,lukas@roiroi.es,delivered@resend.dev').split(',').concat(CFG.adminEmails).map((x) => x.trim().toLowerCase()));
 
 // Conciliación: registra y entrega cualquier pago de los últimos días que no quedara guardado
 // (cierre de la pestaña, un fallo puntual, el webhook sin llegar…). Es idempotente.

@@ -173,7 +173,7 @@
     if (i === 1) {
       var a = angulo || { t: 'Todo lo que necesitas para educar a tu perro', s: 'Hecho para su raza, su edad y tu casa.' };
       intro = '<section class="intro-test"><h1>' + esc(a.t) + '</h1><p class="suave">' + esc(a.s) + ' Responde unas preguntas rápidas y te damos gratis sus 3 primeros días de plan.</p>' +
-        '<div class="micro"><span>' + I('check') + 'Gratis</span><span>' + I('check') + '2 minutos</span><span>' + I('check') + 'Sin castigos</span></div></section>';
+        '<div class="micro"><span>' + I('check') + 'Gratis</span><span>' + I('check') + '2 minutos</span><span>' + I('check') + 'Sin castigos</span></div><p class="prueba-social" id="ps-intro"></p></section>';
     }
     var html = '<div class="pila-g">' + intro + '<div class="cabecera-preg"><h2>' + esc(titulo) + '</h2>' + (q.s ? '<p class="suave">' + esc(q.s) + '</p>' : '') + '</div>';
     var val = estado.r[q.id];
@@ -201,6 +201,7 @@
       }).join('') + '</div>' + (multi ? '<button class="btn" id="sig"' + (sel.length ? '' : ' disabled') + '>Continuar</button>' : '');
     }
     pintar(html + '</div>');
+    if (i === 1 && window.VENTA) { window.VENTA.contador('ps-intro'); window.VENTA.notificaciones({ espera: 6000, max: 2 }); }
 
     function avanzar() { if (i === 1) evento('inicio_form'); evento('paso', q.id); estado.paso = i + 1; guardarEstado(); render(); }
     var campo = document.getElementById('campo'), sig = document.getElementById('sig');
@@ -310,7 +311,8 @@
 
     var html = '<div class="pila-g">' +
       '<section class="pila"><div class="perfil"><span class="avatar">' + D.cara(razaId(), { lengua: true }) + '</span>' +
-        '<div class="pila" style="gap:6px"><span class="chip ok">' + I('check') + 'Gratis para ti</span><h1 style="font-size:1.7rem">Los 3 primeros días de ' + esc(nombre()) + '</h1></div></div>' +
+        '<div class="pila" style="gap:6px"><span class="chip ok">' + I('check') + 'Vista previa gratis</span><h1 style="font-size:1.7rem">Los 3 primeros días de ' + esc(nombre()) + '</h1></div></div>' +
+        '<p class="prueba-social" id="ps-res"></p>' +
         '<div class="ajustes"><span class="suave peq">Ajustado a:</span>' + ajustes.map(function (a) { return '<span class="chip">' + I(a[0]) + esc(a[1]) + '</span>'; }).join('') + '</div>' +
         window.VENTA.aviso({ nombre: nombre(), semanas: 6 }, { I: I, esc: esc }) + '</section>' +
       '<section class="tarjeta pila"><h3>' + I(pg.icono) + ' Por qué lo hace</h3><p>' + esc(sus(pg.porQue)) + '</p>' +
@@ -318,12 +320,15 @@
       window.VENTA.miniPlan({ nombre: nombre(), cara: D.cara(razaId(), { lengua: true }), titulo: pg.titulo + ' · 6 semanas', total: 42, abiertos: 3, guardado: estado.previo || [],
         tabs: pg.semanas.map(function (x, k) { return ['S' + (k + 1), x.foco.split(' ')[0]]; }),
         foco: 'Semana 1 · ' + pg.semanas[0].foco, dias: pg.semanas[0].tareas.map(function (t) { return [t[0], sus(t[1])]; }) }, { I: I, burbuja: burbuja, esc: esc }) +
+      window.VENTA.gratis({ nombre: nombre(), adulto: true }, { I: I, burbuja: burbuja, esc: esc }) +
       window.VENTA.panel({ adulto: true }, { I: I, burbuja: burbuja, esc: esc }) +
       window.VENTA.consejos({ nombre: nombre(), problema: r.problema }, { I: I, burbuja: burbuja, esc: esc }) +
       paywallHtml() + window.VENTA.preguntas({ precio: CONF.precio }, { esc: esc, euros: euros }) + '</div>';
     pintar(html);
     evento('paywall_visto');
+    window.VENTA.contador('ps-res'); window.VENTA.notificaciones({ espera: 15000, max: 3, saltarMin: 3 });
     window.VENTA.activarBloqueos(function (k) { evento('clic_bloqueado', k); });
+    window.VENTA.activarGratis({ nombre: nombre(), adulto: true, alUsar: function (k) { evento('herramienta_gratis', k); } });
     window.VENTA.activarMiniPlan({ total: 42, abiertos: 3, nombre: nombre(),
       alGuardar: function (keys) { estado.previo = keys; guardarEstado(); },
       alMarcar: function (k) { evento('tarea_previa', k); pixel('TareaPrevia', { content_name: k }, null, 1); } });

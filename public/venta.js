@@ -129,11 +129,16 @@
   function panel(o, u) {
     var img = function (f) { return '<img src="/email/' + f + '" alt="" loading="lazy">'; };
     var ico = function (ic, color) { return '<span class="tile-ico">' + u.burbuja(ic, color) + '</span>'; };
-    var tiles = [
-      [img(o.adulto ? 'plan-perro.jpg' : 'diario.jpg'), o.adulto ? 'Tu progreso' : 'Diario de pis y caca', o.adulto ? 'Lo que lleváis hecho, semana a semana' : 'Un toque y ves cómo mejora', 'diario'],
-      [img('clicker.jpg'), 'Clicker en tu móvil', 'Marca justo lo que hace bien', 'clicker'],
-      [ico(o.adulto ? 'escudo' : 'reloj', 'sky'), o.adulto ? 'Si hay una recaída' : 'Su rutina, hora a hora', o.adulto ? 'Qué hacer y cuándo pedir ayuda' : 'Ajustada cada semana a su edad', 'extra'],
-      [ico('personas', 'lilac'), 'Hacedlo juntos', 'Comparte el plan con tu pareja', 'juntos']
+    var tiles = o.adulto ? [
+      [img('plan-perro.jpg'), 'Tu progreso', 'Lo que lleváis hecho, semana a semana', 'diario'],
+      [ico('escudo', 'sky'), 'Si hay una recaída', 'Qué hacer y cuándo pedir ayuda', 'extra'],
+      [ico('personas', 'lilac'), 'Hacedlo juntos', 'Comparte el plan con tu pareja', 'juntos'],
+      [img('mi-zona.jpg'), 'Mi zona, como una app', 'En tu móvil, sin caducidad', 'app']
+    ] : [
+      [ico('reloj', 'sky'), 'Su rutina, hora a hora', 'Ajustada cada semana a su edad', 'extra'],
+      [ico('estrella', 'peach'), 'Los 4 protocolos', 'Pis, mordiscos, noches y quedarse solo', 'protocolos'],
+      [ico('personas', 'lilac'), 'Hacedlo juntos', 'Comparte el plan con tu pareja', 'juntos'],
+      [img('mi-zona.jpg'), 'Mi zona, como una app', 'En tu móvil, sin caducidad', 'app']
     ];
     return '<section class="pila"><span class="etiqueta">Tu panel</span><div class="tiles-bloq">' + tiles.map(function (t) {
       return '<button type="button" class="tile-bloq" data-bloq="' + t[3] + '"><span class="tile-vis" aria-hidden="true">' + t[0] + '</span>' +
@@ -213,5 +218,110 @@
     });
   }
 
-  root.VENTA = { miniPlan: miniPlan, activarMiniPlan: activarMiniPlan, panel: panel, consejos: consejos, activarBloqueos: activarBloqueos, pagoIntegrado: pagoIntegrado, aviso: aviso, incluye: incluye, comparativa: comparativa, preguntas: preguntas, barra: barra, quitarBarra: quitarBarra, activarPago: activarPago };
+  // ---------- Prueba social con actividad real (sin nombres ni emails) ----------
+  var actividadDatos = null, actividadTimer = null, actividadMostrados = 0;
+  function cargarActividad() {
+    if (actividadDatos) return Promise.resolve(actividadDatos);
+    return fetch('/api/actividad').then(function (r) { return r.json(); }).then(function (d) { actividadDatos = d; return d; }).catch(function () { return null; });
+  }
+  function contador(id) {
+    cargarActividad().then(function (d) {
+      var el = document.getElementById(id);
+      if (el && d && d.semana >= 10) el.innerHTML = '<span class="ps-punto"></span>' + d.semana + ' perros han hecho el test esta semana';
+    });
+  }
+  function hace(min) { return min < 60 ? 'hace ' + min + ' min' : min < 120 ? 'hace 1 h' : 'hace ' + Math.round(min / 60) + ' h'; }
+  function notificaciones(o) {
+    o = o || {};
+    if (actividadTimer || (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches)) return;
+    cargarActividad().then(function (d) {
+      if (!d || !d.recientes) return;
+      var lista = d.recientes.filter(function (x) { return x.min >= (o.saltarMin || 0); });
+      if (!lista.length) return;
+      var i = 0;
+      var mostrar = function () {
+        if (actividadMostrados >= (o.max || 4) || document.documentElement.classList.contains('pago-abierto')) { clearInterval(actividadTimer); return; }
+        var x = lista[i++ % lista.length]; actividadMostrados++;
+        var t = document.createElement('div');
+        t.className = 'ps-toast'; t.setAttribute('role', 'status');
+        t.innerHTML = '<span class="ps-cara">' + (window.PERROS ? window.PERROS.cara(x.razaId) : '') + '</span><span><b>Alguien' + (x.zona ? ' en ' + x.zona.replace(/^Comunidad (de |Foral de )?/, '') : '') + '</b> ha hecho el test para ' + x.quien +
+          (x.problema ? ' · ' + x.problema : '') + '<small>' + hace(x.min) + '</small></span><button aria-label="Cerrar">×</button>';
+        document.body.appendChild(t);
+        t.querySelector('button').onclick = function () { t.remove(); clearInterval(actividadTimer); };
+        requestAnimationFrame(function () { t.classList.add('visible'); });
+        setTimeout(function () { t.classList.remove('visible'); setTimeout(function () { t.remove(); }, 400); }, 5500);
+      };
+      setTimeout(function () { mostrar(); actividadTimer = setInterval(mostrar, 20000); }, o.espera || 7000);
+    });
+  }
+
+  // ---------- Herramientas gratis para usar ya: clicker (siempre) y diario (3 días de prueba) ----------
+  var audioCtx = null;
+  function sonidoClic() {
+    try {
+      audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+      var t = audioCtx.currentTime, osc = audioCtx.createOscillator(), g = audioCtx.createGain();
+      osc.type = 'square'; osc.frequency.setValueAtTime(2400, t); osc.frequency.exponentialRampToValueAtTime(900, t + 0.03);
+      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.5, t + 0.002); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.05);
+      osc.connect(g); g.connect(audioCtx.destination); osc.start(t); osc.stop(t + 0.06);
+    } catch (e) {}
+    if (navigator.vibrate) navigator.vibrate(15);
+  }
+  var CLAVE_DIARIO = 'qbp_diario_prueba', DIAS_PRUEBA = 3;
+  var leerDiario = function () { try { return JSON.parse(localStorage.getItem(CLAVE_DIARIO)) || []; } catch (e) { return []; } };
+  function gratis(o, u) {
+    var tabs = o.adulto ? '' : '<div class="gr-tabs" role="tablist"><button role="tab" aria-selected="true" data-gr="clicker">' + u.I('estrella') + 'Clicker</button><button role="tab" aria-selected="false" data-gr="diario">' + u.I('gota') + 'Diario de pis</button></div>';
+    return '<section class="tarjeta pila gratis" id="gratis"><span class="eti-peq">Gratis · úsalo ya</span><h2 style="font-size:1.3rem">Empieza hoy con ' + u.esc(o.nombre) + '</h2>' + tabs +
+      '<div data-panel="clicker" class="gr-panel"><p class="suave peq">Un «clic» marca el momento exacto en que hace algo bien, y después va el premio. Pruébalo: <b>clic y premio, 10 veces seguidas</b>, sin pedirle nada.</p>' +
+        '<button class="clicker" id="gr-clicker" aria-label="Hacer clic">' + u.I('huella') + '<span>Clic</span></button><p class="gr-cont" id="gr-cont">0 de 10 clics</p></div>' +
+      (o.adulto ? '' : '<div data-panel="diario" class="gr-panel" hidden><p class="suave peq">Toca cada vez que haga pis o caca. En unos días verás su patrón y podrás adelantarte. <b>Gratis ' + DIAS_PRUEBA + ' días</b>; con el plan, para siempre y compartido.</p><div id="gr-diario"></div></div>') +
+      '</section>';
+  }
+  function activarGratis(o) {
+    var caja = document.getElementById('gratis'); if (!caja) return;
+    caja.querySelectorAll('[data-gr]').forEach(function (b) {
+      b.onclick = function () {
+        caja.querySelectorAll('[data-gr]').forEach(function (x) { x.setAttribute('aria-selected', String(x === b)); });
+        caja.querySelectorAll('[data-panel]').forEach(function (p) { p.hidden = p.dataset.panel !== b.dataset.gr; });
+        if (o.alUsar) o.alUsar(b.dataset.gr + '_abrir');
+      };
+    });
+    var n = 0, bc = document.getElementById('gr-clicker'), cont = document.getElementById('gr-cont');
+    bc.addEventListener('pointerdown', function (e) {
+      e.preventDefault(); sonidoClic(); n++;
+      bc.classList.add('pulsado'); setTimeout(function () { bc.classList.remove('pulsado'); }, 120);
+      cont.innerHTML = n < 10 ? n + ' de 10 clics' : '<b>¡Clicker cargado!</b> Mañana: clic justo cuando ' + o.nombre + ' te mire, y premio. Está en el día 3 de su plan.';
+      if (n === 1 && o.alUsar) o.alUsar('clicker');
+    });
+    var dz = document.getElementById('gr-diario');
+    if (!dz) return;
+    var pintar = function () {
+      var regs = leerDiario(), hoy = new Date().toDateString();
+      var inicio = regs.length ? regs[0].t : Date.now();
+      var finPrueba = new Date(inicio).setHours(0, 0, 0, 0) + DIAS_PRUEBA * 864e5;
+      if (Date.now() >= finPrueba) {
+        dz.innerHTML = '<div class="bloqueado"><div class="bloq-contenido" aria-hidden="true"><div class="gr-diario-btns"><span>Pis fuera</span><span>Pis en casa</span><span>Caca fuera</span><span>Caca en casa</span></div></div>' +
+          '<a class="bloq-cta" href="#paywall" data-bloq="diario">Tu prueba de ' + DIAS_PRUEBA + ' días ha terminado · sigue con el plan</a></div>';
+        return;
+      }
+      var deHoy = regs.filter(function (r) { return new Date(r.t).toDateString() === hoy; });
+      var fuera = deHoy.filter(function (r) { return r.l === 'fuera'; }).length;
+      var quedan = Math.ceil((finPrueba - Date.now()) / 864e5);
+      dz.innerHTML = '<div class="gr-diario-btns">' + [['pis', 'fuera', 'Pis fuera'], ['pis', 'casa', 'Pis en casa'], ['caca', 'fuera', 'Caca fuera'], ['caca', 'casa', 'Caca en casa']].map(function (b) {
+        return '<button data-t="' + b[0] + '" data-l="' + b[1] + '" class="' + (b[1] === 'fuera' ? 'ok' : '') + '">' + b[2] + '</button>';
+      }).join('') + '</div><p class="gr-cont"><b>' + fuera + ' de ' + deHoy.length + '</b> fuera hoy · te ' + (quedan === 1 ? 'queda 1 día' : 'quedan ' + quedan + ' días') + ' de prueba</p>';
+      dz.querySelectorAll('[data-t]').forEach(function (b) {
+        b.onclick = function () {
+          var regs2 = leerDiario(); regs2.push({ t: Date.now(), p: b.dataset.t, l: b.dataset.l });
+          try { localStorage.setItem(CLAVE_DIARIO, JSON.stringify(regs2.slice(-200))); } catch (e) {}
+          if (navigator.vibrate) navigator.vibrate(20);
+          if (o.alUsar) o.alUsar('diario');
+          pintar();
+        };
+      });
+    };
+    pintar();
+  }
+
+  root.VENTA = { gratis: gratis, activarGratis: activarGratis, contador: contador, notificaciones: notificaciones, miniPlan: miniPlan, activarMiniPlan: activarMiniPlan, panel: panel, consejos: consejos, activarBloqueos: activarBloqueos, pagoIntegrado: pagoIntegrado, aviso: aviso, incluye: incluye, comparativa: comparativa, preguntas: preguntas, barra: barra, quitarBarra: quitarBarra, activarPago: activarPago };
 })(typeof window !== 'undefined' ? window : this);

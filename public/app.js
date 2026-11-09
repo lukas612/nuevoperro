@@ -206,7 +206,7 @@
     if (i === 1) {
       var a = ANGULOS[utm.a] || { t: 'Todo lo que necesitas para educar a tu cachorro', s: 'Hecho para su raza, su edad y tu casa.' };
       intro = '<section class="intro-test"><h1>' + esc(a.t) + '</h1><p class="suave">' + esc(a.s) + ' Responde unas preguntas rápidas y te damos gratis la rutina de mañana para tu cachorro.</p>' +
-        '<div class="micro"><span>' + I('check') + 'Gratis</span><span>' + I('check') + '2 minutos</span><span>' + I('check') + 'Sin tarjeta</span></div></section>';
+        '<div class="micro"><span>' + I('check') + 'Gratis</span><span>' + I('check') + '2 minutos</span><span>' + I('check') + 'Sin tarjeta</span></div><p class="prueba-social" id="ps-intro"></p></section>';
     }
     var html = '<div class="pila-g">' + intro + '<div class="cabecera-preg"><h2>' + esc(titulo) + '</h2>' + (q.s ? '<p class="suave">' + esc(q.s) + '</p>' : '') + '</div>';
     var val = estado.r[q.id];
@@ -241,6 +241,7 @@
       }).join('') + '</div>' + (multi ? '<button class="btn" id="sig"' + (sel.length ? '' : ' disabled') + '>Continuar</button>' : '');
     }
     pintar(html + '</div>');
+    if (i === 1 && window.VENTA) { window.VENTA.contador('ps-intro'); window.VENTA.notificaciones({ espera: 6000, max: 2 }); }
 
     function avanzar() { if (i === 1) evento('inicio_form'); evento('paso', q.id); estado.paso = i + 1; guardarEstado(); render(); }
     var campo = document.getElementById('campo');
@@ -380,6 +381,7 @@
       '<div class="pila-g">' +
       '<section class="pila"><div class="perfil"><span class="avatar">' + D.cara(razaId(), { lengua: true }) + '</span>' +
         '<div class="pila" style="gap:6px"><span class="chip ok">' + I('check') + 'Vista previa gratis</span><h1 style="font-size:1.7rem">El plan de ' + esc(n) + ' está listo</h1></div></div>' +
+        '<p class="prueba-social" id="ps-res"></p>' +
         '<div class="ajustes"><span class="suave peq">Hecho para:</span>' + ajustes.map(function (a) { return '<span class="chip">' + I(a[0]) + esc(a[1]) + '</span>'; }).join('') + '</div>' +
         window.VENTA.aviso({ nombre: n, semanas: 8 }, { I: I, esc: esc }) + '</section>' +
 
@@ -388,6 +390,7 @@
         tabs: [1, 2, 3, 4, 5, 6, 7, 8].map(function (k) { return ['S' + k, (Number(r.edadSemanas) || 8) + k - 1 + ' sem.']; }),
         foco: 'Semana 1 · ' + P.SOCIALIZACION[0].foco, dias: T.slice(0, 7).map(function (t) { return [t.titulo, sus(t.tarea)]; }) }, { I: I, burbuja: burbuja, esc: esc }) +
 
+      window.VENTA.gratis({ nombre: n }, { I: I, burbuja: burbuja, esc: esc }) +
       // Su problema: primeros pasos abiertos, el resto bloqueado
       '<section class="tarjeta pila"><div class="cab-consejo">' + burbuja(icProb, 'peach') + '<div><span class="eti-peq">Tu prioridad</span><h2 style="font-size:1.3rem">' + esc(prot.titulo) + '</h2></div></div>' +
         '<ol class="pasos-prot">' + pasos.slice(0, 2).map(function (x) { return '<li>' + esc(sus(x)) + '</li>'; }).join('') + '</ol>' +
@@ -410,7 +413,9 @@
       window.VENTA.preguntas({ precio: CONF.precio }, { esc: esc, euros: euros }) + '</div>';
     pintar(html);
     evento('paywall_visto');
+    window.VENTA.contador('ps-res'); window.VENTA.notificaciones({ espera: 15000, max: 3, saltarMin: 3 });
     window.VENTA.activarBloqueos(function (k) { evento('clic_bloqueado', k); });
+    window.VENTA.activarGratis({ nombre: n, alUsar: function (k) { evento('herramienta_gratis', k); } });
     window.VENTA.activarMiniPlan({ total: 56, abiertos: 3, nombre: n,
       alGuardar: function (keys) { estado.previo = keys; guardarEstado(); },
       alMarcar: function (k) { evento('tarea_previa', k); pixel('TareaPrevia', { content_name: k }, null, 1); } });
