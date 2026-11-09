@@ -227,7 +227,10 @@
   function contador(id) {
     cargarActividad().then(function (d) {
       var el = document.getElementById(id);
-      if (el && d && d.total >= 20) el.innerHTML = '<span class="ps-punto"></span>' + d.total + ' perros ya han empezado su plan con Qué Buen Perro';
+      if (!el || !d) return;
+      // «Hoy» cuando ya hay unos cuantos (a primera hora, el total), siempre con datos reales
+      if (d.hoy >= 3) el.innerHTML = '<span class="ps-punto"></span>' + d.hoy + ' perros han empezado su plan hoy';
+      else if (d.total >= 20) el.innerHTML = '<span class="ps-punto"></span>' + d.total + ' perros ya han empezado su plan con Qué Buen Perro';
     });
   }
   function hace(min) { return min < 60 ? 'hace ' + min + ' min' : min < 120 ? 'hace 1 h' : 'hace ' + Math.round(min / 60) + ' h'; }
