@@ -245,14 +245,16 @@
     var planes = d.planes.length ? d.planes.map(function (p) {
       var hechas = Math.max(progreso(p.token, p.dias), Object.keys(p.progreso || {}).filter(function (k) { return /^d\d+$/.test(k) && p.progreso[k].v && Number(k.slice(1)) <= p.dias; }).length);
       var dia = Math.min(p.dias, Math.max(1, Math.round((new Date().setHours(0, 0, 0, 0) - new Date(p.desde).setHours(0, 0, 0, 0)) / 864e5) + 1));
-      return '<a class="plan-tarjeta" href="/plan/' + esc(p.token) + '">' +
+      return '<div class="plan-bloque"><a class="plan-tarjeta" href="/plan/' + esc(p.token) + '">' +
         '<span class="avatar">' + D.cara(p.razaId, { lengua: true }) + '</span>' +
         '<span class="pila" style="gap:6px;min-width:0;flex:1"><small class="eti-peq">' + esc(p.titulo) + (p.extra ? ' · Programa extra' : '') + '</small><b>' + esc(p.nombre) + '</b>' +
         '<span class="peq suave">Día ' + dia + ' de ' + p.dias + ' · ' + hechas + (hechas === 1 ? ' tarea hecha' : ' tareas hechas') + '</span>' +
         '<span class="barra-mini"><i style="width:' + Math.max(3, hechas / p.dias * 100) + '%"></i></span>' +
         (p.compartido ? '<span class="peq suave">' + I('personas') + ' Te lo compartió ' + esc(p.dueno) + '</span>' : (p.miembros && p.miembros.length ? '<span class="peq suave">' + I('personas') + ' Con ' + esc(p.miembros.map(function (m) { return m.nombre; }).join(', ')) + '</span>' : '')) +
         '</span>' +
-        '<span class="eleccion-flecha">' + I('flecha') + '</span></a>';
+        '<span class="eleccion-flecha">' + I('flecha') + '</span></a>' +
+        '<div class="plan-acciones"><a href="/plan/' + esc(p.token) + '/nevera">' + I('calendario') + 'Imprimir</a>' +
+          (p.extra ? '' : '<button type="button" data-editar="' + esc(p.token) + '">' + I('persona') + 'Editar datos</button>') + '</div></div>';
     }).join('') : '<div class="tarjeta"><p>Todavía no hay ningún plan enviado a este email. Si acabas de comprar, te llegará por email en unos minutos.</p></div>';
 
     var seguro = d.seguros;
@@ -275,8 +277,7 @@
     app.innerHTML = '<div class="entra zona-app">' +
       '<div class="pila-g zona-vista" data-vista="inicio">' +
         '<section class="pila"><h1 style="font-size:1.9rem">Hola' + (nombres.length === 1 ? ', aquí tienes todo lo de ' + esc(nombres[0]) : '') + '</h1><p class="suave peq">' + esc(d.email) + '</p></section>' +
-        '<section class="pila"><span class="etiqueta">' + (d.planes.length > 1 ? 'Tus planes' : 'Tu plan') + '</span>' + planes +
-          d.planes.filter(function (p) { return !p.extra; }).map(function (p) { return '<div class="acciones-plan"><button class="btn texto editar-btn" data-editar="' + esc(p.token) + '">' + I('persona') + 'Editar sus datos</button><a class="btn texto editar-btn" href="/plan/' + esc(p.token) + '/nevera">' + I('calendario') + 'Imprimir para la nevera</a></div>'; }).join('') + '</section>' +
+        '<section class="pila"><span class="etiqueta">' + (d.planes.length > 1 ? 'Tus planes' : 'Tu plan') + '</span>' + planes + '</section>' +
         '<section class="zona-atajos">' +
           atajo('salud', 'vacuna', 'mint', 'Carnet de salud', 'Vacunas y recordatorios') + atajo('clicker', 'estrella', 'butter', 'Clicker', 'Marca lo que hace bien') +
           atajo('juntos', 'personas', 'lilac', 'Juntos', compartido ? 'Ya lo compartís' : 'Invita a alguien') + atajo('mas', 'corazon', 'peach', 'Para ti', d.catalogo && d.catalogo.length ? 'Más programas desde ' + (d.precioCliente / 100).toFixed(2).replace('.', ',') + ' €' : 'Consejos y recomendaciones') +
