@@ -115,6 +115,17 @@ const rutas = {
   },
 
   // Progreso del plan compartido entre quienes lo siguen. Basta con el token del plan (el mismo que da acceso a su página).
+  // Uso del plan y de Mi zona (para las estadísticas): abrir el plan, clicker… Se apunta en eventos con el sid del plan.
+  'POST /api/uso': async (req, res) => {
+    const b = await json(req);
+    const que = ['plan', 'zona', 'clicker', 'diario', 'salud', 'avisos'].includes(b.que) ? b.que : null;
+    if (!que) return enviar(res, 400, { error: 'que' });
+    let plan = /^[a-f0-9]{32}$/.test(String(b.t || '')) ? await datos.primero('planes', { token: b.t }) : null;
+    if (!plan) { const email = sesion.deCookie(req); plan = email ? (await planesDe(email)).find((p) => !p.pack) : null; }
+    if (plan) await datos.insertar('eventos', { tipo: 'uso', sid: plan.sid, paso: que });
+    enviar(res, 200, { ok: true });
+  },
+
   'GET /api/progreso': async (req, res, url) => {
     const t = limpio(url.searchParams.get('t'), 40);
     const plan = /^[a-f0-9]{32}$/.test(t) && (await datos.primero('planes', { token: t }));

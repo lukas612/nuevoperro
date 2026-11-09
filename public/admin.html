@@ -119,6 +119,8 @@
           <section class="caja" style="grid-column:1/-1"><h2>Embudo</h2><p class="sub">Personas únicas en cada paso del periodo</p><div class="embudo" id="embudo"></div></section>
         </div>
 
+        <section class="caja"><h2>Uso del plan</h2><p class="sub">Desde siempre · prueba gratis frente a quien compró directamente</p><div class="tabla" id="uso"></div></section>
+
         <div class="rejilla-2">
           <section class="caja"><h2>Finanzas</h2><p class="sub">Comisión de Stripe estimada (1,5% + 0,25 € por cobro)</p><div class="tabla"><table class="fin" id="finanzas"></table></div></section>
           <section class="caja"><h2>Otros datos</h2><div class="lista-o" id="otros"></div></section>
@@ -232,6 +234,7 @@
       barras('g-visitas', d.serie, 'visitantes', function (v) { return num(v) + ' visitantes'; });
       pintarEmbudo(d.embudo);
       pintarFinanzas(A);
+      pintarUso(d.uso);
       pintarOtros(d.otros);
       pintarDesglose(d);
       pintarLeads(d.ultimosLeads);
@@ -280,6 +283,24 @@
       }).join('');
     }
 
+    function pintarUso(u) {
+      if (!u) return;
+      var P = u.prueba, C = u.compra;
+      var fila = function (et, a, b) { return '<tr><td>' + et + '</td><td class="n">' + a + '</td><td class="n">' + b + '</td></tr>'; };
+      var pc = function (x, n) { return n ? num(x) + ' <span class="suave">(' + pct(x / n) + ')</span>' : '—'; };
+      $('uso').innerHTML = '<table><thead><tr><th></th><th class="n">Prueba 3 días</th><th class="n">Compradores</th></tr></thead><tbody>' +
+        fila('Personas', num(P.personas), num(C.personas)) +
+        fila('· en prueba ahora', num(P.activas), '—') + fila('· prueba terminada sin pagar', num(P.terminadas), '—') +
+        fila('<b>· pasan a pago</b>', '<b>' + pc(P.convertidas, P.personas) + '</b>', '—') +
+        fila('Marcan alguna tarea', pc(P.marcan, P.personas), pc(C.marcan, C.personas)) +
+        fila('Tareas marcadas de media', P.mediaTareas == null ? '—' : P.mediaTareas.toFixed(1).replace('.', ','), C.mediaTareas == null ? '—' : C.mediaTareas.toFixed(1).replace('.', ',')) +
+        fila('Usan el diario', pc(P.diario, P.personas), pc(C.diario, C.personas)) +
+        fila('Usan el clicker', pc(P.clicker, P.personas), pc(C.clicker, C.personas)) +
+        fila('Usan el carnet de salud', pc(P.salud, P.personas), pc(C.salud, C.personas)) +
+        fila('Activan los avisos', pc(P.avisos, P.personas), pc(C.avisos, C.personas)) +
+        fila('Vuelven otro día', pc(P.vuelven, P.personas), pc(C.vuelven, C.personas)) +
+        '</tbody></table>';
+    }
     function pintarFinanzas(A) {
       var filas = [['Ingresos brutos (IVA incl.)', A.bruto], ['Reembolsos', -A.devuelto], ['IVA (21%)', -A.iva], ['Comisiones de Stripe (estimadas)', -A.comisiones]];
       var h = filas.map(function (f) { return '<tr><td>' + f[0] + '</td><td class="n">' + eur(f[1]) + '</td></tr>'; }).join('') +

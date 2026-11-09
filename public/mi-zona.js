@@ -361,6 +361,9 @@
       H.clicker(document.getElementById('clicker-caja'));
       H.club(document.getElementById('club'), d.enClub);
     }
+    try { var hoyU = new Date().toDateString(); if (localStorage.getItem('uso_zona') !== hoyU) { localStorage.setItem('uso_zona', hoyU); post('/api/uso', { que: 'zona' }); } } catch (e) {}
+    var cc = document.getElementById('clicker-caja');
+    if (cc) cc.addEventListener('pointerdown', function primerClic() { post('/api/uso', { que: 'clicker' }); cc.removeEventListener('pointerdown', primerClic); });
     juntos(d);
     catalogo(d);
     prueba(d);

@@ -35,6 +35,10 @@
 
   // 2) Cuando el plan ya está pintado: subir cada cambio, mostrar quién marcó qué y el botón de invitar.
   document.addEventListener('DOMContentLoaded', function () {
+    try {
+      var hoy = new Date().toDateString();
+      if (localStorage.getItem('uso_' + t) !== hoy) { localStorage.setItem('uso_' + t, hoy); post('/api/uso', { t: t, que: 'plan' }).catch(function () {}); }
+    } catch (e) {}
     pintarAutores();
     document.addEventListener('change', function (e) {
       if (!e.target || e.target.type !== 'checkbox') return;
