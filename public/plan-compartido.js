@@ -56,6 +56,7 @@
     });
     botonInvitar();
     barraZona();
+    if (info.prueba) bloquearPrueba(info.prueba);
   });
 
   function pintarAutores() {
@@ -69,6 +70,45 @@
         if (dest) dest.insertAdjacentHTML('beforeend', ' <small class="por-quien">· ' + esc(s.por) + '</small>');
       });
     });
+  }
+
+  // Prueba gratis: los primeros días abiertos, el resto con candado; al terminar, todo en pausa
+  function bloquearPrueba(pr) {
+    var euros = (pr.precio / 100).toFixed(2).replace('.', ',') + ' €';
+    var ir = '/mi-zona#desbloquear';
+    var css = document.createElement('style');
+    css.textContent = '.pr-banda{position:sticky;top:0;z-index:44;display:flex;align-items:center;gap:10px;justify-content:space-between;padding:10px 16px;background:#1b2a41;color:#fff;font:600 .88rem var(--body,system-ui)}' +
+      '.pr-banda a{background:#ffc83d;color:#1b2a41;border-radius:10px;padding:8px 12px;font-weight:800;text-decoration:none;white-space:nowrap}' +
+      '.pr-bloq{position:relative}.pr-bloq>*:not(.pr-cta){filter:blur(5px);pointer-events:none;user-select:none}' +
+      '.pr-cta{position:absolute;left:50%;top:80px;transform:translateX(-50%);z-index:5;display:flex;gap:8px;align-items:center;background:#1b2a41;color:#fff;border-radius:14px;padding:12px 16px;font:700 .9rem var(--body,system-ui);text-decoration:none;box-shadow:0 10px 28px rgba(27,42,65,.3);white-space:nowrap}' +
+      '.pr-fin{position:fixed;inset:0;z-index:43;background:rgba(15,23,36,.6);display:flex;align-items:center;justify-content:center;padding:20px 16px 90px}' +
+      '.pr-fin div{background:var(--surface,#fff);color:var(--ink,#1b2a41);border-radius:22px;padding:22px;max-width:420px;display:flex;flex-direction:column;gap:12px;font-family:var(--body,system-ui)}' +
+      '.pr-fin h2{font:800 1.4rem var(--display,system-ui);margin:0}.pr-fin a{background:#ffc83d;color:#1b2a41;border-radius:14px;padding:14px;text-align:center;font-weight:800;text-decoration:none;box-shadow:0 4px 0 #e0a800}' +
+      '@media print{.pr-banda,.pr-fin,.pr-cta{display:none}}';
+    document.head.appendChild(css);
+    document.querySelectorAll('.inv-btn').forEach(function (b) { b.remove(); }); // invitar e imprimir, al desbloquear
+    var banda = document.createElement('div');
+    banda.className = 'pr-banda';
+    banda.innerHTML = '<span>' + (pr.terminada ? 'Tu prueba gratis ha terminado' : 'Prueba gratis · ' + (pr.quedan <= 1 ? 'último día' : 'te quedan ' + pr.quedan + ' días')) + '</span><a href="' + ir + '">Desbloquear · ' + euros + '</a>';
+    document.body.insertBefore(banda, document.body.firstChild);
+    var bloquear = function (el, texto) {
+      if (!el || el.classList.contains('pr-bloq')) return;
+      el.classList.add('pr-bloq');
+      var a = document.createElement('a'); a.className = 'pr-cta'; a.href = ir;
+      a.innerHTML = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#ffc83d" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>' + texto;
+      el.appendChild(a);
+    };
+    document.querySelectorAll('.sem[data-sem]').forEach(function (s) { if (Number(s.dataset.sem) > 1) bloquear(s, 'Desbloquea la semana ' + s.dataset.sem); });
+    document.querySelectorAll('.sem[data-sem="1"] input[data-k]').forEach(function (c) {
+      var d = Number(String(c.dataset.k).replace('d', ''));
+      if (d > pr.dias) { var li = c.closest('li'); if (li) { li.style.filter = 'blur(4px)'; li.style.pointerEvents = 'none'; } }
+    });
+    ['protocolos', 'protocolo', 'papeleo', 'ayuda'].forEach(function (id) { bloquear(document.getElementById(id), 'Desbloquea el plan completo'); });
+    if (pr.terminada) {
+      var fin = document.createElement('div'); fin.className = 'pr-fin';
+      fin.innerHTML = '<div><h2>Tu prueba gratis ha terminado</h2><p>El plan se ha quedado en pausa. Desbloquéalo y conservas todo lo que habéis hecho: tareas, diario y carnet de salud.</p><p><b>Pago único de ' + euros + '</b>, para siempre. Sin suscripción.</p><a href="' + ir + '">Desbloquear el plan · ' + euros + '</a></div>';
+      document.body.appendChild(fin);
+    }
   }
 
   // Barra de abajo como en Mi zona: el plan es una pestaña más

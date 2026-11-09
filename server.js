@@ -8,7 +8,7 @@
  * Sin STRIPE_SECRET_KEY arranca en MODO DEMO: el pago se simula para probar el funnel.
  */
 'use strict';
-const { CFG, precioPara, firmaBaja, firmaRetomar } = require('./lib/config');
+const { CFG, precioPara, firmaBaja, firmaRetomar, varianteDe, DIAS_PRUEBA } = require('./lib/config');
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
@@ -103,7 +103,7 @@ const pagina = (titulo, cuerpo) => `<!doctype html><html lang="es"><head><meta c
 // ---------- Rutas ----------
 const rutas = {
   'GET /api/config': async (req, res, url) => {
-    enviar(res, 200, { marca: CFG.marca, pixelId: CFG.pixelId, stripePk: MODO_DEMO ? '' : CFG.stripePk, avisoCookies: /^(si|sí|1|true)$/i.test(process.env.AVISO_COOKIES || ''), precio: precioPara(url.searchParams.get('sid')), precioUpsell: CFG.precioUpsell, demo: MODO_DEMO, emailContacto: CFG.emailContacto });
+    enviar(res, 200, { variante: varianteDe(url.searchParams.get('sid')), diasPrueba: DIAS_PRUEBA, marca: CFG.marca, pixelId: CFG.pixelId, stripePk: MODO_DEMO ? '' : CFG.stripePk, avisoCookies: /^(si|sí|1|true)$/i.test(process.env.AVISO_COOKIES || ''), precio: precioPara(url.searchParams.get('sid')), precioUpsell: CFG.precioUpsell, demo: MODO_DEMO, emailContacto: CFG.emailContacto });
   },
 
   'POST /api/evento': async (req, res) => {
@@ -121,7 +121,7 @@ const rutas = {
     if (!plan) return enviar(res, 404, { error: 'plan' });
     const yo = await quienEnPlan(sesion.deCookie(req), plan);
     const miembros = (await datos.listar('miembros', { token: t })).map((m) => m.nombre || nombreDeEmail(m.email));
-    enviar(res, 200, { progreso: plan.progreso || {}, yo: yo?.nombre || null, miembros, dueno: nombreDeEmail(plan.email) });
+    enviar(res, 200, { progreso: plan.progreso || {}, yo: yo?.nombre || null, miembros, dueno: nombreDeEmail(plan.email), prueba: await infoPrueba(plan) });
   },
   'POST /api/progreso': async (req, res) => {
     const b = await json(req);
@@ -217,7 +217,7 @@ const rutas = {
     const respuestas = ed.validar(base, b.cambios || {});
     // El plan y sus programas extra (mismo perro) se vuelven a generar con los datos nuevos.
     for (const p of await datos.listar('planes', { sid: plan.sid })) {
-      if (p.estado !== 'enviado') continue;
+      if (p.estado !== 'enviado' && p.estado !== 'prueba') continue;
       await datos.actualizar('planes', { token: p.token }, { respuestas, html: ed.regenerar(p, respuestas) });
     }
     enviar(res, 200, { ok: true, respuestas });
@@ -381,11 +381,22 @@ const rutas = {
       consentimientos: { privacidad: true, comerciales: !!b.consentimientos.comerciales, seguros: !!b.consentimientos.seguros, version: '2026-11-07' },
       precio: precioPara(b.sid),
       utm: objeto(b.utm),
-      meta: meta.datosNavegador(req, b)
+      meta: meta.datosNavegador(req, b),
+      variante: varianteDe(b.sid)
     };
     await datos.insertar('leads', lead);
     meta.evento('Lead', { id: 'lead_' + lead.sid, email: lead.email, sid: lead.sid, nav: lead.meta, extra: { content_name: lead.respuestas.problema, content_category: lead.respuestas.tipo } });
     await datos.insertar('eventos', { tipo: 'form_completo', sid: lead.sid, utm: lead.utm });
+    // Versión «prueba gratis»: su plan y su Mi zona al momento, sin tarjeta, durante DIAS_PRUEBA días
+    if (lead.variante === 'prueba') {
+      const token = await require('./lib/entrega').crearPrueba(lead);
+      if (token) {
+        enviar(res, 200, { ok: true, prueba: { token, dias: DIAS_PRUEBA } }, 'application/json', { 'Set-Cookie': sesion.cabeceraCookie(lead.email) });
+        const m = plantillasEmail.pruebaInicio(lead.email, lead.respuestas, `${CFG.baseUrl}/plan/${token}`, sesion.enlaceMagico(lead.email), DIAS_PRUEBA);
+        correo.enviarUnaVez(lead.email, m.clave + '_' + lead.sid, m.asunto, m.html).catch((e) => console.error('prueba_inicio', e.message));
+        return;
+      }
+    }
     enviar(res, 200, { ok: true });
     // Email inmediato con el resultado que ha pedido (rutina o 3 primeros días). Es la respuesta a su
     // solicitud, así que va a todos; la secuencia comercial de los días 1 a 7 solo con consentimiento.
@@ -556,7 +567,8 @@ const rutas = {
       const prog = adulto ? (PROGRAMAS_ADULTO[problema] || PROGRAMAS_ADULTO.correa) : null;
       lista.push({ token: p.token, nombre: r.nombre || 'Tu perro', raza: r.raza || '', razaId: r.razaId || 'mestizo', tipo: p.pack ? 'pack' : (r.tipo || 'cachorro'), problema: problema || '',
         titulo: adulto ? prog.titulo : 'Plan de 8 semanas', dias: adulto ? 42 : 56, desde: p.enviado_at || p.ts, extra: !!p.pack,
-        compartido: !!p.compartido, invitadoPor: p.invitadoPor || null, progreso: p.progreso || {},
+        compartido: !!p.compartido, invitadoPor: p.invitadoPor || null, progreso: p.progreso || {}, sid: p.compartido ? null : p.sid,
+        prueba: p.estado === 'prueba' ? await infoPrueba(p) : null,
         miembros: (await datos.listar('miembros', { token: p.token })).map((m) => ({ nombre: m.nombre || nombreDeEmail(m.email), email: m.email, aceptado: !!m.aceptado_at })),
         dueno: p.compartido ? nombreDeEmail(p.email) : null });
     }
@@ -565,7 +577,7 @@ const rutas = {
     const consejos = [...problemas.flatMap((k) => ZONA.CONSEJOS[k] || []), ...ZONA.CONSEJOS.general];
     const enClub = !!(await datos.primero('emails', { email, clave: 'club' }));
     // Catálogo: los programas que aún no tiene, a precio de cliente (solo para quien compró el plan).
-    const propio = lista.find((p) => !p.compartido && !p.extra);
+    const propio = lista.find((p) => !p.compartido && !p.extra && !p.prueba);
     const tiene = new Set(lista.filter((p) => !p.compartido).map((p) => p.problema));
     const catalogo = propio ? Object.entries(PROGRAMAS_ADULTO).filter(([k]) => !tiene.has(k) && k !== 'derivar').map(([k, pg]) => ({
       id: k, titulo: pg.titulo, icono: pg.icono, texto: String(pg.porQue || '').replace(/\{n\}/g, propio.nombre).split('. ')[0] + '.', semanas: pg.semanas.length
@@ -719,8 +731,15 @@ const rutas = {
 // ---------- Planes compartidos ----------
 const nombreDeEmail = (email) => { const x = String(email || '').split('@')[0].split(/[._+-]/)[0]; return x ? x.charAt(0).toUpperCase() + x.slice(1) : 'Alguien'; };
 /** Planes que ve un email en Mi zona: los suyos y los que le han compartido. */
+/** Estado de la prueba gratis de un plan: hasta cuándo, días que quedan y precio para desbloquear. */
+async function infoPrueba(plan) {
+  if (plan.estado !== 'prueba') return null;
+  const hasta = new Date(plan.prueba_hasta || 0).getTime();
+  const lead = await datos.primero('leads', { sid: plan.sid });
+  return { hasta: plan.prueba_hasta, terminada: Date.now() > hasta, quedan: Math.max(0, Math.ceil((hasta - Date.now()) / 864e5)), dias: DIAS_PRUEBA, precio: lead?.precio || precioPara(plan.sid) };
+}
 async function planesDe(email) {
-  const propios = (await datos.listar('planes', { email })).filter((p) => p.estado === 'enviado');
+  const propios = (await datos.listar('planes', { email })).filter((p) => p.estado === 'enviado' || p.estado === 'prueba');
   const lista = [...propios];
   for (const m of await datos.listar('miembros', { email })) {
     const p = await datos.primero('planes', { token: m.token });

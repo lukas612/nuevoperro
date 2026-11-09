@@ -29,6 +29,7 @@ async function enviarEmails({ prueba: PRUEBA = false } = {}) {
   const compradores = new Set([...pedidos.filter((p) => p.tipo === 'plan').map((p) => p.sid), ...planes.map((p) => p.sid)]);
   const emailsCompradores = new Set([...pedidos.filter((p) => p.tipo === 'plan').map((p) => p.email), ...planes.map((p) => p.email)].filter(Boolean));
   const miembros = await datos.listar('miembros');
+  const pruebas = await datos.listar('planes', { estado: 'prueba' });
   const reembolsados = new Set((await datos.listar('reembolsos')).filter((r) => r.tipo === 'plan').map((r) => r.sid));
   const cola = [];
 
@@ -38,6 +39,7 @@ async function enviarEmails({ prueba: PRUEBA = false } = {}) {
 
   for (const lead of porEmail.values()) {
     if (bajas.has(lead.email) || compradores.has(lead.sid) || emailsCompradores.has(lead.email)) continue;
+    if (lead.variante === 'prueba' && pruebas.some((p) => p.sid === lead.sid)) continue; // tiene su propia secuencia (abajo)
     const d = diasDesde(lead.ts);
     // Su resultado (día 0) a quien no lo recibió al hacer el test (fallo de envío o leads anteriores). Va a todos: lo han pedido.
     if (d <= 2 && !hecho.has(lead.email + '|nurture_0')) { const m0 = emails.nurture(0, lead); m0.para = lead.email; cola.push(m0); }
@@ -66,6 +68,23 @@ async function enviarEmails({ prueba: PRUEBA = false } = {}) {
       }
     }
     for (const e of [7, 21]) if (dia >= e && dia < e + 3) { const m = emails.encuesta(plan.email, lead.respuestas, e, url); m.para = plan.email; cola.push(m); }
+  }
+
+  // Prueba gratis: la tarea de cada día mientras dura; al terminar, aviso (a todos) y recordatorio (con consentimiento)
+  const { DIAS_PRUEBA } = require('../lib/config');
+  for (const plan of pruebas) {
+    if (bajas.has(plan.email)) continue;
+    const lead = { respuestas: plan.respuestas || {} };
+    const dia = diasDesde(plan.enviado_at || plan.ts) + 1;
+    const url = `${CFG.baseUrl}/plan/${plan.token}`;
+    const leadReal = leads.find((l) => l.sid === plan.sid);
+    const precio = leadReal?.precio || require('../lib/config').precioPara(plan.sid);
+    if (dia >= 2 && dia <= DIAS_PRUEBA) { const m = emails.diario(plan.email, lead.respuestas, dia, url); if (m) { m.para = plan.email; cola.push(m); } }
+    if (dia === DIAS_PRUEBA + 1) { const m = emails.pruebaFin(plan.email, lead.respuestas, `${CFG.baseUrl}/mi-zona#desbloquear`, precio, true); m.para = plan.email; cola.push(m); }
+    if (dia === DIAS_PRUEBA + 3 && leadReal?.consentimientos?.comerciales) {
+      const m = emails.pruebaFin(plan.email, lead.respuestas, `${CFG.baseUrl}/mi-zona#desbloquear`, precio, true);
+      m.clave = 'prueba_recordatorio'; m.asunto = `${lead.respuestas.nombre || 'Tu perro'} sigue esperando: su plan está en pausa`; m.para = plan.email; cola.push(m);
+    }
   }
 
   // Recordatorios del carnet de salud: 3 días antes y el mismo día, al dueño y a quien comparte el plan

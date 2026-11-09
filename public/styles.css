@@ -626,3 +626,10 @@ body:has(.venta-barra:not([hidden])) .ps-toast { bottom: calc(84px + env(safe-ar
 .plan-acciones > * + * { border-left: 1px solid var(--line); }
 .plan-acciones .ico { width: 18px; height: 18px; }
 .plan-acciones a:hover, .plan-acciones button:hover { background: var(--surface-2); color: var(--ink); }
+
+/* Prueba gratis en Mi zona */
+.prueba-caja { border: 2px solid var(--primary); }
+.prueba-caja.resalta { animation: resalta 1.4s ease-out; }
+.pr-pausa { position: relative; }
+.pr-pausa > *:not(.pr-pausa-cta) { filter: blur(4px); pointer-events: none; user-select: none; }
+.pr-pausa-cta { position: absolute; left: 50%; top: 40%; transform: translate(-50%, -50%); }

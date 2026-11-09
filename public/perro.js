@@ -38,6 +38,17 @@
 
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
   function euros(c) { return (c / 100).toFixed(2).replace('.', ',') + ' €'; }
+  // ---------- Prueba gratis: ha empezado ----------
+  function pantallaPrueba() {
+    pintarBarra(null);
+    var p = estado.prueba || {};
+    pintar('<div class="pila-g"><section class="pila celebra"><span class="avatar">' + D.cara(razaId(), { lengua: true }) + '<span class="sello">' + I('check') + '</span></span>' +
+      '<span class="chip ok">' + I('check') + 'Sin tarjeta</span><h1 style="font-size:1.9rem">Tu prueba gratis de ' + (p.dias || 3) + ' días ha empezado</h1>' +
+      '<p class="suave">El plan de ' + esc(nombre()) + ' ya es tuyo durante ' + (p.dias || 3) + ' días: la tarea de cada día, el diario, el clicker y el carnet de salud.</p></section>' +
+      '<ul class="lista-inc"><li>' + burbuja('calendario', 'butter') + 'Empieza hoy por el día 1</li><li>' + burbuja('correo', 'sky') + 'Cada mañana te llega la tarea del día</li><li>' + burbuja('casa', 'mint') + 'Todo en Mi zona, en tu móvil</li></ul>' +
+      '<a class="btn" href="/plan/' + esc(p.token) + '">Abrir el plan de ' + esc(nombre()) + '</a><a class="btn texto" href="/mi-zona">Ir a Mi zona</a></div>');
+  }
+
   function post(url, body) {
     return fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
       .then(function (r) { return r.json().then(function (j) { if (!r.ok) throw j; return j; }); });
@@ -266,7 +277,9 @@
       sig.disabled = true; estado.email = email; estado.consent = consent;
       var r = estado.r;
       post('/api/lead', { sid: sid, email: email, consentimientos: consent, utm: utm, cm: cm(), respuestas: { tipo: r.tipo, nombre: r.nombre, raza: r.raza, razaId: r.razaId, tamano: r.tamano, edadPerro: r.edadPerro, problema: r.problema, detalle: r.detalle, muerde: r.muerde, vivienda: r.vivienda, horasSolo: r.horasSolo, convivientes: r.convivientes } })
-        .then(function () { pixel('Lead', { content_name: estado.r.problema || utm.a || 'perro', content_category: 'perro' }, 'lead_' + sid); estado.paso = 'preparando'; guardarEstado(); render(); })
+        .then(function (j) { pixel('Lead', { content_name: estado.r.problema || utm.a || 'perro', content_category: 'perro' }, 'lead_' + sid);
+          if (j && j.prueba) { pixel('StartTrial', { value: 0, currency: 'EUR', content_name: estado.r.problema }, 'prueba_' + sid); estado.paso = 'prueba'; estado.prueba = j.prueba; guardarEstado(); return render(); }
+          estado.paso = 'preparando'; guardarEstado(); render(); })
         .catch(function () { sig.disabled = false; err.textContent = 'No hemos podido guardar tus respuestas. Inténtalo de nuevo.'; });
     };
   }
@@ -449,6 +462,7 @@
   function render() {
     if (estado.paso === 0) return angulo && params.get('portada') ? portada() : pregunta(1);
     if (typeof estado.paso === 'number') { if (estado.r.muerde === 'si') return derivar(); return pregunta(estado.paso); }
+    if (estado.paso === 'prueba') return pantallaPrueba();
     if (estado.paso === 'preparando') return preparando();
     if (estado.paso === 'resultado') return resultado();
     pregunta(1);

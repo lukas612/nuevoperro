@@ -41,6 +41,39 @@
     };
   }
 
+  // ---------- Prueba gratis: días que quedan, desbloquear y herramientas en pausa al terminar ----------
+  function prueba(d) {
+    var p = d.planes.filter(function (x) { return x.prueba; })[0];
+    var el = document.getElementById('desbloquear');
+    if (!p || !el) return;
+    var pr = p.prueba, euros = (pr.precio / 100).toFixed(2).replace('.', ',') + ' €';
+    el.hidden = false;
+    el.innerHTML = '<div class="cab-consejo">' + burbuja(pr.terminada ? 'candado' : 'estrella', pr.terminada ? 'peach' : 'butter') + '<div><span class="eti-peq">' + (pr.terminada ? 'Prueba terminada' : 'Prueba gratis') + '</span><h2 style="font-size:1.3rem">' +
+      (pr.terminada ? 'El plan de ' + esc(p.nombre) + ' está en pausa' : (pr.quedan <= 1 ? 'Hoy es tu último día gratis' : 'Te quedan ' + pr.quedan + ' días gratis')) + '</h2></div></div>' +
+      '<p class="suave">Desbloquea el plan completo de ' + esc(p.nombre) + ' (' + (p.dias / 7) + ' semanas) y conserva todo lo que habéis hecho. Pago único, para siempre.</p>' +
+      '<label class="check"><input type="checkbox" id="d-acepto"> <span>Acepto los <a href="/condiciones" target="_blank">términos y condiciones</a>.</span></label>' +
+      '<p class="error" id="d-err"></p><button class="btn" id="d-pagar">Desbloquear todo · ' + euros + '</button>';
+    var b = document.getElementById('d-pagar'), err = document.getElementById('d-err');
+    b.onclick = function () {
+      if (!document.getElementById('d-acepto').checked) { err.textContent = 'Acepta los términos y condiciones para continuar.'; return; }
+      b.disabled = true; b.textContent = 'Abriendo el pago…'; err.textContent = '';
+      var reset = function () { b.disabled = false; b.textContent = 'Desbloquear todo · ' + euros; };
+      var redir = function () { post('/api/checkout', { sid: p.sid, desistimiento: true }).then(function (j) { if (j.url) location.href = j.url; else throw j; }).catch(function (e) { err.textContent = (e && e.error) || 'No se ha podido abrir el pago.'; reset(); }); };
+      if (!d.stripePk || !window.VENTA) return redir();
+      window.VENTA.pagoIntegrado({ pk: d.stripePk, titulo: 'Plan de ' + p.nombre + ' · ' + euros,
+        pedir: function () { return post('/api/checkout', { sid: p.sid, desistimiento: true, integrado: true }).then(function (j) { if (j.clientSecret) return j.clientSecret; if (j.url) location.href = j.url; throw j; }); },
+        alCerrar: reset, alFallar: redir });
+    };
+    if (location.hash === '#desbloquear') setTimeout(function () { el.scrollIntoView({ block: 'center' }); el.classList.add('resalta'); }, 300);
+    // Al terminar la prueba, las herramientas quedan en pausa
+    if (pr.terminada) ['diario', 'salud', 'clicker-caja'].forEach(function (id) {
+      var c = document.getElementById(id); if (!c) return;
+      c.classList.add('pr-pausa');
+      c.insertAdjacentHTML('beforeend', '<a class="bloq-cta pr-pausa-cta" href="#desbloquear">' + I('candado') + '<span>En pausa · desbloquea el plan para seguir</span></a>');
+      c.querySelector('.pr-pausa-cta').onclick = function (e) { e.preventDefault(); history.pushState(null, '', location.pathname); window.dispatchEvent(new PopStateEvent('popstate')); setTimeout(function () { el.scrollIntoView({ block: 'center' }); }, 50); };
+    });
+  }
+
   // ---------- Carnet de salud ----------
   var TIPOS_SALUD = [['vacuna', 'Vacuna', 'vacuna'], ['desp_interna', 'Desparasitación interna', 'escudo'], ['desp_externa', 'Desparasitación externa', 'escudo'], ['veterinario', 'Visita al veterinario', 'corazon'], ['peso', 'Peso', 'huella'], ['otro', 'Otro', 'calendario']];
   var SUGERENCIAS = { vacuna: ['Primera vacuna', 'Segunda vacuna', 'Tercera vacuna', 'Rabia', 'Refuerzo anual'], desp_interna: ['Pastilla de desparasitación'], desp_externa: ['Pipeta', 'Collar antiparasitario', 'Pastilla antipulgas'], veterinario: ['Revisión', 'Chip y registro', 'Esterilización'], otro: ['Peluquería', 'Seguro'] };
@@ -253,7 +286,7 @@
         (p.compartido ? '<span class="peq suave">' + I('personas') + ' Te lo compartió ' + esc(p.dueno) + '</span>' : (p.miembros && p.miembros.length ? '<span class="peq suave">' + I('personas') + ' Con ' + esc(p.miembros.map(function (m) { return m.nombre; }).join(', ')) + '</span>' : '')) +
         '</span>' +
         '<span class="eleccion-flecha">' + I('flecha') + '</span></a>' +
-        '<div class="plan-acciones"><a href="/plan/' + esc(p.token) + '/nevera">' + I('calendario') + 'Imprimir</a>' +
+        '<div class="plan-acciones">' + (p.prueba ? '' : '<a href="/plan/' + esc(p.token) + '/nevera">' + I('calendario') + 'Imprimir</a>') +
           (p.extra ? '' : '<button type="button" data-editar="' + esc(p.token) + '">' + I('persona') + 'Editar datos</button>') + '</div></div>';
     }).join('') : '<div class="tarjeta"><p>Todavía no hay ningún plan enviado a este email. Si acabas de comprar, te llegará por email en unos minutos.</p></div>';
 
@@ -278,6 +311,7 @@
       '<div class="pila-g zona-vista" data-vista="inicio">' +
         '<section class="pila"><h1 style="font-size:1.9rem">Hola' + (nombres.length === 1 ? ', aquí tienes todo lo de ' + esc(nombres[0]) : '') + '</h1><p class="suave peq">' + esc(d.email) + '</p></section>' +
         '<section class="pila"><span class="etiqueta">' + (d.planes.length > 1 ? 'Tus planes' : 'Tu plan') + '</span>' + planes + '</section>' +
+        '<section class="tarjeta pila prueba-caja" id="desbloquear" hidden></section>' +
         '<section class="zona-atajos">' +
           atajo('salud', 'vacuna', 'mint', 'Carnet de salud', 'Vacunas y recordatorios') + atajo('clicker', 'estrella', 'butter', 'Clicker', 'Marca lo que hace bien') +
           atajo('juntos', 'personas', 'lilac', 'Juntos', compartido ? 'Ya lo compartís' : 'Invita a alguien') + atajo('mas', 'corazon', 'peach', 'Para ti', d.catalogo && d.catalogo.length ? 'Más programas desde ' + (d.precioCliente / 100).toFixed(2).replace('.', ',') + ' €' : 'Consejos y recomendaciones') +
@@ -329,6 +363,7 @@
     }
     juntos(d);
     catalogo(d);
+    prueba(d);
     saludZona(d);
     avisosMovil();
     function pintaConsejo() { var c = d.consejos[idxConsejo % d.consejos.length]; document.getElementById('c-tit').textContent = c[0]; document.getElementById('c-txt').textContent = sus(c[1]); }
