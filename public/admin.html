@@ -203,7 +203,7 @@
         kpi('Ingresos (IVA incl.)', eur(A.bruto), delta(A.bruto, P.bruto), true) +
         kpi('Neto (sin IVA ni comisiones)', eur(A.neto), delta(A.neto, P.neto)) +
         kpi('Compras del plan', num(A.compras), delta(A.compras, P.compras)) +
-        kpi('Packs añadidos', num(A.upsells), '<span class="d">' + pct(A.tasaUpsell) + ' de los compradores</span>') +
+        kpi('Packs y programas extra', num(A.upsells), '<span class="d">' + pct(A.tasaUpsell) + ' por cada compra del plan</span>') +
         kpi('Ticket medio por compra', eur(A.ticketMedio), '<span class="d">plan + pack</span>') +
         kpi('Reembolsos', num(A.reembolsos), '<span class="d">' + eur(A.devuelto) + ' devueltos</span>') +
         (hayGasto ? kpi('Beneficio tras anuncios', eur(A.beneficio), '<span class="d">neto − gasto en Meta</span>') + kpi('ROAS', A.roas == null ? '—' : A.roas.toFixed(2).replace('.', ',') + 'x', '<span class="d">ingresos / gasto</span>') : '');

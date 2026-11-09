@@ -419,8 +419,12 @@ const rutas = {
     const obj = ev.data?.object || {};
     // La cuenta de Stripe puede ser compartida: solo procesamos lo que es del cachorro.
     if (ev.type === 'checkout.session.completed' && obj.metadata?.app === 'cachorro' && obj.payment_status === 'paid') await (obj.metadata?.tipo === 'programa' ? registrarPrograma(obj) : registrarPedido(obj));
-    if (ev.type === 'charge.refunded' && obj.metadata?.app === 'cachorro') {
-      await datos.insertar('reembolsos', { charge: obj.id, payment_intent: obj.payment_intent, importe: obj.amount_refunded, sid: obj.metadata?.sid, tipo: obj.metadata?.tipo }, { ignorarDuplicado: true });
+    if (ev.type === 'charge.refunded') {
+      // El cargo no siempre trae los metadatos del pago: se reconoce también por el pago guardado.
+      const ped = obj.payment_intent ? await datos.primero('pedidos', { payment_intent: obj.payment_intent }) : null;
+      if (obj.metadata?.app === 'cachorro' || ped) {
+        await datos.insertar('reembolsos', { charge: obj.id, payment_intent: obj.payment_intent, importe: obj.amount_refunded, sid: obj.metadata?.sid || ped?.sid, tipo: obj.metadata?.tipo || ped?.tipo }, { ignorarDuplicado: true });
+      }
     }
     enviar(res, 200, { recibido: true });
   },
@@ -647,6 +651,15 @@ async function conciliarStripe() {
     await entregarPack(m.sid, m.pack);
     ESTADO_CONCILIACION.registrados++;
     console.log('conciliación: registrado', m.tipo, m.pack, pi.id);
+  }
+  // Reembolsos hechos en Stripe que no quedaran apuntados
+  const devoluciones = await stripe('GET', '/refunds', { limit: 100, created: { gte: desde } });
+  for (const rf of devoluciones.data || []) {
+    if (rf.status !== 'succeeded' || !rf.payment_intent) continue;
+    const ped = await datos.primero('pedidos', { payment_intent: rf.payment_intent });
+    if (!ped || (await datos.primero('reembolsos', { charge: rf.charge }))) continue;
+    await datos.insertar('reembolsos', { charge: rf.charge, payment_intent: rf.payment_intent, importe: rf.amount, sid: ped.sid, tipo: ped.tipo }, { ignorarDuplicado: true });
+    ESTADO_CONCILIACION.registrados++;
   }
 }
 
