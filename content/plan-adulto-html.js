@@ -4,10 +4,11 @@
  */
 (function (root) {
   'use strict';
-  var PR, D, PH, P;
+  var PR, D, PH, P, DETS;
   if (typeof module !== 'undefined' && module.exports) {
     PR = require('./programas-adulto.js'); D = require('../public/perros.js'); PH = require('./plan-html.js'); P = require('./plantillas.js');
-  } else { PR = root.PROGRAMAS; D = root.PERROS; PH = root.PLAN_HTML; P = root.PLANTILLAS; }
+    try { DETS = require('./detalle/index.js').PROGRAMAS; } catch (e) { DETS = {}; }
+  } else { PR = root.PROGRAMAS; D = root.PERROS; PH = root.PLAN_HTML; P = root.PLANTILLAS; DETS = root.DETALLE_PROGRAMAS || {}; }
   var I = D.icono;
   var COLORES = ['sky', 'butter', 'mint', 'peach', 'lilac'];
   var EDADES = { joven: '6–12 meses', adulto: '1–3 años', maduro: '3–7 años', senior: 'Más de 7 años' };
@@ -20,7 +21,7 @@
   function render(datos) {
     var r = datos.respuestas || {};
     var n = r.nombre || 'tu perro';
-    var sus = function (txt) { return String(txt).replace(/\{n\}/g, n); };
+    var sus = function (txt) { return String(txt == null ? '' : txt).replace(/\{n\}/g, n); };
     var prog = PR.PROGRAMAS[r.problema] || PR.PROGRAMAS.correa;
     var marca = datos.marca || 'Qué Buen Perro';
     var id = datos.id || 'demo';
@@ -30,14 +31,17 @@
     var nombreRaza = razaId === 'otra' ? (r.raza || 'Perro') : raza.nombre;
     var rasgo = (P.RASGOS && P.RASGOS[razaId]) || {};
     var T = tareasPlanas(prog);
+    var clave = PR.PROGRAMAS[r.problema] ? r.problema : 'correa';
+    var DET = DETS[clave] || { SEMANAS: {}, DETALLE: {} };
 
     var semanas = prog.semanas.map(function (s, k) {
       var num = k + 1;
       return '<section class="sem" data-sem="' + num + '"' + (num === 1 ? '' : ' hidden') + '>' +
         '<div class="sem-cab"><div><span class="eti">Semana ' + num + '</span><h3>' + esc(s.foco) + '</h3></div></div>' +
+        (DET.SEMANAS && DET.SEMANAS[num] ? '<p class="sem-meta">' + I('estrella') + '<span><b>Esta semana</b>' + esc(sus(DET.SEMANAS[num].meta)) + '</span></p>' : '') +
         '<div class="caja"><h4>' + I('calendario') + 'Una tarea cada día</h4><ul class="checks">' + s.tareas.map(function (t, j) {
           var dia = k * 7 + j + 1;
-          return '<li><label><input type="checkbox" data-k="d' + dia + '"><span><b>Día ' + dia + ' · ' + esc(t[0]) + '</b>' + esc(sus(t[1])) + '</span></label></li>';
+          return PH.itemTarea(dia, t[0], sus(t[1]), DET.DETALLE && DET.DETALLE[dia], sus);
         }).join('') + '</ul></div></section>';
     }).join('');
 
@@ -69,7 +73,7 @@
       '<main class="in">' +
       '<section id="hoy" class="pila">' +
         '<div class="hoy"><div class="hoy-cab">' + b('sol', 'butter') + '<div><span class="eti">Hoy · <span id="hoy-dia">Día 1</span></span><h2 id="hoy-tit">' + esc(T[0][0]) + '</h2></div></div>' +
-        '<p id="hoy-txt">' + esc(sus(T[0][1])) + '</p><label class="hecho-hoy"><input type="checkbox" id="hoy-check"><span>Hecho</span></label></div>' +
+        '<p id="hoy-txt">' + esc(sus(T[0][1])) + '</p><div id="hoy-det"></div><label class="hecho-hoy"><input type="checkbox" id="hoy-check"><span>Hecho</span></label></div>' +
         '<div class="prio">' + b(prog.icono, 'peach') + '<div><span class="eti">Por qué lo hace</span><p class="porque">' + esc(sus(prog.porQue)) + '</p></div></div>' +
         (notas.length ? '<div class="notas">' + notas.map(function (x) { return '<div class="nt">' + b(x[0], x[1]) + '<div><b>' + esc(x[2]) + '</b><span>' + esc(x[3]) + '</span></div></div>'; }).join('') + '</div>' : '') +
       '</section>' +
@@ -95,7 +99,7 @@
     "function get(){try{return JSON.parse(localStorage.getItem(id))||{}}catch(e){return{}}}function set(v){try{localStorage.setItem(id,JSON.stringify(v))}catch(e){}}" +
     "var st=get();var dia=Math.min(N,Math.max(1,Math.round((new Date().setHours(0,0,0,0)-new Date(inicio.getTime()).setHours(0,0,0,0))/864e5)+1));var sem=Math.ceil(dia/7);" +
     "document.querySelectorAll('input[data-k]').forEach(function(c){var k=c.dataset.k;c.checked=!!st[k];c.onchange=function(){st[k]=c.checked;set(st);sync();act()}});" +
-    "var hc=document.getElementById('hoy-check');document.getElementById('hoy-dia').textContent='Día '+dia;document.getElementById('hoy-tit').textContent=T[dia-1][0];document.getElementById('hoy-txt').textContent=T[dia-1][1];" +
+    "var hc=document.getElementById('hoy-check');document.getElementById('hoy-dia').textContent='Día '+dia;document.getElementById('hoy-tit').textContent=T[dia-1][0];document.getElementById('hoy-txt').textContent=T[dia-1][1];" + PH.HOY_DET +
     "hc.checked=!!st['d'+dia];hc.onchange=function(){st['d'+dia]=hc.checked;set(st);sync();act()};" +
     "function sync(){var c=document.querySelector('input[data-k=\"d'+dia+'\"]');if(c)c.checked=!!st['d'+dia]}" +
     "function act(){var n=0;for(var i=1;i<=N;i++)if(st['d'+i])n++;document.getElementById('pr-sem').textContent='Semana '+sem+' de 6';document.getElementById('pr-pct').textContent=n+' de '+N+' tareas hechas';document.getElementById('pr-bar').style.width=Math.max(3,n/N*100)+'%'}" +

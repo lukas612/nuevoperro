@@ -5,10 +5,11 @@
  */
 (function (root) {
   'use strict';
-  var P, D, T;
+  var P, D, T, DET;
   if (typeof module !== 'undefined' && module.exports) {
     P = require('./plantillas.js'); D = require('../public/perros.js'); T = require('./tareas-diarias.js');
-  } else { P = root.PLANTILLAS; D = root.PERROS; T = root.TAREAS; }
+    try { DET = require('./detalle/index.js').CACHORRO; } catch (e) { DET = null; }
+  } else { P = root.PLANTILLAS; D = root.PERROS; T = root.TAREAS; DET = root.DETALLE_CACHORRO || null; }
   var I = D.icono;
 
   var TIPOS = {
@@ -23,6 +24,23 @@
 
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
   function b(ic, color, cls) { return '<span class="bu b-' + color + (cls ? ' ' + cls : '') + '">' + I(ic) + '</span>'; }
+  /* «Cómo hacerlo» de una tarea: para qué sirve, pasos, tiempo y material, cómo saber que va bien y qué hacer si no sale. */
+  function detalle(d, sus, dia) {
+    if (!d || !d.pasos) return '';
+    var meta = [d.tiempo ? '<span>' + I('reloj') + esc(sus(d.tiempo)) + '</span>' : '', d.material ? '<span>' + I('cuenco') + esc(sus(d.material)) + '</span>' : ''].join('');
+    return '<div class="det" data-det="' + dia + '">' +
+      (d.objetivo ? '<p class="det-obj">' + esc(sus(d.objetivo)) + '</p>' : '') +
+      (meta ? '<div class="det-meta">' + meta + '</div>' : '') +
+      '<ol class="det-pasos">' + d.pasos.map(function (x) { return '<li>' + esc(sus(x)) + '</li>'; }).join('') + '</ol>' +
+      (d.exito ? '<p class="det-ok"><b>Va bien si</b>' + esc(sus(d.exito)) + '</p>' : '') +
+      (d.siNo ? '<p class="det-no"><b>Si no sale</b>' + esc(sus(d.siNo)) + '</p>' : '') +
+      '</div>';
+  }
+  function itemTarea(dia, titulo, texto, d, sus) {
+    var det = detalle(d, sus, dia);
+    return '<li><label><input type="checkbox" data-k="d' + dia + '"><span><b>Día ' + dia + ' · ' + esc(titulo) + '</b>' + esc(texto) + '</span></label>' +
+      (det ? '<details class="como"><summary>Cómo hacerlo</summary>' + det + '</details>' : '') + '</li>';
+  }
   function perfilDe(r) {
     return { nombre: r.nombre || 'tu cachorro', raza: r.raza, razaId: r.razaId || 'mestizo', edadSemanas: Number(r.edadSemanas) || 10, tamano: r.tamano || 'mediano', vivienda: r.vivienda, horasSolo: Number(r.horasSolo) || 0, problema: r.problema || 'pis', convivientes: r.convivientes || [] };
   }
@@ -42,6 +60,7 @@
     var r = datos.respuestas || {};
     var pf = perfilDe(r);
     var n = pf.nombre;
+    var sus = function (txt) { return String(txt == null ? '' : txt).replace(/\{n\}/g, n); };
     var marca = datos.marca || 'Qué Buen Perro';
     var id = datos.id || 'demo';
     var inicio = datos.inicio ? new Date(datos.inicio) : new Date();
@@ -62,10 +81,10 @@
       semanas += '<section class="sem" id="s' + s + '" data-sem="' + s + '"' + (s === 1 ? '' : ' hidden') + '>' +
         '<div class="sem-cab"><div><span class="eti">Semana ' + s + ' · ' + esc(soc.foco) + '</span><h3>' + esc(n) + ' con ' + edad + ' semanas</h3></div>' +
         (cambia && s > 1 ? '<span class="pill nueva">Rutina nueva</span>' : '') + '</div>' +
+        (DET && DET.SEMANAS[s] ? '<p class="sem-meta">' + I('estrella') + '<span><b>Esta semana</b>' + esc(sus(DET.SEMANAS[s].meta)) + '</span></p>' : '') +
         '<div class="rejilla">' +
           '<div class="caja"><h4>' + I('calendario') + 'Una tarea cada día</h4><ul class="checks">' + tareas.map(function (t) {
-            var k = 'd' + t.dia;
-            return '<li><label><input type="checkbox" data-k="' + k + '"><span><b>Día ' + t.dia + ' · ' + esc(t.titulo) + '</b>' + esc(t.tarea.replace(/\{n\}/g, n)) + '</span></label></li>';
+            return itemTarea(t.dia, t.titulo, t.tarea.replace(/\{n\}/g, n), DET && DET.DETALLE[t.dia], sus);
           }).join('') + '</ul></div>' +
           '<div class="caja"><h4>' + I('personas') + 'Socialización: ' + esc(soc.foco.toLowerCase()) + '</h4><ul class="checks">' + soc.items.map(function (it, j) {
             return '<li><label><input type="checkbox" data-k="s' + s + '-' + j + '"><span>' + esc(it) + '</span></label></li>';
@@ -126,7 +145,7 @@
       '<main class="in">' +
       '<section id="hoy" class="pila">' +
         '<div class="hoy"><div class="hoy-cab">' + b('sol', 'butter') + '<div><span class="eti">Hoy · <span id="hoy-dia">Día 1</span></span><h2 id="hoy-tit">' + esc(T[0].titulo) + '</h2></div></div>' +
-        '<p id="hoy-txt">' + esc(T[0].tarea.replace(/\{n\}/g, n)) + '</p><label class="hecho-hoy"><input type="checkbox" id="hoy-check"><span>Hecho</span></label></div>' +
+        '<p id="hoy-txt">' + esc(T[0].tarea.replace(/\{n\}/g, n)) + '</p><div id="hoy-det"></div><label class="hecho-hoy"><input type="checkbox" id="hoy-check"><span>Hecho</span></label></div>' +
         '<div class="prio">' + b(ICONO_PROBLEMA[pf.problema], 'peach') + '<div><span class="eti">Tu prioridad</span><h3>' + esc(prot.titulo) + '</h3><ol>' + primeros.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ol><a href="#protocolos">Ver el protocolo completo</a></div></div>' +
         (notas.length ? '<div class="notas">' + notas.map(function (x) { return '<div class="nt">' + b(x[0], x[1]) + '<div><b>' + esc(x[2]) + '</b><span>' + esc(x[3]) + '</span></div></div>'; }).join('') + '</div>' : '') +
       '</section>' +
@@ -150,11 +169,14 @@
     return html;
   }
 
+  // Copia el «Cómo hacerlo» del día a la tarjeta de Hoy, ya desplegado.
+  var HOY_DET = "var hd=document.getElementById('hoy-det'),dd=document.querySelector('.como [data-det=\\\"'+dia+'\\\"]');if(hd&&dd){hd.innerHTML='<span class=\\\"eti\\\">Cómo hacerlo</span>'+dd.outerHTML;hd.className='hoy-det'}";
+
   var JS = "(function(){var id='plan_'+__ID__,inicio=new Date(__INICIO__),T=__TAREAS__;" +
     "function get(){try{return JSON.parse(localStorage.getItem(id))||{}}catch(e){return{}}}function set(v){try{localStorage.setItem(id,JSON.stringify(v))}catch(e){}}" +
     "var st=get();var dia=Math.min(56,Math.max(1,Math.round((new Date().setHours(0,0,0,0)-new Date(inicio.getTime()).setHours(0,0,0,0))/864e5)+1));var sem=Math.ceil(dia/7);" +
     "document.querySelectorAll('input[data-k]').forEach(function(c){var k=c.dataset.k;c.checked=k in st?st[k]:!!c.dataset.def;c.onchange=function(){st[k]=c.checked;set(st);sync();act()}});" +
-    "var hc=document.getElementById('hoy-check');document.getElementById('hoy-dia').textContent='Día '+dia;document.getElementById('hoy-tit').textContent=T[dia-1][0];document.getElementById('hoy-txt').textContent=T[dia-1][1];" +
+    "var hc=document.getElementById('hoy-check');document.getElementById('hoy-dia').textContent='Día '+dia;document.getElementById('hoy-tit').textContent=T[dia-1][0];document.getElementById('hoy-txt').textContent=T[dia-1][1];" + HOY_DET +
     "hc.checked=!!st['d'+dia];hc.onchange=function(){st['d'+dia]=hc.checked;set(st);sync();act()};" +
     "function sync(){var c=document.querySelector('input[data-k=\"d'+dia+'\"]');if(c)c.checked=!!st['d'+dia]}" +
     "function act(){var n=0;for(var i=1;i<=56;i++)if(st['d'+i])n++;document.getElementById('pr-sem').textContent='Semana '+sem+' de 8';document.getElementById('pr-pct').textContent=n+' de 56 tareas hechas';document.getElementById('pr-bar').style.width=Math.max(3,n/56*100)+'%'}" +
@@ -162,6 +184,7 @@
     "document.querySelectorAll('[data-tab]').forEach(function(b){b.onclick=function(){tab(b.dataset.tab)}});tab(sem);act();" +
     "var v=document.getElementById('volver');if(v)v.onclick=function(){location.reload()};try{if('serviceWorker' in navigator&&!v)navigator.serviceWorker.register('/sw.js').catch(function(){})}catch(e){}" +
     "window.addEventListener('beforeprint',function(){document.querySelectorAll('.sem').forEach(function(s){s.hidden=false});document.querySelectorAll('details').forEach(function(d){d.open=true})});})();";
+
 
   var CSS = [
     ':root{--bg:#f5f7fb;--surface:#fff;--surface-2:#eef2f8;--ink:#1b2a41;--muted:#5c6b80;--line:#dde3ec;--primary:#ffc83d;--brand:#2546a8;--ok:#17885c;--ok-bg:#dcf3e8;--warn:#b8432b;--warn-bg:#fde6df;--peach:#ffe0cc;--butter:#fff0bf;--mint:#d5f2e3;--sky:#d6ecff;--lilac:#e6defc;--shadow:0 1px 2px rgba(27,42,65,.06),0 8px 24px rgba(27,42,65,.08);--display:"Bricolage Grotesque","Avenir Next",system-ui,sans-serif;--body:"Figtree",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}',
@@ -201,12 +224,18 @@
     '.aviso{background:var(--surface-2);border-radius:14px;padding:10px 12px;font-size:.86rem;color:var(--muted)}.lista-ic{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}.lista-ic li{display:flex;gap:12px;align-items:center;font-size:.93rem}',
     '.legal{list-style:none;margin:0;padding:0}.legal li{display:grid;grid-template-columns:42px 1fr auto;gap:12px;align-items:center;padding:12px 0;border-bottom:1px solid var(--line)}.legal li:last-child{border-bottom:0}.legal b{display:block;font-size:.93rem;line-height:1.3}.legal span{font-size:.82rem;color:var(--muted)}.pill-check{padding:6px 10px;font-size:.8rem}',
     '.pie{background:var(--ok-bg);color:var(--ok);border-radius:22px;padding:16px;display:grid;grid-template-columns:42px 1fr;gap:12px;align-items:center}.pie b{display:block}.pie span{font-size:.9rem}.legal-pie{font-size:.8rem;color:var(--muted);text-align:center}',
+    '.sem-meta{display:flex;gap:10px;align-items:flex-start;background:var(--butter);border-radius:16px;padding:12px 14px;font-size:.93rem;line-height:1.45}.sem-meta .ico{flex:none;margin-top:1px}.sem-meta b{display:block;font-size:.78rem;letter-spacing:.06em;text-transform:uppercase}',
+    'details.como{margin:0 6px 8px 38px}details.como summary{cursor:pointer;list-style:none;display:inline-flex;align-items:center;gap:6px;font-size:.82rem;font-weight:700;color:var(--brand);padding:4px 10px;border-radius:99px;background:var(--surface-2)}details.como summary:after{content:"+";font-weight:800}details.como[open] summary:after{content:"–"}details.como[open] summary{margin-bottom:10px}',
+    '.det{display:flex;flex-direction:column;gap:10px;font-size:.92rem;line-height:1.5}.det-obj{font-weight:600}.det-meta{display:flex;flex-wrap:wrap;gap:6px}.det-meta span{display:inline-flex;align-items:center;gap:6px;background:var(--surface-2);border-radius:99px;padding:4px 10px;font-size:.8rem;font-weight:600}.det-meta .ico{width:16px;height:16px}',
+    '.det-pasos{margin:0;padding-left:22px;display:flex;flex-direction:column;gap:6px}.det-pasos li::marker{font-weight:800;color:var(--brand)}.det-ok,.det-no{border-radius:12px;padding:10px 12px;font-size:.88rem}.det-ok{background:var(--ok-bg)}.det-no{background:var(--warn-bg)}.det-ok b,.det-no b{display:block;font-size:.75rem;letter-spacing:.06em;text-transform:uppercase;margin-bottom:2px}.det-ok b{color:var(--ok)}.det-no b{color:var(--warn)}',
+    '.hoy-det{display:flex;flex-direction:column;gap:8px;border-top:1px solid var(--line);padding-top:12px}',
+    '@media (max-width:480px){details.como{margin-left:6px}}',
     '@media (max-width:480px){.hero-main{gap:14px}.av{width:84px;height:84px}.tabs{grid-template-columns:repeat(4,1fr)}.legal li{grid-template-columns:42px 1fr}.legal .pill-check{grid-column:2}}',
     '@media print{.nav,.volver,.tabs{display:none}.sem{page-break-inside:avoid}body{background:#fff}}',
     '@media (prefers-reduced-motion:reduce){*{transition:none!important}}'
   ].join('\n');
 
-  var api = { render: render, TIPOS: TIPOS, CSS: CSS };
+  var api = { render: render, TIPOS: TIPOS, CSS: CSS, itemTarea: itemTarea, HOY_DET: HOY_DET, esc: esc };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.PLAN_HTML = api;
 })(this);
