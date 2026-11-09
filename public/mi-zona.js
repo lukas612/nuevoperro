@@ -41,6 +41,45 @@
     };
   }
 
+  // ---------- Editar los datos del plan ----------
+  function editor(token) {
+    var el = document.getElementById('editar');
+    el.dataset.t = token;
+    el.innerHTML = '<p class="suave">Cargando…</p>';
+    fetch('/api/plan/datos?t=' + encodeURIComponent(token)).then(function (r) { return r.json(); }).then(function (d) {
+      if (!d.campos) { el.innerHTML = '<p>No se han podido cargar los datos.</p>'; return; }
+      var r = d.respuestas || {};
+      el.innerHTML = '<div class="cab-consejo">' + burbuja('persona', 'peach') + '<h2 style="font-size:1.3rem">Los datos de ' + esc(r.nombre || 'tu perro') + '</h2></div>' +
+        '<p class="suave peq">Cámbialos si algo no era así: su plan se rehace con los datos nuevos y conservas lo que ya has marcado.</p>' +
+        (d.fijo ? '<p class="chip">' + I('candado') + 'Programa: ' + esc(d.fijo) + '</p>' : '') +
+        '<form id="form-datos" class="form-datos">' + d.campos.map(function (c) {
+          var v = r[c.id];
+          if (c.tipo === 'text') return '<label class="campo-d"><span>' + esc(c.t) + '</span><input type="text" name="' + c.id + '" maxlength="40" value="' + esc(v || '') + '"></label>';
+          if (c.tipo === 'select') return '<label class="campo-d"><span>' + esc(c.t) + '</span><select name="' + c.id + '">' + c.ops.map(function (o) { return '<option value="' + esc(o[0]) + '"' + (String(o[0]) === String(v) ? ' selected' : '') + '>' + esc(o[1]) + '</option>'; }).join('') + '</select></label>';
+          return '<fieldset class="campo-d"><legend>' + esc(c.t) + '</legend><div class="multi-d">' + c.ops.map(function (o) {
+            return '<label><input type="checkbox" name="' + c.id + '" value="' + esc(o[0]) + '"' + ((v || []).indexOf(o[0]) >= 0 ? ' checked' : '') + '><span>' + esc(o[1]) + '</span></label>';
+          }).join('') + '</div></fieldset>';
+        }).join('') +
+        '<p class="error" id="err-datos"></p><button class="btn" type="submit">Guardar y actualizar su plan</button>' +
+        '<button class="btn texto" type="button" id="cancelar-datos">Cancelar</button></form>';
+      document.getElementById('cancelar-datos').onclick = function () { history.back(); };
+      document.getElementById('form-datos').onsubmit = function (e) {
+        e.preventDefault();
+        var f = e.target, cambios = {};
+        d.campos.forEach(function (c) {
+          if (c.tipo === 'multi') cambios[c.id] = [].slice.call(f.querySelectorAll('input[name="' + c.id + '"]:checked')).map(function (x) { return x.value; });
+          else cambios[c.id] = f.elements[c.id].value;
+        });
+        var b = f.querySelector('button[type="submit"]'); b.disabled = true; b.textContent = 'Guardando…';
+        post('/api/plan/datos', { t: token, cambios: cambios }).then(function (j) {
+          if (!j.ok) throw j;
+          el.innerHTML = '<div class="cab-consejo">' + burbuja('check', 'mint') + '<h2 style="font-size:1.3rem">Guardado</h2></div><p>El plan de ' + esc(j.respuestas.nombre || 'tu perro') + ' ya está actualizado con los datos nuevos.</p><a class="btn" href="/plan/' + esc(token) + '">Ver su plan</a>';
+          setTimeout(function () { location.href = '/mi-zona'; }, 2500);
+        }).catch(function () { document.getElementById('err-datos').textContent = 'No se ha podido guardar. Inténtalo de nuevo.'; b.disabled = false; b.textContent = 'Guardar y actualizar su plan'; });
+      };
+    }).catch(function () { el.innerHTML = '<p>No se han podido cargar los datos.</p>'; });
+  }
+
   // ---------- Hacedlo juntos: invitar a otra persona al plan ----------
   function juntos(d) {
     var el = document.getElementById('juntos');
@@ -107,7 +146,8 @@
     app.innerHTML = '<div class="entra zona-app">' +
       '<div class="pila-g zona-vista" data-vista="inicio">' +
         '<section class="pila"><h1 style="font-size:1.9rem">Hola' + (nombres.length === 1 ? ', aquí tienes todo lo de ' + esc(nombres[0]) : '') + '</h1><p class="suave peq">' + esc(d.email) + '</p></section>' +
-        '<section class="pila"><span class="etiqueta">' + (d.planes.length > 1 ? 'Tus planes' : 'Tu plan') + '</span>' + planes + '</section>' +
+        '<section class="pila"><span class="etiqueta">' + (d.planes.length > 1 ? 'Tus planes' : 'Tu plan') + '</span>' + planes +
+          d.planes.filter(function (p) { return !p.extra; }).map(function (p) { return '<button class="btn texto editar-btn" data-editar="' + esc(p.token) + '">' + I('persona') + 'Editar los datos de ' + esc(p.nombre) + '</button>'; }).join('') + '</section>' +
         '<section class="zona-atajos">' +
           atajo('diario', 'gota', 'sky', 'Diario', 'Apunta pis y caca') + atajo('clicker', 'estrella', 'butter', 'Clicker', 'Marca lo que hace bien') +
           atajo('juntos', 'personas', 'lilac', 'Juntos', compartido ? 'Ya lo compartís' : 'Invita a alguien') + atajo('mas', 'corazon', 'peach', 'Para ti', 'Consejos y recomendaciones') +
@@ -119,6 +159,7 @@
       '<div class="pila-g zona-vista" data-vista="diario" hidden><section class="tarjeta pila" id="diario"></section></div>' +
       '<div class="pila-g zona-vista" data-vista="clicker" hidden><section class="tarjeta pila" id="clicker-caja"></section></div>' +
       '<div class="pila-g zona-vista" data-vista="juntos" hidden><section class="tarjeta pila" id="juntos"></section></div>' +
+      '<div class="pila-g zona-vista" data-vista="editar" hidden><section class="tarjeta pila" id="editar"></section></div>' +
       '<div class="pila-g zona-vista" data-vista="mas" hidden>' +
         '<section class="pila"><span class="etiqueta">Lo que te va a ayudar</span><div class="incluye-grid">' + productos + '</div>' +
           (hayAfiliados ? '<p class="peq suave">Algunos enlaces son de afiliado: si compras, recibimos una pequeña comisión sin coste para ti.</p>' : '') + '</section>' +
@@ -134,13 +175,15 @@
 
     // Navegación por pestañas, con el botón atrás del móvil funcionando (#diario, #clicker…)
     function ir(v, sinHistorial) {
-      if (!VISTAS.some(function (x) { return x[0] === v; })) v = 'inicio';
+      if (v !== 'editar' && !VISTAS.some(function (x) { return x[0] === v; })) v = 'inicio';
+      if (v === 'editar' && !document.getElementById('editar').dataset.t) v = 'inicio';
       app.querySelectorAll('.zona-vista').forEach(function (el) { el.hidden = el.dataset.vista !== v; });
       document.querySelectorAll('.zona-nav [data-ir]').forEach(function (b) { b.setAttribute('aria-current', String(b.dataset.ir === v)); });
       if (!sinHistorial && location.hash.slice(1) !== v) history.pushState(null, '', v === 'inicio' ? location.pathname + location.search : '#' + v);
       window.scrollTo(0, 0);
     }
     document.querySelectorAll('[data-ir]').forEach(function (b) { b.addEventListener('click', function () { ir(b.dataset.ir); }); });
+    document.querySelectorAll('[data-editar]').forEach(function (b) { b.addEventListener('click', function () { editor(b.dataset.editar); ir('editar'); }); });
     window.addEventListener('popstate', function () { ir(location.hash.slice(1) || 'inicio', true); });
     ir(location.hash.slice(1) || 'inicio', true);
 

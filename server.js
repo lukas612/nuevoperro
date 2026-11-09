@@ -139,6 +139,33 @@ const rutas = {
     await datos.actualizar('planes', { token: t }, { progreso });
     enviar(res, 200, { progreso });
   },
+  // Editar las respuestas de un plan (dueño o quien lo comparte)
+  'GET /api/plan/datos': async (req, res, url) => {
+    const email = sesion.deCookie(req);
+    if (!email) return enviar(res, 401, { error: 'sesion' });
+    const plan = await datos.primero('planes', { token: limpio(url.searchParams.get('t'), 40) });
+    if (!plan || !(await quienEnPlan(email, plan))) return enviar(res, 404, { error: 'plan' });
+    const ed = require('./lib/edicion');
+    const r = plan.respuestas || (await datos.primero('leads', { sid: plan.sid }))?.respuestas || {};
+    enviar(res, 200, { respuestas: r, campos: ed.campos({ ...plan, respuestas: r }), fijo: ['adulto', 'adoptado'].includes(r.tipo) ? (PROGRAMAS_ADULTO[r.problema] || {}).titulo : null });
+  },
+  'POST /api/plan/datos': async (req, res) => {
+    const email = sesion.deCookie(req);
+    if (!email) return enviar(res, 401, { error: 'sesion' });
+    const b = await json(req);
+    const plan = await datos.primero('planes', { token: limpio(b.t, 40) });
+    if (!plan || plan.pack || !(await quienEnPlan(email, plan))) return enviar(res, 404, { error: 'plan' });
+    const ed = require('./lib/edicion');
+    const base = { ...plan, respuestas: plan.respuestas || (await datos.primero('leads', { sid: plan.sid }))?.respuestas || {} };
+    const respuestas = ed.validar(base, b.cambios || {});
+    // El plan y sus programas extra (mismo perro) se vuelven a generar con los datos nuevos.
+    for (const p of await datos.listar('planes', { sid: plan.sid })) {
+      if (p.estado !== 'enviado') continue;
+      await datos.actualizar('planes', { token: p.token }, { respuestas, html: ed.regenerar(p, respuestas) });
+    }
+    enviar(res, 200, { ok: true, respuestas });
+  },
+
   'POST /api/invitar': async (req, res) => {
     const b = await json(req);
     const t = limpio(b.t, 40);

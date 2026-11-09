@@ -566,3 +566,15 @@ html.pago-abierto, html.pago-abierto body { overflow: hidden; }
 .mp-dia b, .mp-bloq b { display: block; font-size: .88rem; }
 .mp-bloq { display: grid; grid-template-columns: 26px 1fr; gap: 10px; padding: 8px; font-size: .9rem; line-height: 1.38; filter: blur(3.5px); user-select: none; cursor: pointer; opacity: .85; }
 .mp-cta { position: static; transform: none; align-self: center; margin-top: -70px; z-index: 2; }
+
+/* Editar los datos del plan */
+.editar-btn { width: auto; align-self: flex-start; padding-left: 0; display: inline-flex; gap: 6px; align-items: center; }
+.form-datos { display: flex; flex-direction: column; gap: 14px; }
+.campo-d { display: flex; flex-direction: column; gap: 6px; border: 0; padding: 0; margin: 0; }
+.campo-d > span, .campo-d legend { font-weight: 700; font-size: .9rem; padding: 0; }
+.multi-d { display: flex; flex-wrap: wrap; gap: 8px; }
+.multi-d label { position: relative; }
+.multi-d input { position: absolute; opacity: 0; }
+.multi-d span { display: inline-block; padding: 8px 12px; border-radius: 99px; border: 1.5px solid var(--line); font-size: .88rem; cursor: pointer; background: var(--surface); }
+.multi-d input:checked + span { border-color: var(--ok); background: var(--ok-bg); color: var(--ok); font-weight: 700; }
+.multi-d input:focus-visible + span { outline: 2px solid var(--brand); outline-offset: 2px; }
