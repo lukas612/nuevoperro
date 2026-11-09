@@ -528,6 +528,8 @@
     var email = estado.email;
     var respuestas = estado.r;
     lsSet('pc_estado', null);
+    // Compra hecha: si después hace otro test (otro perro), que sea un registro nuevo y no pise este.
+    lsSet('pc_sid', (window.crypto && crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random()).replace(/[-.]/g, ''));
     pintar('<div class="celebra"><span class="avatar">' + D.cara(razaId(), { lengua: true }) + '<span class="sello">' + I('check') + '</span></span>' +
       '<h1 style="font-size:1.9rem">Empieza el plan de ' + esc(nombre()) + '</h1>' +
       '<p class="suave">Lo estamos preparando con sus respuestas. Te llegará a <b>' + esc(email || 'tu email') + '</b>.</p>' +

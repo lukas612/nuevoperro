@@ -155,8 +155,8 @@ const rutas = {
     invitacionesRecientes.set(t, Date.now());
     const quien = (await quienEnPlan(sesion.deCookie(req), plan))?.nombre || nombreDeEmail(plan.email);
     await datos.insertar('miembros', { token: t, email, nombre: nombre || null, invitado_por: quien }, { ignorarDuplicado: true });
-    const lead = await datos.primero('leads', { sid: plan.sid });
-    const m = plantillasEmail.invitacion(email, { quien, nombre, perro: lead?.respuestas?.nombre, urlPlan: `${CFG.baseUrl}/plan/${t}`, urlZona: sesion.enlaceMagico(email) });
+    const perro = (plan.respuestas || (await datos.primero('leads', { sid: plan.sid }))?.respuestas || {}).nombre;
+    const m = plantillasEmail.invitacion(email, { quien, nombre, perro, urlPlan: `${CFG.baseUrl}/plan/${t}`, urlZona: sesion.enlaceMagico(email) });
     correo.enviar(email, m.asunto, m.html).catch((e) => console.error('invitacion', e.message));
     enviar(res, 200, { ok: true });
   },
@@ -353,8 +353,7 @@ const rutas = {
     for (const m of await datos.listar('miembros', { email })) if (!m.aceptado_at) datos.actualizar('miembros', { id: m.id }, { aceptado_at: new Date().toISOString() }).catch(() => {});
     const lista = [];
     for (const p of planes) {
-      const lead = await datos.primero('leads', { sid: p.sid });
-      const r = lead?.respuestas || {};
+      const r = p.respuestas || (await datos.primero('leads', { sid: p.sid }))?.respuestas || {};
       const adulto = !!p.pack || r.tipo === 'adulto' || r.tipo === 'adoptado';
       const problema = p.pack || r.problema;
       const prog = adulto ? (PROGRAMAS_ADULTO[problema] || PROGRAMAS_ADULTO.correa) : null;

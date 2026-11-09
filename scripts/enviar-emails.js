@@ -51,7 +51,8 @@ async function enviarEmails({ prueba: PRUEBA = false } = {}) {
   for (const plan of planes) {
     if (plan.pack) continue; // los programas extra no mandan email diario: se siguen desde su página
     if (bajas.has(plan.email) || reembolsados.has(plan.sid)) continue;
-    const lead = porEmail.get(plan.email) || (await datos.primero('leads', { sid: plan.sid }));
+    // Las respuestas con las que se creó el plan (si después hizo otro test, no se mezclan).
+    const lead = plan.respuestas ? { respuestas: plan.respuestas } : (await datos.primero('leads', { sid: plan.sid }));
     if (!lead) continue;
     // Día del plan = el mismo que ve en su página: el de la entrega es el 1 (va en el email de entrega); desde el día siguiente, uno al día.
     const dia = diasDesde(plan.enviado_at) + 1;
