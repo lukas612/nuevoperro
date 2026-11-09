@@ -1,7 +1,7 @@
 /* Service worker de Qué Buen Perro: permite instalar la web como app y abrir el plan sin conexión.
    Páginas: primero la red y, si no hay, la copia guardada. Estáticos: copia guardada y se actualiza por detrás.
    La API y los pagos nunca pasan por la caché. */
-const VERSION = 'qbp-v1';
+const VERSION = 'qbp-v2';
 const PRECARGA = ['/offline.html', '/styles.css', '/perros.js', '/herramientas.js', '/mi-zona.js', '/favicon.svg', '/icon-192.png'];
 
 self.addEventListener('install', (e) => {
@@ -31,4 +31,23 @@ self.addEventListener('fetch', (e) => {
       return guardado || red;
     })));
   }
+});
+
+// ---------- Avisos en el móvil ----------
+// El aviso llega sin contenido: se pide al servidor qué mostrar (así no hay que cifrar el mensaje).
+self.addEventListener('push', (e) => {
+  e.waitUntil(
+    fetch('/api/avisos', { credentials: 'include', cache: 'no-store' }).then((r) => r.json()).catch(() => ({}))
+      .then((a) => self.registration.showNotification(a.titulo || 'Qué Buen Perro', {
+        body: a.texto || 'Tienes novedades en Mi zona.', icon: '/icon-192.png', badge: '/icon-192.png', data: { url: a.url || '/mi-zona' }, tag: a.url || 'qbp'
+      }))
+  );
+});
+self.addEventListener('notificationclick', (e) => {
+  e.notification.close();
+  const destino = new URL((e.notification.data && e.notification.data.url) || '/mi-zona', self.location.origin).href;
+  e.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((ws) => {
+    for (const w of ws) if (w.url.startsWith(self.location.origin) && 'focus' in w) { w.navigate(destino); return w.focus(); }
+    return self.clients.openWindow(destino);
+  }));
 });

@@ -140,6 +140,63 @@ const rutas = {
     enviar(res, 200, { progreso });
   },
   // Editar las respuestas de un plan (dueño o quien lo comparte)
+  // ---------- Carnet de salud (por plan / perro; lo comparten quienes siguen el plan) ----------
+  'GET /api/salud': async (req, res, url) => {
+    const email = sesion.deCookie(req);
+    if (!email) return enviar(res, 401, { error: 'sesion' });
+    const plan = await datos.primero('planes', { token: limpio(url.searchParams.get('t'), 40) });
+    if (!plan || !(await quienEnPlan(email, plan))) return enviar(res, 404, { error: 'plan' });
+    enviar(res, 200, { registros: await datos.listar('salud', { token: plan.token }, { orden: 'ts.desc', limite: 300 }) });
+  },
+  'POST /api/salud': async (req, res) => {
+    const email = sesion.deCookie(req);
+    if (!email) return enviar(res, 401, { error: 'sesion' });
+    const b = await json(req);
+    const plan = await datos.primero('planes', { token: limpio(b.t, 40) });
+    const yo = plan && (await quienEnPlan(email, plan));
+    if (!yo) return enviar(res, 404, { error: 'plan' });
+    const TIPOS_SALUD = ['vacuna', 'desp_interna', 'desp_externa', 'veterinario', 'peso', 'otro'];
+    const fecha = (v) => (/^\d{4}-\d{2}-\d{2}$/.test(String(v || '')) ? v : null);
+    const fila = { token: plan.token, tipo: TIPOS_SALUD.includes(b.tipo) ? b.tipo : 'otro', nombre: limpio(b.nombre, 80) || 'Sin nombre', fecha: fecha(b.fecha), proxima: fecha(b.proxima),
+      peso_kg: b.tipo === 'peso' && Number(b.peso) > 0 && Number(b.peso) < 150 ? Math.round(Number(b.peso) * 10) / 10 : null, nota: limpio(b.nota, 200) || null, por: yo.nombre };
+    if (!fila.fecha && !fila.proxima && fila.peso_kg == null) return enviar(res, 400, { error: 'Pon al menos una fecha.' });
+    enviar(res, 200, { registro: await datos.insertar('salud', fila, { devolver: true }) });
+  },
+  'POST /api/salud/borrar': async (req, res) => {
+    const email = sesion.deCookie(req);
+    if (!email) return enviar(res, 401, { error: 'sesion' });
+    const b = await json(req);
+    const plan = await datos.primero('planes', { token: limpio(b.t, 40) });
+    if (!plan || !(await quienEnPlan(email, plan)) || !/^\d+$/.test(String(b.id || ''))) return enviar(res, 404, { error: 'plan' });
+    await datos.borrar('salud', { token: plan.token, id: String(b.id) });
+    enviar(res, 200, { ok: true });
+  },
+
+  // ---------- Avisos en el móvil ----------
+  'GET /api/push/clave': async (req, res) => enviar(res, 200, { publica: require('./lib/push').publica() }),
+  'POST /api/push/alta': async (req, res) => {
+    const email = sesion.deCookie(req);
+    if (!email) return enviar(res, 401, { error: 'sesion' });
+    const b = await json(req);
+    const endpoint = String(b.endpoint || '').slice(0, 800);
+    if (!/^https:\/\//.test(endpoint)) return enviar(res, 400, { error: 'endpoint' });
+    await datos.borrar('push', { endpoint }).catch(() => {});
+    await datos.insertar('push', { email, endpoint, ua: limpio(req.headers['user-agent'], 200) });
+    require('./lib/push').avisar(email, { titulo: '¡Avisos activados!', texto: 'Te avisaremos aquí de la tarea del día y de las vacunas y citas de tu perro.', url: '/mi-zona' }).catch(() => {});
+    enviar(res, 200, { ok: true });
+  },
+  'POST /api/push/baja': async (req, res) => {
+    const b = await json(req);
+    if (b.endpoint) await datos.borrar('push', { endpoint: String(b.endpoint).slice(0, 800) }).catch(() => {});
+    enviar(res, 200, { ok: true });
+  },
+  // El service worker pregunta qué mostrar al recibir un aviso
+  'GET /api/avisos': async (req, res) => {
+    const email = sesion.deCookie(req);
+    const aviso = email && require('./lib/push').siguienteAviso(email);
+    enviar(res, 200, aviso || { titulo: CFG.marca, texto: 'Tienes novedades en Mi zona.', url: '/mi-zona' });
+  },
+
   'GET /api/plan/datos': async (req, res, url) => {
     const email = sesion.deCookie(req);
     if (!email) return enviar(res, 401, { error: 'sesion' });
@@ -597,6 +654,7 @@ const rutas = {
     add('Quien compra', 'Cada mañana desde el día 2 (hasta el 56 o el 42): la tarea del día', E.diario(ej, adulto.respuestas, 2, plan), 'Perro adulto');
     add('Quien compra', 'Días 7 y 21: encuesta de 1 clic', E.encuesta(ej, cachorro.respuestas, 7, plan), 'Cachorro');
     add('Quien compra', 'Al comprar el pack o un programa extra', E.pack(ej, cachorro.respuestas, 'correa', plan), 'Cachorro');
+    add('Quien compra', 'Carnet de salud: 3 días antes y el mismo día (también aviso en el móvil)', E.salud(ej, { id: 0, nombre: 'Segunda vacuna', perro: 'Luna', dias: 3, fecha: new Date(Date.now() + 3 * 864e5).toISOString().slice(0, 10), nota: 'Clínica Veterinaria Centro', url: `${CFG.baseUrl}/mi-zona#salud` }), '');
     add('Quien compra', 'Cuando pide entrar en Mi zona', E.acceso(ej, `${CFG.baseUrl}/mi-zona`), '');
     add('Quien compra', 'Cuando alguien le invita a compartir un plan', E.invitacion(ej, { quien: 'Lukas', nombre: 'Adriana', perro: 'Luna', urlPlan: plan, urlZona: `${CFG.baseUrl}/mi-zona` }), '');
     enviar(res, 200, { emails: L });

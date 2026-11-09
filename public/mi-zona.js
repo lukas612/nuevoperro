@@ -41,6 +41,96 @@
     };
   }
 
+  // ---------- Carnet de salud ----------
+  var TIPOS_SALUD = [['vacuna', 'Vacuna', 'vacuna'], ['desp_interna', 'Desparasitación interna', 'escudo'], ['desp_externa', 'Desparasitación externa', 'escudo'], ['veterinario', 'Visita al veterinario', 'corazon'], ['peso', 'Peso', 'huella'], ['otro', 'Otro', 'calendario']];
+  var SUGERENCIAS = { vacuna: ['Primera vacuna', 'Segunda vacuna', 'Tercera vacuna', 'Rabia', 'Refuerzo anual'], desp_interna: ['Pastilla de desparasitación'], desp_externa: ['Pipeta', 'Collar antiparasitario', 'Pastilla antipulgas'], veterinario: ['Revisión', 'Chip y registro', 'Esterilización'], otro: ['Peluquería', 'Seguro'] };
+  var fechaBonita = function (f) { return f ? new Date(String(f).slice(0, 10) + 'T12:00:00').toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' }) : ''; };
+  var diasHasta = function (f) { var h = new Date(); h.setHours(0, 0, 0, 0); return Math.round((new Date(String(f).slice(0, 10) + 'T00:00:00') - h) / 864e5); };
+  function saludZona(d) {
+    var el = document.getElementById('salud');
+    var planes = d.planes.filter(function (p) { return !p.extra; });
+    if (!el || !planes.length) return;
+    var plan = planes[0];
+    var pintar = function (regs) {
+      var nombreTipo = function (t) { return (TIPOS_SALUD.filter(function (x) { return x[0] === t; })[0] || [0, 'Otro'])[1]; };
+      var proximos = regs.filter(function (r) { return r.proxima && diasHasta(r.proxima) >= 0; }).sort(function (a, b) { return a.proxima < b.proxima ? -1 : 1; });
+      var pesos = regs.filter(function (r) { return r.tipo === 'peso' && r.peso_kg; });
+      el.innerHTML = '<div class="cab-consejo">' + burbuja('vacuna', 'mint') + '<h2 style="font-size:1.3rem">Carnet de salud de ' + esc(plan.nombre) + '</h2></div>' +
+        (planes.length > 1 ? '<select id="s-plan">' + planes.map(function (p, k) { return '<option value="' + k + '"' + (p === plan ? ' selected' : '') + '>' + esc(p.nombre) + '</option>'; }).join('') + '</select>' : '') +
+        '<p class="suave peq">Apunta lo que te diga tu veterinario y te lo recordamos 3 días antes y el mismo día, por email' + ('PushManager' in window ? ' y en el móvil' : '') + '.</p>' +
+        '<span class="etiqueta">Próximos</span>' + (proximos.length ? '<ul class="salud-lista">' + proximos.map(function (r) {
+          var dd = diasHasta(r.proxima);
+          return '<li><span class="salud-dias' + (dd <= 3 ? ' pronto' : '') + '">' + (dd === 0 ? 'Hoy' : dd === 1 ? 'Mañana' : 'En ' + dd + ' días') + '</span><span><b>' + esc(r.nombre) + '</b><small>' + nombreTipo(r.tipo) + ' · ' + fechaBonita(r.proxima) + '</small></span></li>';
+        }).join('') + '</ul>' : '<p class="suave peq">Nada pendiente. Añade la próxima vacuna o desparasitación.</p>') +
+        (pesos.length ? '<span class="etiqueta">Peso</span><p><b>' + String(pesos[0].peso_kg).replace('.', ',') + ' kg</b> <span class="suave peq">el ' + fechaBonita(pesos[0].fecha || pesos[0].ts) + (pesos[1] ? ' · antes ' + String(pesos[1].peso_kg).replace('.', ',') + ' kg' : '') + '</span></p>' : '') +
+        '<details class="salud-nuevo"><summary class="btn">+ Añadir al carnet</summary><form id="s-form" class="form-datos">' +
+          '<label class="campo-d"><span>Qué es</span><select name="tipo">' + TIPOS_SALUD.map(function (t) { return '<option value="' + t[0] + '">' + t[1] + '</option>'; }).join('') + '</select></label>' +
+          '<label class="campo-d" data-f="nombre"><span>Nombre</span><input type="text" name="nombre" maxlength="80" placeholder="Por ejemplo, Segunda vacuna"><span class="multi-d" id="s-sug"></span></label>' +
+          '<label class="campo-d" data-f="peso" hidden><span>Peso (kg)</span><input type="number" name="peso" step="0.1" min="0" inputmode="decimal"></label>' +
+          '<label class="campo-d"><span>Hecho el (opcional)</span><input type="date" name="fecha"></label>' +
+          '<label class="campo-d" data-f="proxima"><span>Próxima vez (te avisamos)</span><input type="date" name="proxima"></label>' +
+          '<label class="campo-d"><span>Nota (opcional)</span><input type="text" name="nota" maxlength="200" placeholder="Lote, clínica, dosis que te indicó…"></label>' +
+          '<p class="error" id="s-err"></p><button class="btn" type="submit">Guardar</button></form></details>' +
+        '<span class="etiqueta">Historial</span>' + (regs.length ? '<ul class="salud-lista hist">' + regs.map(function (r) {
+          return '<li><span><b>' + esc(r.nombre) + (r.peso_kg ? ' · ' + String(r.peso_kg).replace('.', ',') + ' kg' : '') + '</b><small>' + nombreTipo(r.tipo) + (r.fecha ? ' · hecho el ' + fechaBonita(r.fecha) : '') + (r.proxima ? ' · próxima ' + fechaBonita(r.proxima) : '') + (r.por && d.planes.some(function (p) { return p.compartido || (p.miembros && p.miembros.length); }) ? ' · ' + esc(r.por) : '') + '</small>' + (r.nota ? '<small>' + esc(r.nota) + '</small>' : '') + '</span><button class="btn texto" data-borrar-s="' + r.id + '" style="width:auto;min-height:32px;padding:0 6px">Borrar</button></li>';
+        }).join('') + '</ul>' : '<p class="suave peq">Aún no has apuntado nada.</p>') +
+        '<p class="peq suave">Las vacunas, fechas y dosis las decide tu veterinario. Esto es un recordatorio, no un consejo veterinario.</p>';
+      var f = el.querySelector('#s-form');
+      var sug = function () {
+        var t = f.elements.tipo.value;
+        el.querySelector('[data-f="peso"]').hidden = t !== 'peso';
+        el.querySelector('[data-f="nombre"]').hidden = t === 'peso';
+        el.querySelector('[data-f="proxima"]').hidden = t === 'peso';
+        el.querySelector('#s-sug').innerHTML = (SUGERENCIAS[t] || []).map(function (x) { return '<label><input type="radio" name="sug" value="' + esc(x) + '"><span>' + esc(x) + '</span></label>'; }).join('');
+        el.querySelectorAll('#s-sug input').forEach(function (r) { r.onchange = function () { f.elements.nombre.value = r.value; }; });
+      };
+      f.elements.tipo.onchange = sug; sug();
+      f.onsubmit = function (e) {
+        e.preventDefault();
+        var t = f.elements.tipo.value;
+        var cuerpo = { t: plan.token, tipo: t, nombre: t === 'peso' ? 'Peso' : f.elements.nombre.value, peso: f.elements.peso.value, fecha: f.elements.fecha.value, proxima: t === 'peso' ? '' : f.elements.proxima.value, nota: f.elements.nota.value };
+        if (t === 'peso' && !cuerpo.fecha) cuerpo.fecha = new Date().toISOString().slice(0, 10);
+        post('/api/salud', cuerpo).then(function (j) { if (!j.registro) throw j; cargar(); }).catch(function (e) { el.querySelector('#s-err').textContent = (e && e.error) || 'No se ha podido guardar.'; });
+      };
+      el.querySelectorAll('[data-borrar-s]').forEach(function (b) { b.onclick = function () { post('/api/salud/borrar', { t: plan.token, id: b.dataset.borrarS }).then(cargar); }; });
+      var sp = el.querySelector('#s-plan'); if (sp) sp.onchange = function () { plan = planes[Number(sp.value)]; cargar(); };
+    };
+    var cargar = function () { fetch('/api/salud?t=' + encodeURIComponent(plan.token)).then(function (r) { return r.json(); }).then(function (j) { pintar(j.registros || []); }).catch(function () { pintar([]); }); };
+    cargar();
+  }
+
+  // ---------- Avisos en el móvil ----------
+  function avisosMovil() {
+    var el = document.getElementById('avisos');
+    if (!el || !('serviceWorker' in navigator)) return;
+    var ios = /iphone|ipad|ipod/i.test(navigator.userAgent), instalada = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone;
+    if (!('PushManager' in window) || !('Notification' in window)) {
+      if (ios && !instalada) { el.hidden = false; el.innerHTML = '<div class="cab-consejo">' + burbuja('chispa', 'butter') + '<h2 style="font-size:1.2rem">Avisos en el móvil</h2></div><p class="suave peq">En iPhone, primero añade Mi zona a tu pantalla de inicio (Compartir → «Añadir a pantalla de inicio») y ábrela desde ahí para activar los avisos.</p>'; }
+      return;
+    }
+    if (Notification.permission === 'denied') return;
+    navigator.serviceWorker.ready.then(function (reg) { return reg.pushManager.getSubscription(); }).then(function (sub) {
+      if (sub && Notification.permission === 'granted') return; // ya activados
+      el.hidden = false;
+      el.innerHTML = '<div class="cab-consejo">' + burbuja('chispa', 'butter') + '<h2 style="font-size:1.2rem">Activa los avisos en este móvil</h2></div>' +
+        '<p class="suave peq">Te avisamos de la tarea del día y de las vacunas y citas del carnet de salud. Puedes quitarlos cuando quieras.</p>' +
+        '<button class="btn" id="activar-avisos">Activar avisos</button><p class="error" id="err-avisos"></p>';
+      document.getElementById('activar-avisos').onclick = function () {
+        var b = this; b.disabled = true;
+        Notification.requestPermission().then(function (perm) {
+          if (perm !== 'granted') throw new Error('Has bloqueado los avisos. Puedes activarlos en los ajustes del navegador.');
+          return Promise.all([navigator.serviceWorker.ready, fetch('/api/push/clave').then(function (r) { return r.json(); })]);
+        }).then(function (r) {
+          var k = r[1].publica.replace(/-/g, '+').replace(/_/g, '/'); var raw = atob(k + '==='.slice((k.length + 3) % 4)); var arr = new Uint8Array(raw.length);
+          for (var i = 0; i < raw.length; i++) arr[i] = raw.charCodeAt(i);
+          return r[0].pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: arr });
+        }).then(function (sub) { return post('/api/push/alta', { endpoint: sub.endpoint }); }).then(function () {
+          el.innerHTML = '<div class="cab-consejo">' + burbuja('check', 'mint') + '<h2 style="font-size:1.2rem">Avisos activados</h2></div><p class="suave peq">Te acabamos de mandar uno de prueba.</p>';
+        }).catch(function (e) { document.getElementById('err-avisos').textContent = (e && e.message) || 'No se han podido activar.'; b.disabled = false; });
+      };
+    }).catch(function () {});
+  }
+
   // ---------- Catálogo: otros programas a precio de cliente ----------
   function catalogo(d) {
     var el = document.getElementById('catalogo');
@@ -178,8 +268,8 @@
 
     var compartido = d.planes.some(function (p) { return p.compartido || (p.miembros && p.miembros.length); });
     var VISTAS = [
-      ['inicio', 'casa', 'Inicio'], ['diario', 'gota', 'Diario'], ['clicker', 'estrella', 'Clicker'],
-      ['juntos', 'personas', 'Juntos'], ['mas', 'corazon', 'Para ti']
+      ['inicio', 'casa', 'Inicio'], ['diario', 'gota', 'Diario'], ['salud', 'vacuna', 'Salud'],
+      ['clicker', 'estrella', 'Clicker'], ['mas', 'corazon', 'Para ti']
     ];
     var atajo = function (v, ic, color, t, sub) { return '<button class="zona-atajo" data-ir="' + v + '">' + burbuja(ic, color) + '<b>' + t + '</b><span class="peq suave">' + sub + '</span></button>'; };
     app.innerHTML = '<div class="entra zona-app">' +
@@ -188,14 +278,16 @@
         '<section class="pila"><span class="etiqueta">' + (d.planes.length > 1 ? 'Tus planes' : 'Tu plan') + '</span>' + planes +
           d.planes.filter(function (p) { return !p.extra; }).map(function (p) { return '<div class="acciones-plan"><button class="btn texto editar-btn" data-editar="' + esc(p.token) + '">' + I('persona') + 'Editar sus datos</button><a class="btn texto editar-btn" href="/plan/' + esc(p.token) + '/nevera">' + I('calendario') + 'Imprimir para la nevera</a></div>'; }).join('') + '</section>' +
         '<section class="zona-atajos">' +
-          atajo('diario', 'gota', 'sky', 'Diario', 'Apunta pis y caca') + atajo('clicker', 'estrella', 'butter', 'Clicker', 'Marca lo que hace bien') +
+          atajo('salud', 'vacuna', 'mint', 'Carnet de salud', 'Vacunas y recordatorios') + atajo('clicker', 'estrella', 'butter', 'Clicker', 'Marca lo que hace bien') +
           atajo('juntos', 'personas', 'lilac', 'Juntos', compartido ? 'Ya lo compartís' : 'Invita a alguien') + atajo('mas', 'corazon', 'peach', 'Para ti', d.catalogo && d.catalogo.length ? 'Más programas desde ' + (d.precioCliente / 100).toFixed(2).replace('.', ',') + ' €' : 'Consejos y recomendaciones') +
         '</section>' +
         '<section class="tarjeta pila consejo"><div class="cab-consejo">' + burbuja('chispa', 'butter') + '<span class="etiqueta">Consejo de hoy</span></div>' +
           '<h2 id="c-tit" style="font-size:1.3rem"></h2><p id="c-txt"></p><button class="btn texto" id="otro" style="align-self:flex-start;width:auto;padding-left:0">Otro consejo</button></section>' +
+        '<section class="tarjeta pila" id="avisos" hidden></section>' +
         '<section class="tarjeta pila" id="instalar"></section>' +
       '</div>' +
       '<div class="pila-g zona-vista" data-vista="diario" hidden><section class="tarjeta pila" id="diario"></section></div>' +
+      '<div class="pila-g zona-vista" data-vista="salud" hidden><section class="tarjeta pila" id="salud"></section></div>' +
       '<div class="pila-g zona-vista" data-vista="clicker" hidden><section class="tarjeta pila" id="clicker-caja"></section></div>' +
       '<div class="pila-g zona-vista" data-vista="juntos" hidden><section class="tarjeta pila" id="juntos"></section></div>' +
       '<div class="pila-g zona-vista" data-vista="editar" hidden><section class="tarjeta pila" id="editar"></section></div>' +
@@ -215,7 +307,7 @@
 
     // Navegación por pestañas, con el botón atrás del móvil funcionando (#diario, #clicker…)
     function ir(v, sinHistorial) {
-      if (v !== 'editar' && !VISTAS.some(function (x) { return x[0] === v; })) v = 'inicio';
+      if (v !== 'editar' && v !== 'juntos' && !VISTAS.some(function (x) { return x[0] === v; })) v = 'inicio';
       if (v === 'editar' && !document.getElementById('editar').dataset.t) v = 'inicio';
       app.querySelectorAll('.zona-vista').forEach(function (el) { el.hidden = el.dataset.vista !== v; });
       document.querySelectorAll('.zona-nav [data-ir]').forEach(function (b) { b.setAttribute('aria-current', String(b.dataset.ir === v)); });
@@ -236,6 +328,8 @@
     }
     juntos(d);
     catalogo(d);
+    saludZona(d);
+    avisosMovil();
     function pintaConsejo() { var c = d.consejos[idxConsejo % d.consejos.length]; document.getElementById('c-tit').textContent = c[0]; document.getElementById('c-txt').textContent = sus(c[1]); }
     pintaConsejo();
     document.getElementById('otro').onclick = function () { idxConsejo++; pintaConsejo(); };

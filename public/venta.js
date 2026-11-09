@@ -133,12 +133,12 @@
       [img('plan-perro.jpg'), 'Tu progreso', 'Lo que lleváis hecho, semana a semana', 'diario'],
       [ico('escudo', 'sky'), 'Si hay una recaída', 'Qué hacer y cuándo pedir ayuda', 'extra'],
       [ico('personas', 'lilac'), 'Hacedlo juntos', 'Comparte el plan con tu pareja', 'juntos'],
-      [img('mi-zona.jpg'), 'Mi zona, como una app', 'En tu móvil, sin caducidad', 'app']
+      [ico('vacuna', 'mint'), 'Carnet de salud', 'Vacunas y citas, con recordatorios', 'salud']
     ] : [
       [ico('reloj', 'sky'), 'Su rutina, hora a hora', 'Ajustada cada semana a su edad', 'extra'],
       [ico('estrella', 'peach'), 'Los 4 protocolos', 'Pis, mordiscos, noches y quedarse solo', 'protocolos'],
       [ico('personas', 'lilac'), 'Hacedlo juntos', 'Comparte el plan con tu pareja', 'juntos'],
-      [img('mi-zona.jpg'), 'Mi zona, como una app', 'En tu móvil, sin caducidad', 'app']
+      [ico('vacuna', 'mint'), 'Carnet de salud', 'Vacunas y citas, con recordatorios en el móvil', 'salud']
     ];
     return '<section class="pila"><span class="etiqueta">Tu panel</span><div class="tiles-bloq">' + tiles.map(function (t) {
       return '<button type="button" class="tile-bloq" data-bloq="' + t[3] + '"><span class="tile-vis" aria-hidden="true">' + t[0] + '</span>' +

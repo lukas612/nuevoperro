@@ -14,6 +14,7 @@ const { CFG } = require('../lib/config');
 const datos = require('../lib/datos');
 const correo = require('../lib/email');
 const emails = require('../lib/emails');
+const push = require('../lib/push');
 
 const DIA = 864e5;
 // Días de calendario en España (no bloques de 24 h): lo de ayer a las 23:00 ya es «hace 1 día» hoy.
@@ -67,11 +68,31 @@ async function enviarEmails({ prueba: PRUEBA = false } = {}) {
     for (const e of [7, 21]) if (dia >= e && dia < e + 3) { const m = emails.encuesta(plan.email, lead.respuestas, e, url); m.para = plan.email; cola.push(m); }
   }
 
+  // Recordatorios del carnet de salud: 3 días antes y el mismo día, al dueño y a quien comparte el plan
+  const hoyMadrid = diaMadrid(Date.now());
+  for (const r of await datos.listar('salud')) {
+    if (!r.proxima) continue;
+    const dias = Math.round((Date.parse(String(r.proxima).slice(0, 10)) - Date.parse(hoyMadrid)) / DIA);
+    if (dias !== 3 && dias !== 0) continue;
+    const plan = planes.find((p) => p.token === r.token);
+    if (!plan) continue;
+    const perro = (plan.respuestas || {}).nombre || 'tu perro';
+    const destinatarios = [plan.email, ...miembros.filter((x) => x.token === plan.token && x.aceptado_at).map((x) => x.email)];
+    for (const para of destinatarios) {
+      if (bajas.has(para)) continue;
+      const m = emails.salud(para, { id: r.id, nombre: r.nombre, perro, dias, fecha: String(r.proxima).slice(0, 10), nota: r.nota, url: `${CFG.baseUrl}/mi-zona#salud` });
+      m.para = para; cola.push(m);
+    }
+  }
+
   let enviadosHoy = 0;
   for (const m of cola) {
     if (hecho.has(m.para + '|' + m.clave)) continue;
     if (PRUEBA) { console.log(`[prueba] ${m.para} · ${m.clave} · ${m.asunto}`); continue; }
-    if (await correo.enviarUnaVez(m.para, m.clave, m.asunto, m.html)) enviadosHoy++;
+    if (await correo.enviarUnaVez(m.para, m.clave, m.asunto, m.html)) {
+      enviadosHoy++;
+      if (m.push) await push.avisar(m.para, m.push).catch(() => {}); // y al móvil, si activó los avisos
+    }
   }
   console.log(PRUEBA ? `${cola.length} emails candidatos.` : `[emails] ${enviadosHoy} enviados.`);
   return enviadosHoy;
