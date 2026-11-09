@@ -984,7 +984,12 @@ if (require.main === module) {
     console.log('Datos:', datos.USA_SUPABASE ? 'Supabase' : 'archivos en data/ (desarrollo)');
     console.log(MODO_DEMO ? 'MODO DEMO: sin Stripe, los pagos se simulan.' : 'Stripe activo.');
     console.log('Emails:', correo.configurado() ? 'Resend' : 'desactivados (sin RESEND_API_KEY)');
-    if (!MODO_DEMO) entregarPendientes().catch((e) => console.error('entregas pendientes', e.message));
+    if (!MODO_DEMO) {
+      // Al arrancar y cada hora: entregas pendientes y planes añadidos a mano (se generan con su contenido completo).
+      const pendientes = () => entregarPendientes().catch((e) => console.error('entregas pendientes', e.message));
+      pendientes();
+      setInterval(pendientes, 60 * 60000);
+    }
     if (!MODO_DEMO) {
       const conciliar = () => conciliarStripe().catch((e) => { ESTADO_CONCILIACION.error = e.message; console.error('conciliación', e.message); });
       setTimeout(conciliar, 20000);
