@@ -152,7 +152,7 @@
 
   var JS = "(function(){var id='plan_'+__ID__,inicio=new Date(__INICIO__),T=__TAREAS__;" +
     "function get(){try{return JSON.parse(localStorage.getItem(id))||{}}catch(e){return{}}}function set(v){try{localStorage.setItem(id,JSON.stringify(v))}catch(e){}}" +
-    "var st=get();var dia=Math.min(56,Math.max(1,Math.floor((Date.now()-inicio.getTime())/864e5)+1));var sem=Math.ceil(dia/7);" +
+    "var st=get();var dia=Math.min(56,Math.max(1,Math.round((new Date().setHours(0,0,0,0)-new Date(inicio.getTime()).setHours(0,0,0,0))/864e5)+1));var sem=Math.ceil(dia/7);" +
     "document.querySelectorAll('input[data-k]').forEach(function(c){var k=c.dataset.k;c.checked=k in st?st[k]:!!c.dataset.def;c.onchange=function(){st[k]=c.checked;set(st);sync();act()}});" +
     "var hc=document.getElementById('hoy-check');document.getElementById('hoy-dia').textContent='Día '+dia;document.getElementById('hoy-tit').textContent=T[dia-1][0];document.getElementById('hoy-txt').textContent=T[dia-1][1];" +
     "hc.checked=!!st['d'+dia];hc.onchange=function(){st['d'+dia]=hc.checked;set(st);sync();act()};" +

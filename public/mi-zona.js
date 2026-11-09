@@ -76,7 +76,7 @@
 
     var planes = d.planes.length ? d.planes.map(function (p) {
       var hechas = Math.max(progreso(p.token, p.dias), Object.keys(p.progreso || {}).filter(function (k) { return /^d\d+$/.test(k) && p.progreso[k].v && Number(k.slice(1)) <= p.dias; }).length);
-      var dia = Math.min(p.dias, Math.max(1, Math.floor((Date.now() - new Date(p.desde).getTime()) / 864e5) + 1));
+      var dia = Math.min(p.dias, Math.max(1, Math.round((new Date().setHours(0, 0, 0, 0) - new Date(p.desde).setHours(0, 0, 0, 0)) / 864e5) + 1));
       return '<a class="plan-tarjeta" href="/plan/' + esc(p.token) + '">' +
         '<span class="avatar">' + D.cara(p.razaId, { lengua: true }) + '</span>' +
         '<span class="pila" style="gap:6px;min-width:0;flex:1"><small class="eti-peq">' + esc(p.titulo) + (p.extra ? ' · Programa extra' : '') + '</small><b>' + esc(p.nombre) + '</b>' +

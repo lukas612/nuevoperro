@@ -565,7 +565,8 @@ const servidor = http.createServer(async (req, res) => {
       const plan = await datos.primero('planes', { token: m[1] });
       if (!plan) return html(res, 404, pagina('Plan no encontrado', '<h1>No encontramos este plan</h1><p>Revisa el enlace del email o escríbenos.</p>'));
       // Plan compartido: sincroniza el progreso y añade el botón de invitar (vale también para planes ya entregados).
-      const conCompartir = plan.html.replace(/<body([^>]*)>/, (b) => `${b}<script src="/plan-compartido.js" data-t="${plan.token}"></script>`);
+      // Día del plan por día del calendario (los planes antiguos contaban 24 h desde la entrega).
+      const conCompartir = plan.html.split('Math.floor((Date.now()-inicio.getTime())/864e5)+1').join('Math.round((new Date().setHours(0,0,0,0)-new Date(inicio.getTime()).setHours(0,0,0,0))/864e5)+1').replace(/<body([^>]*)>/, (b) => `${b}<script src="/plan-compartido.js" data-t="${plan.token}"></script>`);
       return enviar(res, 200, conCompartir, TIPOS['.html'], { 'X-Robots-Tag': 'noindex' });
     }
     // Páginas indexables (generadas en el servidor)

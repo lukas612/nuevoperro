@@ -16,7 +16,9 @@ const correo = require('../lib/email');
 const emails = require('../lib/emails');
 
 const DIA = 864e5;
-const diasDesde = (fecha) => Math.floor((Date.now() - new Date(fecha).getTime()) / DIA);
+// Días de calendario en España (no bloques de 24 h): lo de ayer a las 23:00 ya es «hace 1 día» hoy.
+const diaMadrid = (t) => new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Madrid' }).format(new Date(t));
+const diasDesde = (fecha) => Math.round((Date.parse(diaMadrid(Date.now())) - Date.parse(diaMadrid(fecha))) / DIA);
 
 async function enviarEmails({ prueba: PRUEBA = false } = {}) {
   const [leads, pedidos, planes, enviados] = await Promise.all([datos.listar('leads'), datos.listar('pedidos'), datos.listar('planes', { estado: 'enviado' }), datos.listar('emails')]);
@@ -51,9 +53,10 @@ async function enviarEmails({ prueba: PRUEBA = false } = {}) {
     if (bajas.has(plan.email) || reembolsados.has(plan.sid)) continue;
     const lead = porEmail.get(plan.email) || (await datos.primero('leads', { sid: plan.sid }));
     if (!lead) continue;
-    const dia = diasDesde(plan.enviado_at); // el día 1 es el día siguiente a la entrega
+    // Día del plan = el mismo que ve en su página: el de la entrega es el 1 (va en el email de entrega); desde el día siguiente, uno al día.
+    const dia = diasDesde(plan.enviado_at) + 1;
     const url = `${CFG.baseUrl}/plan/${plan.token}`;
-    if (dia >= 1 && dia <= emails.DIAS(lead.respuestas)) {
+    if (dia >= 2 && dia <= emails.DIAS(lead.respuestas)) {
       const m = emails.diario(plan.email, lead.respuestas, dia, url); if (m) { m.para = plan.email; cola.push(m); }
       // Quien comparte el plan (y ya ha entrado) también recibe la tarea del día.
       for (const mb of miembros.filter((x) => x.token === plan.token && x.aceptado_at && !bajas.has(x.email))) {
