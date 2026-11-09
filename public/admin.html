@@ -114,7 +114,7 @@
 
         <section class="caja">
           <div class="fila-t"><h2>Desglose</h2>
-            <div class="seg" role="group" aria-label="Desglose"><button data-des="porAngulo" aria-pressed="true">Por anuncio</button><button data-des="porFuente">Por fuente</button><button data-des="porPerfil">Por perfil</button></div>
+            <div class="seg" role="group" aria-label="Desglose"><button data-des="porAngulo" aria-pressed="true">Por anuncio</button><button data-des="porFuente">Por fuente</button><button data-des="porPerfil">Por perfil</button><button data-des="porPrecio">Por precio (test A/B)</button></div>
           </div>
           <div class="tabla" id="desglose"></div>
         </section>
@@ -293,7 +293,7 @@
 
     function pintarDesglose(d) {
       var filas = d[estado.des] || [];
-      var nombre = { porAngulo: 'Anuncio (a=)', porFuente: 'Fuente', porPerfil: 'Perfil · problema' }[estado.des];
+      var nombre = { porAngulo: 'Anuncio (a=)', porFuente: 'Fuente', porPerfil: 'Perfil · problema', porPrecio: 'Precio' }[estado.des];
       $('desglose').innerHTML = filas.length ? '<table><thead><tr><th>' + nombre + '</th><th class="n">Visitantes</th><th class="n">Leads</th><th class="n">% lead</th><th class="n">Compras</th><th class="n">% compra</th><th class="n">Ingresos</th></tr></thead><tbody>' +
         filas.map(function (f) { return '<tr><td>' + esc(f.clave) + '</td><td class="n">' + num(f.visitantes) + '</td><td class="n">' + num(f.leads) + '</td><td class="n">' + pct(f.tasaLead) + '</td><td class="n">' + num(f.compras) + '</td><td class="n">' + pct(f.tasaCompra) + '</td><td class="n">' + eur(f.ingresos) + '</td></tr>'; }).join('') +
         '</tbody></table>' : '<p class="suave">Sin datos en este periodo.</p>';

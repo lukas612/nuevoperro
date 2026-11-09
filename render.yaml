@@ -19,7 +19,7 @@ services:
       - key: SUPABASE_URL
         value: https://wwxlzvfxlfuodikcamlq.supabase.co
       - key: PRECIOS
-        value: "1999"
+        value: "999,1999"
       - key: PRECIO_UPSELL
         value: "999"
       - key: ADMIN_EMAILS

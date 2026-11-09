@@ -314,6 +314,7 @@
         b.onclick = function () {
           var regs2 = leerDiario(); regs2.push({ t: Date.now(), p: b.dataset.t, l: b.dataset.l });
           try { localStorage.setItem(CLAVE_DIARIO, JSON.stringify(regs2.slice(-200))); } catch (e) {}
+          if (o.alDiario) o.alDiario(regs2.slice(-200));
           if (navigator.vibrate) navigator.vibrate(20);
           if (o.alUsar) o.alUsar('diario');
           pintar();
@@ -323,5 +324,7 @@
     pintar();
   }
 
-  root.VENTA = { gratis: gratis, activarGratis: activarGratis, contador: contador, notificaciones: notificaciones, miniPlan: miniPlan, activarMiniPlan: activarMiniPlan, panel: panel, consejos: consejos, activarBloqueos: activarBloqueos, pagoIntegrado: pagoIntegrado, aviso: aviso, incluye: incluye, comparativa: comparativa, preguntas: preguntas, barra: barra, quitarBarra: quitarBarra, activarPago: activarPago };
+  function restaurarDiario(regs) { if (Array.isArray(regs) && regs.length) { try { localStorage.setItem(CLAVE_DIARIO, JSON.stringify(regs)); } catch (e) {} } }
+
+  root.VENTA = { restaurarDiario: restaurarDiario, gratis: gratis, activarGratis: activarGratis, contador: contador, notificaciones: notificaciones, miniPlan: miniPlan, activarMiniPlan: activarMiniPlan, panel: panel, consejos: consejos, activarBloqueos: activarBloqueos, pagoIntegrado: pagoIntegrado, aviso: aviso, incluye: incluye, comparativa: comparativa, preguntas: preguntas, barra: barra, quitarBarra: quitarBarra, activarPago: activarPago };
 })(typeof window !== 'undefined' ? window : this);

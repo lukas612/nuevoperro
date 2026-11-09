@@ -321,16 +321,17 @@
         tabs: pg.semanas.map(function (x, k) { return ['S' + (k + 1), x.foco.split(' ')[0]]; }),
         foco: 'Semana 1 · ' + pg.semanas[0].foco, dias: pg.semanas[0].tareas.map(function (t) { return [t[0], sus(t[1])]; }) }, { I: I, burbuja: burbuja, esc: esc }) +
       window.VENTA.gratis({ nombre: nombre(), adulto: true }, { I: I, burbuja: burbuja, esc: esc }) +
+      paywallHtml() +
       window.VENTA.panel({ adulto: true }, { I: I, burbuja: burbuja, esc: esc }) +
       window.VENTA.consejos({ nombre: nombre(), problema: r.problema }, { I: I, burbuja: burbuja, esc: esc }) +
-      paywallHtml() + window.VENTA.preguntas({ precio: CONF.precio }, { esc: esc, euros: euros }) + '</div>';
+      window.VENTA.preguntas({ precio: CONF.precio }, { esc: esc, euros: euros }) + '</div>';
     pintar(html);
     evento('paywall_visto');
     window.VENTA.contador('ps-res'); window.VENTA.notificaciones({ espera: 15000, max: 3, saltarMin: 3 });
     window.VENTA.activarBloqueos(function (k) { evento('clic_bloqueado', k); });
-    window.VENTA.activarGratis({ nombre: nombre(), adulto: true, alUsar: function (k) { evento('herramienta_gratis', k); } });
+    window.VENTA.activarGratis({ nombre: nombre(), adulto: true, alUsar: function (k) { evento('herramienta_gratis', k); }, alDiario: function (regs) { post('/api/previo', { sid: sid, diario: regs }).catch(function () {}); } });
     window.VENTA.activarMiniPlan({ total: 42, abiertos: 3, nombre: nombre(),
-      alGuardar: function (keys) { estado.previo = keys; guardarEstado(); },
+      alGuardar: function (keys) { estado.previo = keys; guardarEstado(); post('/api/previo', { sid: sid, previo: keys }).catch(function () {}); },
       alMarcar: function (k) { evento('tarea_previa', k); pixel('TareaPrevia', { content_name: k }, null, 1); } });
     activarPaywall();
   }
@@ -349,16 +350,13 @@
   function paywallHtml() {
     var pg = prog(), dia = (CONF.precio / 42 / 100).toFixed(2).replace('.', ',');
     return '<section class="tarjeta pila" id="paywall" style="gap:18px">' +
-      '<div class="portada-plan"><div class="fila-p"><span class="avatar">' + D.cara(razaId()) + '</span><div><small>' + esc(pg.titulo) + ' · 6 semanas</small><h2>' + esc(nombre()) + '</h2></div></div>' +
-        '<div class="semanas" style="grid-template-columns:repeat(6,1fr)">' + [1, 2, 3, 4, 5, 6].map(function (s) { return '<span>S' + s + '</span>'; }).join('') + '</div></div>' +
       '<h3 class="venta-tit">Todo lo que tendrás para ' + esc(nombre()) + '</h3>' +
       window.VENTA.incluye({ semanas: 6, prioridad: pg.titulo.toLowerCase(), icono: pg.icono,
         extras: ['Acceso para siempre al plan y a Mi zona, sin caducidad', 'Ajustado a cuándo y cómo le pasa a ' + nombre(), 'Con lo que necesita su raza y su edad', 'Qué hacer, qué evitar y cuándo pedir ayuda profesional'] }, { I: I, burbuja: burbuja, esc: esc }) +
       window.VENTA.comparativa({ nombre: nombre(), semanas: 6, precio: CONF.precio }, { esc: esc, euros: euros }) +
-      '<div class="precio-fila"><span class="precio">' + euros(CONF.precio) + '</span><span class="suave">Pago único · acceso para siempre</span></div>' +
       '<label class="check"><input type="checkbox" id="desist"> <span>Quiero recibir el plan ya. Acepto que, al empezar la entrega del contenido digital, pierdo el derecho legal de desistimiento. <a href="/condiciones" target="_blank">Términos y condiciones</a>.</span></label>' +
       '<p class="error" id="err-pago"></p><button class="btn" id="pagar">Quiero el plan de ' + esc(nombre()) + ' · ' + euros(CONF.precio) + '</button>' +
-      '<p class="micro"><span>' + I('candado') + 'Pago seguro con Stripe</span><span>Tarjeta · Apple Pay · Google Pay</span></p>' +
+      '<p class="micro"><span>Pago único · para siempre</span><span>' + I('candado') + 'Pago seguro con Stripe</span><span>Tarjeta · Apple Pay · Google Pay</span></p>' +
       '<p class="peq suave">El plan da pautas de educación en positivo. No sustituye a tu veterinario ni a un profesional que vea a tu perro en persona.</p></section>';
   }
 
@@ -467,7 +465,8 @@
         if (o && typeof o[2] === 'string') r[q.id + 'Texto'] = o[2];
       });
       sid = j.sid; lsSet('pc_sid', sid);
-      estado = { paso: 'resultado', r: r, email: j.email, consent: j.consentimientos || {} };
+      estado = { paso: 'resultado', r: r, email: j.email, consent: j.consentimientos || {}, previo: j.previo || [] };
+      if (window.VENTA) window.VENTA.restaurarDiario(j.diario);
       guardarEstado();
       evento('visita');
       render();

@@ -366,6 +366,7 @@
     var legalItems = P.LEGAL.items.filter(function (x) { return x.id !== 'ppp'; });
     var prot = P.PROTOCOLOS[r.problema] || P.PROTOCOLOS.pis;
     var faltaSeguro = tiene.indexOf('seguro') < 0;
+    var pendientes = legalItems.filter(function (x) { return tiene.indexOf(x.id) < 0; }).length;
     var ajustes = [['perro', r.raza || 'Su raza'], ['reloj', r.edadSemanasTexto || 'Su edad'], [({ pis: 'gota', mordiscos: 'diente', noches: 'luna', solo: 'puerta' })[r.problema] || 'gota', P.PROBLEMAS[r.problema] || 'Tu problema'], [r.vivienda === 'jardin' ? 'casa' : 'piso', r.vivienda === 'jardin' ? 'Casa con jardín' : 'Piso'], ['puerta', r.horasSolo ? r.horasSoloTexto + ' sin nadie' : 'Siempre acompañado']];
     if ((r.convivientes || []).indexOf('ninos') >= 0) ajustes.push(['nino', 'Niños en casa']);
     var chips = [r.raza, r.edadSemanasTexto, r.vivienda === 'jardin' ? 'Casa con jardín' : 'Piso', r.horasSolo ? r.horasSoloTexto + ' sin nadie' : 'Casi nunca sin nadie'].filter(Boolean);
@@ -399,25 +400,27 @@
           'Ver los ' + (Math.max(0, pasos.length - 2) + (prot.no || []).length) + ' pasos y consejos restantes') : '') +
         rut.avisosRaza.slice(0, 1).map(function (a) { return '<p class="nota raza-nota">' + I('huella') + '<span><b>Por ser ' + esc(nombreRaza) + ':</b> ' + esc(a.charAt(0).toLowerCase() + a.slice(1)) + '</span></p>'; }).join('') + '</section>' +
 
+      paywallHtml() +
+      // Estado legal: qué le falta (abierto) y cómo hacerlo en su comunidad (con candado)
+      '<section class="tarjeta pila"><div class="cab-consejo">' + burbuja('ley', pendientes ? 'peach' : 'mint') + '<div><span class="eti-peq">Papeleo y salud</span><h2 style="font-size:1.3rem">' +
+        (pendientes ? 'A ' + esc(n) + ' le ' + (pendientes === 1 ? 'falta 1 trámite' : 'faltan ' + pendientes + ' trámites') : esc(n) + ' lo tiene todo en regla') + '</h2></div></div>' +
+        '<ul class="legal-lista">' + legalItems.map(function (x) {
+          var hecho = tiene.indexOf(x.id) >= 0;
+          return '<li>' + burbuja(ICONO_LEGAL[x.id] || 'ley', hecho ? 'mint' : 'peach') + '<div><b>' + esc(x.texto) + '</b></div><span class="pill ' + (hecho ? 'hecho">Hecho' : 'pend">Pendiente') + '</span></li>';
+        }).join('') + '</ul>' +
+        bloqueado('<p><b>Cómo hacerlo en ' + esc(r.comunidad || 'tu comunidad') + ':</b> dónde se hace, qué llevar, plazos y cuánto cuesta cada trámite.</p><p>' + legalItems.map(function (x) { return esc(x.estado); }).join(' ') + '</p>',
+          'Ver cómo hacerlo en ' + (r.comunidad || 'tu comunidad').replace(/^Comunidad (de |Foral de )?/, '')) +
+        (faltaSeguro ? '<button class="btn texto" id="seguros" style="align-self:flex-start;width:auto;padding-left:0">' + I('escudo') + 'Quiero comparar seguros</button>' : '') + '</section>' +
       window.VENTA.panel({}, { I: I, burbuja: burbuja, esc: esc }) +
       window.VENTA.consejos({ nombre: n, problema: r.problema }, { I: I, burbuja: burbuja, esc: esc }) +
-      paywallHtml() +
-      '<section class="pila"><h2>¿' + esc(nombre()) + ' está en regla?</h2>' +
-        '<div class="tarjeta"><ul class="legal-lista">' + legalItems.map(function (x) {
-          var hecho = tiene.indexOf(x.id) >= 0;
-          return '<li>' + burbuja(ICONO_LEGAL[x.id] || 'ley', hecho ? 'mint' : 'peach') + '<div><b>' + esc(x.texto) + '</b><span class="det">' + esc(x.estado) + '</span></div>' +
-            '<span class="pill ' + (hecho ? 'hecho">Hecho' : 'pend">Pendiente') + '</span></li>';
-        }).join('') + '</ul><p class="peq suave" style="margin-top:8px">' + esc(P.LEGAL.aviso) + '</p>' +
-        (faltaSeguro ? '<div style="margin-top:12px"><button class="btn sec" id="seguros">' + I('escudo') + 'Quiero comparar seguros</button></div>' : '') + '</div></section>' +
-
       window.VENTA.preguntas({ precio: CONF.precio }, { esc: esc, euros: euros }) + '</div>';
     pintar(html);
     evento('paywall_visto');
     window.VENTA.contador('ps-res'); window.VENTA.notificaciones({ espera: 15000, max: 3, saltarMin: 3 });
     window.VENTA.activarBloqueos(function (k) { evento('clic_bloqueado', k); });
-    window.VENTA.activarGratis({ nombre: n, alUsar: function (k) { evento('herramienta_gratis', k); } });
+    window.VENTA.activarGratis({ nombre: n, alUsar: function (k) { evento('herramienta_gratis', k); }, alDiario: function (regs) { post('/api/previo', { sid: sid, diario: regs }).catch(function () {}); } });
     window.VENTA.activarMiniPlan({ total: 56, abiertos: 3, nombre: n,
-      alGuardar: function (keys) { estado.previo = keys; guardarEstado(); },
+      alGuardar: function (keys) { estado.previo = keys; guardarEstado(); post('/api/previo', { sid: sid, previo: keys }).catch(function () {}); },
       alMarcar: function (k) { evento('tarea_previa', k); pixel('TareaPrevia', { content_name: k }, null, 1); } });
 
     var bs = document.getElementById('seguros');
@@ -447,17 +450,14 @@
   function paywallHtml() {
     var dia = (CONF.precio / 56 / 100).toFixed(2).replace('.', ',');
     return '<section class="tarjeta pila" id="paywall" style="gap:18px">' +
-      '<div class="portada-plan"><div class="fila-p"><span class="avatar">' + D.cara(razaId()) + '</span><div><small>Plan de 8 semanas</small><h2>' + esc(nombre()) + '</h2></div></div>' +
-        '<div class="semanas">' + [1, 2, 3, 4, 5, 6, 7, 8].map(function (s) { return '<span>S' + s + '</span>'; }).join('') + '</div></div>' +
       '<h3 class="venta-tit">Todo lo que tendrás para ' + esc(nombre()) + '</h3>' +
       window.VENTA.incluye({ semanas: 8, prioridad: (P.PROBLEMAS[estado.r.problema] || 'su mayor problema').toLowerCase(), icono: ({ pis: 'gota', mordiscos: 'diente', noches: 'luna', solo: 'puerta' })[estado.r.problema],
         extras: ['Acceso para siempre al plan y a Mi zona, sin caducidad', 'Protocolos para pis, mordiscos, noches y quedarse solo', 'Rutina que se actualiza cada semana con su edad', 'Checklist de socialización semana a semana', 'Salud y checklist legal de ' + (estado.r.comunidad || 'tu comunidad')] }, { I: I, burbuja: burbuja, esc: esc }) +
       window.VENTA.comparativa({ nombre: nombre(), semanas: 8, precio: CONF.precio }, { esc: esc, euros: euros }) +
-      '<div class="precio-fila"><span class="precio">' + euros(CONF.precio) + '</span><span class="suave">Pago único · acceso para siempre</span></div>' +
       '<label class="check"><input type="checkbox" id="desist"> <span>Quiero recibir el plan ya. Acepto que, al empezar la entrega del contenido digital, pierdo el derecho legal de desistimiento. <a href="/condiciones" target="_blank">Términos y condiciones</a>.</span></label>' +
       '<p class="error" id="err-pago"></p>' +
       '<button class="btn" id="pagar">Quiero el plan de ' + esc(nombre()) + ' · ' + euros(CONF.precio) + '</button>' +
-      '<p class="micro"><span>' + I('candado') + 'Pago seguro con Stripe</span><span>Tarjeta · Apple Pay · Google Pay</span></p>' +
+      '<p class="micro"><span>Pago único · para siempre</span><span>' + I('candado') + 'Pago seguro con Stripe</span><span>Tarjeta · Apple Pay · Google Pay</span></p>' +
       '<p class="peq suave">El plan da rutinas y educación. No sustituye al veterinario ni al curso oficial de tenencia responsable.</p></section>';
   }
 
@@ -575,7 +575,8 @@
         if (o && typeof o[2] === 'string') r[q.id + 'Texto'] = o[2];
       });
       sid = j.sid; lsSet('pc_sid', sid);
-      estado = { paso: 'resultado', r: r, email: j.email, consent: j.consentimientos || {} };
+      estado = { paso: 'resultado', r: r, email: j.email, consent: j.consentimientos || {}, previo: j.previo || [] };
+      if (window.VENTA) window.VENTA.restaurarDiario(j.diario);
       guardarEstado();
       evento('visita');
       render();

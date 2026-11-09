@@ -270,7 +270,7 @@ const rutas = {
     if (!sid || !firma || firma !== firmaRetomar(sid)) return enviar(res, 400, { error: 'enlace' });
     const lead = await datos.primero('leads', { sid });
     if (!lead) return enviar(res, 404, { error: 'lead' });
-    enviar(res, 200, { sid: lead.sid, email: lead.email, respuestas: lead.respuestas, consentimientos: lead.consentimientos });
+    enviar(res, 200, { sid: lead.sid, email: lead.email, respuestas: lead.respuestas, consentimientos: lead.consentimientos, previo: lead.previo || [], diario: lead.diario_prueba || [] });
   },
 
   // Actividad real y anónima para la prueba social: raza, problema, zona y hace cuánto. Sin nombres ni emails.
@@ -291,6 +291,18 @@ const rutas = {
       cacheActividad.t = ahora; cacheActividad.datos = { semana, recientes };
     }
     enviar(res, 200, cacheActividad.datos, 'application/json', { 'Cache-Control': 'public, max-age=60' });
+  },
+
+  // Lo que hace en la vista previa (tareas marcadas y diario de prueba) se guarda para recuperarlo desde los emails
+  'POST /api/previo': async (req, res) => {
+    const b = await json(req);
+    const sid = limpio(b.sid, 64);
+    if (!sid) return enviar(res, 400, { error: 'sid' });
+    const cambios = {};
+    if (Array.isArray(b.previo)) cambios.previo = b.previo.filter((k) => /^d[1-7]$/.test(k)).slice(0, 7);
+    if (Array.isArray(b.diario)) cambios.diario_prueba = b.diario.slice(-200).map((r) => ({ t: Number(r.t) || 0, p: r.p === 'caca' ? 'caca' : 'pis', l: r.l === 'fuera' ? 'fuera' : 'casa' }));
+    if (Object.keys(cambios).length && (await datos.primero('leads', { sid }))) await datos.actualizar('leads', { sid }, cambios);
+    enviar(res, 200, { ok: true });
   },
 
   'POST /api/lead': async (req, res) => {
@@ -502,7 +514,7 @@ const rutas = {
       id: k, titulo: pg.titulo, icono: pg.icono, texto: String(pg.porQue || '').replace(/\{n\}/g, propio.nombre).split('. ')[0] + '.', semanas: pg.semanas.length
     })) : [];
     enviar(res, 200, { email, planes: lista, consejos, productos, seguros: ZONA.SEGUROS, marca: CFG.marca, enClub,
-      catalogo, catalogoPara: propio ? propio.nombre : null, precioCliente: CFG.precioCliente, precioNormal: CFG.precios[0], stripePk: MODO_DEMO ? '' : CFG.stripePk });
+      catalogo, catalogoPara: propio ? propio.nombre : null, precioCliente: CFG.precioCliente, precioNormal: Math.max(...CFG.precios), stripePk: MODO_DEMO ? '' : CFG.stripePk });
   },
 
   // Diario de pis y caca (Mi zona)
