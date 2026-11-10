@@ -123,6 +123,7 @@
   }
 
   // Barra de abajo como en Mi zona: el plan es una pestaña más
+  try { if (!localStorage.getItem('qbp_mi_plan')) localStorage.setItem('qbp_mi_plan', t); } catch (e) {}
   function barraZona() {
     var ic = function (d) { return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + d + '</svg>'; };
     var items = [

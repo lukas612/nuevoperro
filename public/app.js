@@ -38,6 +38,7 @@
       '<ul class="lista-inc"><li>' + burbuja('calendario', 'butter') + 'Empieza hoy por el día 1</li><li>' + burbuja('correo', 'sky') + 'Cada mañana te llega la tarea del día</li><li>' + burbuja('casa', 'mint') + 'Todo en Mi zona, en tu móvil</li></ul>' +
       '<a class="btn" href="/plan/' + esc(p.token) + '">Abrir el plan de ' + esc(nombre()) + '</a><a class="btn texto" href="/mi-zona">Ir a Mi zona</a>' +
       (window.QBP_APP && !window.QBP_APP.instalada() ? '<button class="btn texto" id="instalar-app" type="button">Instalar la app en el móvil</button>' : '') + '</div>');
+    if (window.QBP_BARRA && p.token) window.QBP_BARRA.mostrar(p.token);
     var ia = document.getElementById('instalar-app');
     if (ia) ia.onclick = function () { evento('instalar_app'); window.QBP_APP.ofrecer({ forzar: true, espera: 1, nombre: nombre() }); };
   }

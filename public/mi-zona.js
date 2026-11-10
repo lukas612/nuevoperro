@@ -310,6 +310,7 @@
 
     var compartido = d.planes.some(function (p) { return p.compartido || (p.miembros && p.miembros.length); });
     var principal = d.planes.filter(function (p) { return !p.extra; })[0] || d.planes[0] || null;
+    try { if (principal) localStorage.setItem('qbp_mi_plan', principal.token); } catch (e) {}
     var VISTAS = [
       ['inicio', 'casa', 'Inicio'], ['diario', 'gota', 'Diario'], ['salud', 'vacuna', 'Salud'],
       ['clicker', 'estrella', 'Clicker'], ['mas', 'corazon', 'Para ti']
