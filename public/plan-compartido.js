@@ -101,6 +101,7 @@
       '@media print{.pr-banda,.pr-fin,.pr-cta{display:none}}';
     document.head.appendChild(css);
     document.querySelectorAll('.imp-btn').forEach(function (b) { b.remove(); }); // imprimir, al desbloquear (invitar sí: usarlo en pareja engancha)
+    if (!pr.terminada) return; // durante la prueba, nada: ni banda ni candados
     var banda = document.createElement('div');
     banda.className = 'pr-banda';
     banda.innerHTML = '<span>' + (pr.terminada ? 'Tu prueba gratis ha terminado' : 'Prueba gratis · ' + (pr.quedan <= 1 ? 'último día' : 'te quedan ' + pr.quedan + ' días')) + '</span><a href="' + ir + '">Desbloquear · ' + euros + '</a>';

@@ -47,6 +47,13 @@
     var el = document.getElementById('desbloquear');
     if (!p || !el) return;
     var pr = p.prueba, euros = (pr.precio / 100).toFixed(2).replace('.', ',') + ' €';
+    // Durante la prueba no se pide pagar: solo se recuerda que está todo abierto
+    if (!pr.terminada) {
+      el.hidden = false;
+      el.innerHTML = '<div class="cab-consejo">' + burbuja('estrella', 'butter') + '<div><span class="eti-peq">Prueba gratis</span><h2 style="font-size:1.2rem">' + (pr.quedan <= 1 ? 'Hoy es tu último día gratis' : 'Te quedan ' + pr.quedan + ' días gratis') + '</h2></div></div>' +
+        '<p class="suave peq">Tienes todo abierto: el plan completo, los protocolos, el diario, el clicker y el carnet de salud. Aprovéchalo con ' + esc(p.nombre) + '.</p>';
+      return;
+    }
     el.hidden = false;
     el.innerHTML = '<div class="cab-consejo">' + burbuja(pr.terminada ? 'candado' : 'estrella', pr.terminada ? 'peach' : 'butter') + '<div><span class="eti-peq">' + (pr.terminada ? 'Prueba terminada' : 'Prueba gratis') + '</span><h2 style="font-size:1.3rem">' +
       (pr.terminada ? 'El plan de ' + esc(p.nombre) + ' está en pausa' : (pr.quedan <= 1 ? 'Hoy es tu último día gratis' : 'Te quedan ' + pr.quedan + ' días gratis')) + '</h2></div></div>' +
