@@ -125,7 +125,7 @@
   function barraZona() {
     var ic = function (d) { return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + d + '</svg>'; };
     var items = [
-      ['#', 'Plan', '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>', true],
+      ['#', 'Mi plan', '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>', true],
       ['/mi-zona#diario', 'Diario', '<path d="M12 3c3.5 4.2 6 7.6 6 10.6A6 6 0 0 1 6 13.6C6 10.6 8.5 7.2 12 3z"/>'],
       ['/mi-zona#salud', 'Salud', '<path d="M18 2l4 4M20 4l-9.5 9.5M14 5l5 5M8.5 11.5l4 4M3 21l4-4M11 9L5 15l4 4 6-6"/>'],
       ['/mi-zona#clicker', 'Clicker', '<path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z"/>'],

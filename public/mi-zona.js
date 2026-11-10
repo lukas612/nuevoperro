@@ -302,6 +302,7 @@
     var hayAfiliados = d.productos.some(function (x) { return x.url; });
 
     var compartido = d.planes.some(function (p) { return p.compartido || (p.miembros && p.miembros.length); });
+    var principal = d.planes.filter(function (p) { return !p.extra; })[0] || d.planes[0] || null;
     var VISTAS = [
       ['inicio', 'casa', 'Inicio'], ['diario', 'gota', 'Diario'], ['salud', 'vacuna', 'Salud'],
       ['clicker', 'estrella', 'Clicker'], ['mas', 'corazon', 'Para ti']
@@ -336,9 +337,13 @@
         '<section class="pila" id="lecturas"></section>' +
       '</div>' +
       '</div>' +
-      '<nav class="zona-nav" aria-label="Secciones de Mi zona"><div class="zona-nav-in">' + VISTAS.map(function (v) {
-        return '<button data-ir="' + v[0] + '" aria-current="false">' + I(v[1]) + '<span>' + v[2] + '</span></button>';
-      }).join('') + '</div></nav>';
+      // Barra de abajo, la misma que en el plan: Mi plan siempre a mano (sin plan: Para ti)
+      '<nav class="zona-nav" aria-label="Secciones de Mi zona"><div class="zona-nav-in">' +
+        (principal ? '<a href="/plan/' + esc(principal.token) + '">' + I('calendario') + '<span>Mi plan</span></a>' : '') +
+        [['diario', 'gota', 'Diario'], ['salud', 'vacuna', 'Salud'], ['clicker', 'estrella', 'Clicker']].concat(principal ? [] : [['mas', 'corazon', 'Para ti']]).concat([['inicio', 'casa', 'Mi zona']]).map(function (v) {
+          return '<button data-ir="' + v[0] + '" aria-current="false">' + I(v[1]) + '<span>' + v[2] + '</span></button>';
+        }).join('') +
+      '</div></nav>';
 
     // Navegación por pestañas, con el botón atrás del móvil funcionando (#diario, #clicker…)
     function ir(v, sinHistorial) {
