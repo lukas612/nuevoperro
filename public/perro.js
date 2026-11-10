@@ -46,7 +46,10 @@
       '<span class="chip ok">' + I('check') + 'Sin tarjeta</span><h1 style="font-size:1.9rem">Tu prueba gratis de ' + (p.dias || 3) + ' días ha empezado</h1>' +
       '<p class="suave">El plan de ' + esc(nombre()) + ' ya es tuyo durante ' + (p.dias || 3) + ' días: la tarea de cada día, el diario, el clicker y el carnet de salud.</p></section>' +
       '<ul class="lista-inc"><li>' + burbuja('calendario', 'butter') + 'Empieza hoy por el día 1</li><li>' + burbuja('correo', 'sky') + 'Cada mañana te llega la tarea del día</li><li>' + burbuja('casa', 'mint') + 'Todo en Mi zona, en tu móvil</li></ul>' +
-      '<a class="btn" href="/plan/' + esc(p.token) + '">Abrir el plan de ' + esc(nombre()) + '</a><a class="btn texto" href="/mi-zona">Ir a Mi zona</a></div>');
+      '<a class="btn" href="/plan/' + esc(p.token) + '">Abrir el plan de ' + esc(nombre()) + '</a><a class="btn texto" href="/mi-zona">Ir a Mi zona</a>' +
+      (window.QBP_APP && !window.QBP_APP.instalada() ? '<button class="btn texto" id="instalar-app" type="button">Instalar la app en el móvil</button>' : '') + '</div>');
+    var ia = document.getElementById('instalar-app');
+    if (ia) ia.onclick = function () { evento('instalar_app'); window.QBP_APP.ofrecer({ forzar: true, espera: 1, nombre: nombre() }); };
   }
 
   function post(url, body) {

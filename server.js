@@ -108,7 +108,7 @@ const rutas = {
 
   'POST /api/evento': async (req, res) => {
     const b = await json(req);
-    const permitidos = ['visita', 'inicio_form', 'paso', 'form_completo', 'resultado_visto', 'paywall_visto', 'checkout_inicio', 'checkout_cancelado', 'upsell_visto', 'upsell_rechazado', 'clic_seguros', 'derivado', 'clic_afiliado', 'visita_web', 'clic_bloqueado', 'tarea_previa', 'herramienta_gratis', 'como_hacerlo'];
+    const permitidos = ['visita', 'inicio_form', 'paso', 'form_completo', 'resultado_visto', 'paywall_visto', 'checkout_inicio', 'checkout_cancelado', 'upsell_visto', 'upsell_rechazado', 'clic_seguros', 'derivado', 'clic_afiliado', 'visita_web', 'clic_bloqueado', 'tarea_previa', 'herramienta_gratis', 'como_hacerlo', 'instalar_app'];
     if (!permitidos.includes(b.tipo)) return enviar(res, 400, { error: 'tipo' });
     await datos.insertar('eventos', { tipo: b.tipo, sid: limpio(b.sid, 64), paso: limpio(b.paso, 40), utm: objeto(b.utm) });
     enviar(res, 200, { ok: true });
@@ -118,7 +118,7 @@ const rutas = {
   // Uso del plan y de Mi zona (para las estadísticas): abrir el plan, clicker… Se apunta en eventos con el sid del plan.
   'POST /api/uso': async (req, res) => {
     const b = await json(req);
-    const que = ['plan', 'zona', 'clicker', 'diario', 'salud', 'avisos'].includes(b.que) ? b.que : null;
+    const que = ['plan', 'zona', 'clicker', 'diario', 'salud', 'avisos', 'app', 'app_instalada', 'instalar_visto', 'instalar_clic', 'instalar_no', 'avisos_visto'].includes(b.que) ? b.que : null;
     if (!que) return enviar(res, 400, { error: 'que' });
     let plan = /^[a-f0-9]{32}$/.test(String(b.t || '')) ? await datos.primero('planes', { token: b.t }) : null;
     if (!plan) { const email = sesion.deCookie(req); plan = email ? (await planesDe(email)).find((p) => !p.pack) : null; }
@@ -921,7 +921,7 @@ const servidor = http.createServer(async (req, res) => {
       if (!plan) return html(res, 404, pagina('Plan no encontrado', '<h1>No encontramos este plan</h1><p>Revisa el enlace del email o escríbenos.</p>'));
       // Plan compartido: sincroniza el progreso y añade el botón de invitar (vale también para planes ya entregados).
       // Día del plan por día del calendario (los planes antiguos contaban 24 h desde la entrega).
-      const conCompartir = plan.html.split('Math.floor((Date.now()-inicio.getTime())/864e5)+1').join('Math.round((new Date().setHours(0,0,0,0)-new Date(inicio.getTime()).setHours(0,0,0,0))/864e5)+1').replace(/<body([^>]*)>/, (b) => `${b}<script src="/plan-compartido.js" data-t="${plan.token}"></script>`);
+      const conCompartir = plan.html.split('Math.floor((Date.now()-inicio.getTime())/864e5)+1').join('Math.round((new Date().setHours(0,0,0,0)-new Date(inicio.getTime()).setHours(0,0,0,0))/864e5)+1').replace(/<body([^>]*)>/, (b) => `${b}<script src="/plan-compartido.js" data-t="${plan.token}"></script><script src="/app-aviso.js" data-t="${plan.token}" defer></script>`);
       return enviar(res, 200, conCompartir, TIPOS['.html'], { 'X-Robots-Tag': 'noindex' });
     }
     // Páginas indexables (generadas en el servidor)
