@@ -59,7 +59,7 @@ Si le pillas en el momento, cógele con calma y llévale al sitio bueno. Si ya e
 - Dejarle suelto por toda la casa demasiado pronto.
 - Cambiar el sitio de pis cada pocos días.
 
-Si quieres los horarios exactos para tu cachorro según su edad, su tamaño y tu casa, el test gratis te da su rutina de mañana con las salidas ya calculadas.`
+Si quieres los horarios exactos para tu cachorro según su edad, su tamaño y tu casa, haz el test y pruébalo 3 días gratis: su plan completo, con su rutina y las salidas ya calculadas.`
   },
   {
     slug: 'perro-tira-de-la-correa',
@@ -191,7 +191,7 @@ Un cachorro de 8–10 semanas duerme unas 18–20 horas al día, sumando las sie
 - Siestas de día en la misma cama.
 - Horarios fijos para comer, salir y dormir.
 
-El test gratis te da la rutina de mañana de tu cachorro, con la hora de la última salida y de la salida nocturna según su edad.`
+Haz el test y prueba 3 días gratis su plan completo, con la hora de la última salida y de la salida nocturna según su edad.`
   },
   {
     slug: 'ansiedad-por-separacion-perros',

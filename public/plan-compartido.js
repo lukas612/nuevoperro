@@ -86,7 +86,7 @@
     });
   }
 
-  // Prueba gratis: los primeros días abiertos, el resto con candado; al terminar, todo en pausa
+  // Prueba gratis: todo el plan abierto durante la prueba (solo una banda con los días que quedan); al terminar, todo en pausa
   function bloquearPrueba(pr) {
     var euros = (pr.precio / 100).toFixed(2).replace('.', ',') + ' €';
     var ir = '/mi-zona#desbloquear';
@@ -100,7 +100,7 @@
       '.pr-fin h2{font:800 1.4rem var(--display,system-ui);margin:0}.pr-fin a{background:#ffc83d;color:#1b2a41;border-radius:14px;padding:14px;text-align:center;font-weight:800;text-decoration:none;box-shadow:0 4px 0 #e0a800}' +
       '@media print{.pr-banda,.pr-fin,.pr-cta{display:none}}';
     document.head.appendChild(css);
-    document.querySelectorAll('.inv-btn').forEach(function (b) { b.remove(); }); // invitar e imprimir, al desbloquear
+    document.querySelectorAll('.imp-btn').forEach(function (b) { b.remove(); }); // imprimir, al desbloquear (invitar sí: usarlo en pareja engancha)
     var banda = document.createElement('div');
     banda.className = 'pr-banda';
     banda.innerHTML = '<span>' + (pr.terminada ? 'Tu prueba gratis ha terminado' : 'Prueba gratis · ' + (pr.quedan <= 1 ? 'último día' : 'te quedan ' + pr.quedan + ' días')) + '</span><a href="' + ir + '">Desbloquear · ' + euros + '</a>';
@@ -112,13 +112,9 @@
       a.innerHTML = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#ffc83d" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>' + texto;
       el.appendChild(a);
     };
-    document.querySelectorAll('.sem[data-sem]').forEach(function (s) { if (Number(s.dataset.sem) > 1) bloquear(s, 'Desbloquea la semana ' + s.dataset.sem); });
-    document.querySelectorAll('.sem[data-sem="1"] input[data-k]').forEach(function (c) {
-      var d = Number(String(c.dataset.k).replace('d', ''));
-      if (d > pr.dias) { var li = c.closest('li'); if (li) { li.style.filter = 'blur(4px)'; li.style.pointerEvents = 'none'; } }
-    });
-    ['protocolos', 'protocolo', 'papeleo', 'ayuda'].forEach(function (id) { bloquear(document.getElementById(id), 'Desbloquea el plan completo'); });
     if (pr.terminada) {
+      document.querySelectorAll('.sem[data-sem]').forEach(function (s) { bloquear(s, 'Desbloquea el plan para seguir'); });
+      ['hoy', 'protocolos', 'protocolo', 'papeleo', 'ayuda'].forEach(function (id) { bloquear(document.getElementById(id), 'Desbloquea el plan completo'); });
       var fin = document.createElement('div'); fin.className = 'pr-fin';
       fin.innerHTML = '<div><h2>Tu prueba gratis ha terminado</h2><p>El plan se ha quedado en pausa. Desbloquéalo y conservas todo lo que habéis hecho: tareas, diario y carnet de salud.</p><p><b>Pago único de ' + euros + '</b>, para siempre. Sin suscripción.</p><a href="' + ir + '">Desbloquear el plan · ' + euros + '</a></div>';
       document.body.appendChild(fin);

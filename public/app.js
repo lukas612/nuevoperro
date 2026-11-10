@@ -34,7 +34,7 @@
     var p = estado.prueba || {};
     pintar('<div class="pila-g"><section class="pila celebra"><span class="avatar">' + D.cara(razaId(), { lengua: true }) + '<span class="sello">' + I('check') + '</span></span>' +
       '<span class="chip ok">' + I('check') + 'Sin tarjeta</span><h1 style="font-size:1.9rem">Tu prueba gratis de ' + (p.dias || 3) + ' días ha empezado</h1>' +
-      '<p class="suave">El plan de ' + esc(nombre()) + ' ya es tuyo durante ' + (p.dias || 3) + ' días: la tarea de cada día, el diario, el clicker y el carnet de salud.</p></section>' +
+      '<p class="suave">El plan de ' + esc(nombre()) + ' es tuyo, con todo abierto, durante ' + (p.dias || 3) + ' días: el plan completo con su paso a paso, los protocolos, el diario, el clicker y el carnet de salud.</p></section>' +
       '<ul class="lista-inc"><li>' + burbuja('calendario', 'butter') + 'Empieza hoy por el día 1</li><li>' + burbuja('correo', 'sky') + 'Cada mañana te llega la tarea del día</li><li>' + burbuja('casa', 'mint') + 'Todo en Mi zona, en tu móvil</li></ul>' +
       '<a class="btn" href="/plan/' + esc(p.token) + '">Abrir el plan de ' + esc(nombre()) + '</a><a class="btn texto" href="/mi-zona">Ir a Mi zona</a>' +
       (window.QBP_APP && !window.QBP_APP.instalada() ? '<button class="btn texto" id="instalar-app" type="button">Instalar la app en el móvil</button>' : '') + '</div>');
@@ -126,7 +126,7 @@
       '<section class="pila">' +
         '<span class="eyebrow">' + I('huella') + 'Para cachorros de 8 a 26 semanas</span>' +
         '<h1>' + esc(a.t) + '</h1>' +
-        '<p class="suave">' + esc(a.s) + ' Responde unas preguntas rápidas y te damos gratis la rutina de mañana para tu cachorro.</p>' +
+        '<p class="suave">' + esc(a.s) + ' Responde unas preguntas rápidas y pruébalo 3 días gratis: su plan completo, sin tarjeta.</p>' +
         '<div class="escena" aria-hidden="true">' +
           '<span class="p p1">' + D.cara('labrador', { lengua: true }) + '</span>' +
           '<span class="p p2">' + D.cara('chihuahua') + '</span>' +
@@ -149,8 +149,8 @@
       '<section class="seccion"><span class="etiqueta">Cómo funciona</span><h2>De agobio a rutina en 3 pasos</h2>' +
         '<ol class="pasos">' +
           '<li><div><b>Nos cuentas cómo es</b><span>Raza, edad, tu casa y lo que más te preocupa ahora.</span></div></li>' +
-          '<li><div><b>Recibes su rutina de mañana, gratis</b><span>Con horas concretas para comer, dormir, jugar y salir a hacer pis.</span></div></li>' +
-          '<li><div><b>Si quieres, el plan de 8 semanas</b><span>Semana a semana y con un email cada día con la tarea del día.</span></div></li>' +
+          '<li><div><b>Recibes su plan de 8 semanas</b><span>Una tarea al día con su paso a paso, y un email cada mañana.</span></div></li>' +
+          '<li><div><b>Lo pruebas 3 días gratis, con todo abierto</b><span>Sin tarjeta. Si os gusta, lo desbloqueas para siempre.</span></div></li>' +
         '</ol></section>' +
 
       '<section class="seccion"><span class="etiqueta">El plan completo</span><h2>Todo lo que necesitas los primeros 2 meses</h2>' +
@@ -219,7 +219,7 @@
     var intro = '';
     if (i === 1) {
       var a = ANGULOS[utm.a] || { t: 'Todo lo que necesitas para educar a tu cachorro', s: 'Hecho para su raza, su edad y tu casa.' };
-      intro = '<section class="intro-test"><h1>' + esc(a.t) + '</h1><p class="suave">' + esc(a.s) + ' Responde unas preguntas rápidas y te damos gratis la rutina de mañana para tu cachorro.</p>' +
+      intro = '<section class="intro-test"><h1>' + esc(a.t) + '</h1><p class="suave">' + esc(a.s) + ' Responde unas preguntas rápidas y pruébalo 3 días gratis: su plan completo, sin tarjeta.</p>' +
         '<div class="micro"><span>' + I('check') + 'Gratis</span><span>' + I('check') + '2 minutos</span><span>' + I('check') + 'Sin tarjeta</span></div><p class="prueba-social" id="ps-intro"></p></section>';
     }
     var html = '<div class="pila-g">' + intro + '<div class="cabecera-preg"><h2>' + esc(titulo) + '</h2>' + (q.s ? '<p class="suave">' + esc(q.s) + '</p>' : '') + '</div>';

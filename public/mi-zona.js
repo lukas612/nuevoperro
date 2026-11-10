@@ -50,7 +50,7 @@
     el.hidden = false;
     el.innerHTML = '<div class="cab-consejo">' + burbuja(pr.terminada ? 'candado' : 'estrella', pr.terminada ? 'peach' : 'butter') + '<div><span class="eti-peq">' + (pr.terminada ? 'Prueba terminada' : 'Prueba gratis') + '</span><h2 style="font-size:1.3rem">' +
       (pr.terminada ? 'El plan de ' + esc(p.nombre) + ' está en pausa' : (pr.quedan <= 1 ? 'Hoy es tu último día gratis' : 'Te quedan ' + pr.quedan + ' días gratis')) + '</h2></div></div>' +
-      '<p class="suave">Desbloquea el plan completo de ' + esc(p.nombre) + ' (' + (p.dias / 7) + ' semanas) y conserva todo lo que habéis hecho. Pago único, para siempre.</p>' +
+      (pr.terminada ? '<p class="suave">Desbloquea el plan de ' + esc(p.nombre) + ' (' + (p.dias / 7) + ' semanas) y conserva todo lo que habéis hecho. Pago único, para siempre.</p>' : '<p class="suave">Ahora mismo tienes todo abierto: las ' + (p.dias / 7) + ' semanas, los protocolos, el diario, el clicker y el carnet de salud. Para seguir cuando acabe la prueba, desbloquéalo y conservas todo lo que hayáis hecho. Pago único, para siempre.</p>') +
       '<label class="check"><input type="checkbox" id="d-acepto"> <span>Acepto los <a href="/condiciones" target="_blank">términos y condiciones</a>.</span></label>' +
       '<p class="error" id="d-err"></p><button class="btn" id="d-pagar">Desbloquear todo · ' + euros + '</button>';
     var b = document.getElementById('d-pagar'), err = document.getElementById('d-err');
