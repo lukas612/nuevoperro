@@ -34,7 +34,7 @@
   if (subir.length) post('/api/progreso', { t: t, cambios: subir }).catch(function () {});
 
   // 2) Cuando el plan ya está pintado: subir cada cambio, mostrar quién marcó qué y el botón de invitar.
-  // Instalar la app: justo después de marcar una tarea (momento de más motivación) o en la 2.ª visita.
+  // Instalar la app: salta a los 5 s de abrir el plan, o justo al marcar una tarea si es antes.
   function ofrecerApp(espera) {
     if (!window.QBP_APP) return;
     var h = document.querySelector('.hero h1');
@@ -43,7 +43,7 @@
   document.addEventListener('change', function (e) {
     if (e.target && e.target.matches && e.target.matches('input[data-k], #hoy-check') && e.target.checked) ofrecerApp(900);
   });
-  try { var vis = Number(localStorage.getItem('qa_visitas_' + t) || 0) + 1; localStorage.setItem('qa_visitas_' + t, String(vis)); if (vis >= 2) window.addEventListener('load', function () { ofrecerApp(20000); }); } catch (e) {}
+  window.addEventListener('load', function () { ofrecerApp(5000); });
   document.addEventListener('DOMContentLoaded', function () {
     try {
       var hoy = new Date().toDateString();

@@ -1,7 +1,7 @@
 /* Aviso para instalar la web como app (y, ya instalada, para activar los avisos).
  * Android/Chrome: botón que abre el diálogo de instalación del sistema. iPhone: los 3 pasos de Safari.
  * Se carga en el plan, en Mi zona y en el test (tras el lead). Uso: QBP_APP.ofrecer({ donde: 'prueba' }).
- * Si se cierra con «Ahora no», no vuelve a salir en 3 días. */
+ * Si se cierra con «Ahora no», no vuelve a saltar en 1 día; mientras, queda una barrita arriba con el botón de instalar. */
 (function () {
   'use strict';
   if (window.QBP_APP) return;
@@ -28,14 +28,15 @@
     try { if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(function () {}); } catch (e) {}
   }
 
-  var CSS = '.qa-fondo{position:fixed;inset:0;z-index:2147483000;background:rgba(15,23,36,.45);display:flex;align-items:flex-end;justify-content:center;animation:qa-in .2s ease-out}' +
-    '.qa-hoja{background:#fff;color:#1b2a41;width:100%;max-width:480px;border-radius:24px 24px 0 0;padding:22px 20px calc(18px + env(safe-area-inset-bottom,0px));box-shadow:0 -8px 30px rgba(0,0,0,.2);font:16px/1.45 Figtree,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;display:flex;flex-direction:column;gap:14px;animation:qa-sube .25s ease-out}' +
+  var CSS = '.qa-fondo{position:fixed;inset:0;z-index:2147483000;background:rgba(15,23,36,.62);display:flex;align-items:center;justify-content:center;padding:16px;animation:qa-in .2s ease-out}' +
+    '.qa-hoja{background:#fff;color:#1b2a41;width:100%;max-width:400px;border-radius:26px;padding:26px 22px 16px;box-shadow:0 20px 60px rgba(0,0,0,.35);text-align:left;font:16px/1.45 Figtree,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;display:flex;flex-direction:column;gap:14px;animation:qa-sube .25s ease-out}' +
     '.qa-cab{display:flex;gap:14px;align-items:center}.qa-cab img{width:56px;height:56px;border-radius:14px;box-shadow:0 2px 8px rgba(0,0,0,.15);flex:none}.qa-cab b{display:block;font:800 1.2rem/1.2 "Bricolage Grotesque",system-ui,sans-serif;letter-spacing:-.01em}.qa-cab span{font-size:.88rem;color:#5c6b80}' +
     '.qa-lista{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px;font-size:.95rem}.qa-lista li{display:flex;gap:10px;align-items:flex-start}.qa-lista li:before{content:"";flex:none;width:20px;height:20px;margin-top:1px;border-radius:50%;background:#dcf3e8 url("data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27%2317885c%27 stroke-width=%273%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3E%3Cpath d=%27M5 12l5 5L20 7%27/%3E%3C/svg%3E") center/12px no-repeat}' +
     '.qa-pasos{margin:0;padding:12px 14px 12px 34px;background:#eef2f8;border-radius:14px;display:flex;flex-direction:column;gap:6px;font-size:.93rem}' +
     '.qa-si{border:0;border-radius:14px;background:#ffc83d;color:#1b2a41;font:800 1.02rem Figtree,system-ui,sans-serif;padding:15px;cursor:pointer;width:100%}.qa-no{border:0;background:none;color:#5c6b80;font:600 .9rem Figtree,system-ui,sans-serif;padding:6px;cursor:pointer}' +
     '.qa-err{color:#b8432b;font-size:.85rem;margin:0}.qa-flecha{display:inline-block;vertical-align:-3px;width:18px;height:18px}' +
-    '@keyframes qa-in{from{opacity:0}}@keyframes qa-sube{from{transform:translateY(40px);opacity:.4}}' +
+    '@keyframes qa-in{from{opacity:0}}@keyframes qa-sube{from{transform:scale(.9);opacity:.3}}' +
+    '.qa-cab{flex-direction:column;text-align:center}.qa-cab img{width:76px;height:76px;border-radius:20px}.qa-cab b{font-size:1.45rem}.qa-mini{position:sticky;top:0;z-index:46;display:flex;align-items:center;gap:10px;padding:9px 14px;background:#1b2a41;color:#fff;font:600 .88rem Figtree,system-ui,sans-serif}.qa-mini img{width:30px;height:30px;border-radius:8px;flex:none}.qa-mini span{flex:1;min-width:0;line-height:1.25}.qa-mini button{border:0;border-radius:10px;background:#ffc83d;color:#1b2a41;font:800 .85rem Figtree,system-ui,sans-serif;padding:8px 12px;cursor:pointer;white-space:nowrap}.qa-mini .qa-x{background:none;color:#c5d0e3;padding:6px;font-size:1.1rem;line-height:1}' +
     '@media (prefers-color-scheme:dark){.qa-hoja{background:#18233a;color:#edf1f8}.qa-cab span,.qa-no{color:#a3b3c9}.qa-pasos{background:#1f2c46}}';
   var compartir = '<svg class="qa-flecha" viewBox="0 0 24 24" fill="none" stroke="#2546a8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M8 7l4-4 4 4M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg>';
 
@@ -99,12 +100,23 @@
     }).catch(function () {});
   }
 
+  function mini(o) {
+    if (document.getElementById('qa-mini') || ls.get('qa_mini_no') === new Date().toDateString()) return;
+    if (!document.getElementById('qa-css')) { var st = document.createElement('style'); st.id = 'qa-css'; st.textContent = CSS; document.head.appendChild(st); }
+    var b = document.createElement('div'); b.id = 'qa-mini'; b.className = 'qa-mini';
+    b.innerHTML = '<img src="/icon-192.png" alt=""><span>Ten el plan' + (o.nombre ? ' de ' + o.nombre : '') + ' como app en tu móvil</span><button type="button" id="qa-mini-si">Instalar</button><button type="button" class="qa-x" id="qa-mini-x" aria-label="Cerrar">×</button>';
+    document.body.insertBefore(b, document.body.firstChild);
+    b.querySelector('#qa-mini-si').onclick = function () { uso('instalar_mini'); preparar(); mostrar(o); };
+    b.querySelector('#qa-mini-x').onclick = function () { ls.set('qa_mini_no', new Date().toDateString()); b.remove(); };
+  }
+  window.addEventListener('appinstalled', function () { var m = document.getElementById('qa-mini'); if (m) m.remove(); });
+
   function ofrecer(o) {
     o = o || {};
     if (instalada()) { if (!o.soloInstalar) setTimeout(avisos, o.espera || 1500); return; }
     if (!movil && !evento) return; // en ordenador solo si Chrome ofrece instalar
     var pos = Number(ls.get('qa_pospuesto') || 0);
-    if (!o.forzar && pos && Date.now() - pos < 3 * 864e5) return;
+    if (!o.forzar && pos && Date.now() - pos < 864e5) { if (o.mini !== false) { preparar(); mini(o); } return; }
     preparar();
     var lanzar = function () {
       if (abierta) return;

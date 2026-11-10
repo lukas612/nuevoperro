@@ -118,7 +118,7 @@ const rutas = {
   // Uso del plan y de Mi zona (para las estadísticas): abrir el plan, clicker… Se apunta en eventos con el sid del plan.
   'POST /api/uso': async (req, res) => {
     const b = await json(req);
-    const que = ['plan', 'zona', 'clicker', 'diario', 'salud', 'avisos', 'app', 'app_instalada', 'instalar_visto', 'instalar_clic', 'instalar_no', 'avisos_visto'].includes(b.que) ? b.que : null;
+    const que = ['plan', 'zona', 'clicker', 'diario', 'salud', 'avisos', 'app', 'app_instalada', 'instalar_visto', 'instalar_clic', 'instalar_no', 'instalar_mini', 'avisos_visto'].includes(b.que) ? b.que : null;
     if (!que) return enviar(res, 400, { error: 'que' });
     let plan = /^[a-f0-9]{32}$/.test(String(b.t || '')) ? await datos.primero('planes', { token: b.t }) : null;
     if (!plan) { const email = sesion.deCookie(req); plan = email ? (await planesDe(email)).find((p) => !p.pack) : null; }

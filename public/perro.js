@@ -51,6 +51,7 @@
     if (window.QBP_BARRA && p.token) window.QBP_BARRA.mostrar(p.token);
     var ia = document.getElementById('instalar-app');
     if (ia) ia.onclick = function () { evento('instalar_app'); window.QBP_APP.ofrecer({ forzar: true, espera: 1, nombre: nombre() }); };
+    if (window.QBP_APP) window.QBP_APP.ofrecer({ espera: 3000, nombre: nombre(), mini: false });
   }
 
   function post(url, body) {
