@@ -21,7 +21,7 @@
       ['chispa', 'sky', 'Clicker en el móvil', 'Marca lo que hace bien'],
       ['estrella', 'mint', 'Diario de progresos', 'Mira cómo mejora cada semana'],
       ['casa', 'lilac', 'Mi zona, como una app', 'En tu pantalla de inicio'],
-      ['correo', 'sky', 'Email cada mañana', 'Con la tarea del día']
+      ['correo', 'sky', 'Email cada tarde', 'A las 20:00, con la tarea del día']
     ];
     return '<div class="venta-incluye">' + piezas.map(function (p) {
       return '<div class="venta-pieza">' + u.burbuja(p[0], p[1]) + '<b>' + u.esc(p[2]) + '</b><span>' + u.esc(p[3]) + '</span></div>';
@@ -39,7 +39,7 @@
     var faq = [
       ['¿Es una suscripción?', 'No. Es un pago único de ' + u.euros(o.precio) + '. No se renueva y no hay que darse de baja de nada.'],
       ['¿Hasta cuándo tengo acceso?', 'Para siempre. El plan y Mi zona son tuyos, sin fecha de caducidad: vuelve a él cuando quieras, a tu ritmo.'],
-      ['¿Cuánto tiempo al día?', 'Entre 5 y 15 minutos. Cada mañana te llega la tarea del día por email y la tienes en Mi zona.'],
+      ['¿Cuánto tiempo al día?', 'Entre 5 y 15 minutos. Cada tarde, a las 20:00, te llega la tarea del día por email y la tienes en Mi zona.'],
       ['¿Y si me atasco?', 'Responde a cualquiera de nuestros emails y te ayudamos con vuestro caso.'],
       ['¿Cuándo lo recibo?', 'Nada más pagar. Te llega por email y lo tienes en Mi zona, en el móvil.']
     ];

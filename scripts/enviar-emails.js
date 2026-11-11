@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /*
- * Envíos programados. Los lanza el propio servidor (server.js) cada hora entre las 9 y las 21 h de España;
+ * Envíos programados. Los lanza el propio servidor (server.js) a las 20:00 de España (y otra pasada a las 21);
  * cada email se envía una sola vez (tabla "emails"), así que repetir la ejecución no duplica nada.
  *  - Quien no compra (con consentimiento comercial): un email al día durante 7 días, uno por cada ventaja del plan.
  *  - Compradores con el plan enviado: la tarea de cada día (1 a 56) y encuestas de los días 7 y 21.

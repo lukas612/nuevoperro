@@ -689,8 +689,8 @@ const rutas = {
       add('Quien deja su email y no compra', `Día ${d} (${QUE[d]}) · solo si marcó la casilla de emails · a las 9:00`, E.nurture(d, adulto), 'Perro adulto');
     }
     add('Quien compra', 'Al pagar: entrega del plan', E.entrega(ej, cachorro.respuestas, plan, false), 'Cachorro');
-    add('Quien compra', 'Cada mañana desde el día 2 (hasta el 56 o el 42): la tarea del día', E.diario(ej, cachorro.respuestas, 2, plan), 'Cachorro');
-    add('Quien compra', 'Cada mañana desde el día 2 (hasta el 56 o el 42): la tarea del día', E.diario(ej, adulto.respuestas, 2, plan), 'Perro adulto');
+    add('Quien compra', 'Cada día a las 20:00 desde el día 2 (hasta el 56 o el 42): la tarea del día', E.diario(ej, cachorro.respuestas, 2, plan), 'Cachorro');
+    add('Quien compra', 'Cada día a las 20:00 desde el día 2 (hasta el 56 o el 42): la tarea del día', E.diario(ej, adulto.respuestas, 2, plan), 'Perro adulto');
     add('Quien compra', 'Días 7 y 21: encuesta de 1 clic', E.encuesta(ej, cachorro.respuestas, 7, plan), 'Cachorro');
     add('Quien compra', 'Al comprar el pack o un programa extra', E.pack(ej, cachorro.respuestas, 'correa', plan), 'Cachorro');
     add('Quien compra', 'Carnet de salud: 3 días antes y el mismo día (también aviso en el móvil)', E.salud(ej, { id: 0, nombre: 'Segunda vacuna', perro: 'Luna', dias: 3, fecha: new Date(Date.now() + 3 * 864e5).toISOString().slice(0, 10), nota: 'Clínica Veterinaria Centro', url: `${CFG.baseUrl}/mi-zona#salud` }), '');
@@ -996,17 +996,18 @@ if (require.main === module) {
       setInterval(conciliar, 60 * 60000);
     }
     // Emails programados (secuencia de 7 días a leads, tarea diaria a compradores, encuestas).
-    // Cada hora, solo de 9 a 21 h en España. Cada email sale una sola vez aunque se repita la ejecución.
+    // A las 20:00 de España (con otra pasada a las 21 por si acaso): por el día la gente trabaja y por la tarde está con el perro.
+    // Cada email sale una sola vez aunque se repita la ejecución.
     if (correo.configurado() && datos.USA_SUPABASE) {
       let enCurso = false;
       const tanda = () => {
         const hora = Number(new Intl.DateTimeFormat('es-ES', { timeZone: 'Europe/Madrid', hour: 'numeric', hour12: false }).format(new Date()));
-        if (enCurso || hora < 9 || hora >= 21) return;
+        if (enCurso || hora < 20 || hora > 21) return;
         enCurso = true;
         require('./scripts/enviar-emails').enviarEmails().catch((e) => console.error('[emails]', e.message)).finally(() => { enCurso = false; });
       };
       setTimeout(tanda, 60000);
-      setInterval(tanda, 60 * 60000);
+      setInterval(tanda, 10 * 60000); // cada 10 min: sale entre las 20:00 y las 20:10
     }
     console.log('Precios en test:', CFG.precios.map((p) => (p / 100).toFixed(2) + ' €').join(' / '));
   });
