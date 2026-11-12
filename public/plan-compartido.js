@@ -10,6 +10,17 @@
   var t = me && me.getAttribute('data-t');
   if (!t) return;
   var clave = 'plan_' + t;
+  // Píxel de Meta en el plan: para medir quién lo usa (TareaHecha, Vuelve) con el mismo id que el servidor
+  var pixel = me.getAttribute('data-pixel'), sidPlan = me.getAttribute('data-s') || '';
+  function fbq() { if (window.fbq) window.fbq.apply(null, arguments); }
+  if (pixel) {
+    /* eslint-disable */
+    !function(f,b,e,v,n,t2,s2){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t2=b.createElement(e);t2.async=!0;t2.src=v;s2=b.getElementsByTagName(e)[0];s2.parentNode.insertBefore(t2,s2)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');
+    /* eslint-enable */
+    window.fbq('init', pixel, sidPlan ? { external_id: sidPlan } : {});
+    window.fbq('track', 'PageView');
+  }
+  function metaEventos(j) { (j && j.meta || []).forEach(function (e) { fbq('trackCustom', e.n, e.k ? { content_name: e.k } : {}, { eventID: e.id }); }); }
   var leer = function () { try { return JSON.parse(localStorage.getItem(clave)) || {}; } catch (e) { return {}; } };
   var escribir = function (v) { try { localStorage.setItem(clave, JSON.stringify(v)); } catch (e) {} };
   var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
@@ -47,7 +58,7 @@
   document.addEventListener('DOMContentLoaded', function () {
     try {
       var hoy = new Date().toDateString();
-      if (localStorage.getItem('uso_' + t) !== hoy) { localStorage.setItem('uso_' + t, hoy); post('/api/uso', { t: t, que: 'plan' }).catch(function () {}); }
+      if (localStorage.getItem('uso_' + t) !== hoy) { localStorage.setItem('uso_' + t, hoy); post('/api/uso', { t: t, que: 'plan' }).then(metaEventos).catch(function () {}); }
     } catch (e) {}
     pintarAutores();
     document.addEventListener('change', function (e) {
@@ -57,7 +68,7 @@
         Object.keys(ahora).forEach(function (k) { if (!!ahora[k] !== !!antes[k]) cambios.push({ k: k, v: !!ahora[k] }); });
         Object.keys(antes).forEach(function (k) { if (!(k in ahora) && antes[k]) cambios.push({ k: k, v: false }); });
         foto = JSON.stringify(ahora);
-        if (cambios.length) post('/api/progreso', { t: t, cambios: cambios }).then(function (j) { servidor = j.progreso || servidor; pintarAutores(); }).catch(function () {});
+        if (cambios.length) post('/api/progreso', { t: t, cambios: cambios }).then(function (j) { servidor = j.progreso || servidor; pintarAutores(); metaEventos(j); }).catch(function () {});
       }, 0);
     });
     // Al volver a la app, si la otra persona ha marcado algo, recargamos para verlo.

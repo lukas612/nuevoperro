@@ -122,8 +122,21 @@ const rutas = {
     if (!que) return enviar(res, 400, { error: 'que' });
     let plan = /^[a-f0-9]{32}$/.test(String(b.t || '')) ? await datos.primero('planes', { token: b.t }) : null;
     if (!plan) { const email = sesion.deCookie(req); plan = email ? (await planesDe(email)).find((p) => !p.pack) : null; }
+    let metaEv = [];
+    if (plan && ['plan', 'zona', 'app'].includes(que)) {
+      // Meta: vuelve a usar el plan otro día distinto al de alta (una vez por día)
+      const dia = (t) => new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Madrid' }).format(new Date(t));
+      const hoy = dia(Date.now());
+      const previos = (await datos.listar('eventos', { sid: plan.sid, tipo: 'uso' }).catch(() => [])).filter((e) => ['plan', 'zona', 'app'].includes(e.paso));
+      if (previos.some((e) => dia(e.ts) < hoy) && !previos.some((e) => dia(e.ts) === hoy)) {
+        const id = 'vuelve_' + plan.sid + '_' + hoy;
+        metaEv = [{ n: 'Vuelve', id }];
+        const lead = await datos.primero('leads', { sid: plan.sid }).catch(() => null);
+        meta.evento('Vuelve', { id, email: plan.email, sid: plan.sid, nav: meta.unir(lead?.meta, meta.datosNavegador(req, b)), extra: { content_category: plan.estado === 'prueba' ? 'prueba' : 'cliente' } });
+      }
+    }
     if (plan) await datos.insertar('eventos', { tipo: 'uso', sid: plan.sid, paso: que });
-    enviar(res, 200, { ok: true });
+    enviar(res, 200, { ok: true, meta: metaEv });
   },
 
   'GET /api/progreso': async (req, res, url) => {
@@ -148,7 +161,17 @@ const rutas = {
       progreso[k] = { v: !!c.v, por: yo?.nombre || null, ts: Date.now() };
     }
     await datos.actualizar('planes', { token: t }, { progreso });
-    enviar(res, 200, { progreso });
+    // Meta: cada tarea del día marcada por primera vez (mismo id que el píxel, así no cuenta doble)
+    const nuevas = cambios.filter((c) => c.v && /^d\d{1,2}$/.test(String(c.k)) && !(plan.progreso || {})[c.k]?.v);
+    const metaEv = nuevas.slice(0, 3).map((c) => ({ n: 'TareaHecha', id: 'tarea_' + plan.sid + '_' + c.k, k: c.k }));
+    // La primera tarea de esa persona: un único evento por persona, el mejor para optimizar campañas
+    if (nuevas.length && !Object.values(plan.progreso || {}).some((x) => x?.v)) metaEv.unshift({ n: 'PrimeraTarea', id: 'primera_' + plan.sid, k: nuevas[0].k });
+    if (metaEv.length) {
+      const lead = await datos.primero('leads', { sid: plan.sid }).catch(() => null);
+      const nav = meta.unir(lead?.meta, meta.datosNavegador(req, b));
+      for (const e of metaEv) meta.evento(e.n, { id: e.id, email: plan.email, sid: plan.sid, nav, extra: { content_name: e.k, content_category: plan.estado === 'prueba' ? 'prueba' : 'cliente' } });
+    }
+    enviar(res, 200, { progreso, meta: metaEv });
   },
   // Editar las respuestas de un plan (dueño o quien lo comparte)
   // ---------- Carnet de salud (por plan / perro; lo comparten quienes siguen el plan) ----------
@@ -921,7 +944,7 @@ const servidor = http.createServer(async (req, res) => {
       if (!plan) return html(res, 404, pagina('Plan no encontrado', '<h1>No encontramos este plan</h1><p>Revisa el enlace del email o escríbenos.</p>'));
       // Plan compartido: sincroniza el progreso y añade el botón de invitar (vale también para planes ya entregados).
       // Día del plan por día del calendario (los planes antiguos contaban 24 h desde la entrega).
-      const conCompartir = plan.html.split('Math.floor((Date.now()-inicio.getTime())/864e5)+1').join('Math.round((new Date().setHours(0,0,0,0)-new Date(inicio.getTime()).setHours(0,0,0,0))/864e5)+1').replace(/<body([^>]*)>/, (b) => `${b}<script src="/plan-compartido.js" data-t="${plan.token}"></script><script src="/app-aviso.js" data-t="${plan.token}" defer></script>`);
+      const conCompartir = plan.html.split('Math.floor((Date.now()-inicio.getTime())/864e5)+1').join('Math.round((new Date().setHours(0,0,0,0)-new Date(inicio.getTime()).setHours(0,0,0,0))/864e5)+1').replace(/<body([^>]*)>/, (b) => `${b}<script src="/plan-compartido.js" data-t="${plan.token}" data-s="${plan.sid || ''}" data-pixel="${CFG.pixelId || ''}"></script><script src="/app-aviso.js" data-t="${plan.token}" defer></script>`);
       return enviar(res, 200, conCompartir, TIPOS['.html'], { 'X-Robots-Tag': 'noindex' });
     }
     // Páginas indexables (generadas en el servidor)
